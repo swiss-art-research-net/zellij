@@ -1,0 +1,14 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+  <h1>{% block title %}Convert RDF to JSON-LD{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div><form method="POST"><button type="submit" name="downloadbutton" id="downloadbutton" value="download">Download</button></form></div>
+<div>
+<code><pre>
+{{json}}
+</pre></code>
+</div>
+{% endblock %}

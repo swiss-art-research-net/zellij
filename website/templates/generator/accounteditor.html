@@ -1,0 +1,52 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+    <h1>{% block title %}{{ "Update" if existing else "Create" }} AirTable Account{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <style> #swapoff {
+        display: none;
+    } </style>
+    <form method="post">
+        <div class="fields">
+            <label for="ataccountname">Name</label>
+            <input name="ataccountname" id="ataccountname" required value="{{ existing["accountname"] }}">
+
+            <div class="lockfield">
+                <label for="secret">Bearer Token</label>
+                {%- if existing %}
+                    <span class="lock" id="swapon">••••••••••••••••••••••••
+				<a class="lockbutton"
+                   onclick="document.getElementById('swapon').style.display='none';document.getElementById('swapoff').style.display='inline';"
+                ><i class="fas fa-edit"></i></a>
+			</span>
+                    <span class="unlock" id="swapoff"><input type="password" name="secret" id="secret" required><span><i
+                            class="fas fa-lock-open"></i></span></span>
+                {%- else %}
+                    <input type="password" name="secret" id="secret" required>
+                {%- endif %}
+            </div>
+            <p></p>
+            <button type="submit">{{ "Update" if existing else "Create" }} Account</button>
+            {% if existing %}
+                <button type="button" id="delete-button">Delete Account</button>
+            {% endif %}
+        </div>
+    </form>
+
+    <script>
+        function deleteAccount() {
+            $.ajax({
+                url: "{{ url_for('datasources.airTableAccountDelete', accountid=existing['accountid']) }}",
+                type: "DELETE",
+                success: function () {
+                    window.location.href = "{{ url_for('datasources.connections') }}";
+                }
+            });
+        }
+
+        const deleteButton = document.getElementById('delete-button');
+        deleteButton.addEventListener('click', deleteAccount);
+    </script>
+{% endblock %}

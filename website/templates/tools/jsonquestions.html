@@ -1,0 +1,27 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+  <h1>{% block title %}Convert RDF to JSON-LD{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div>
+	<p>Select the type (or types) that should be top-level entries.</p>
+	<form method="post">
+		<input type="hidden" id="localpath" name="localpath" value="{{localpath}}"/>
+		{% for pair in categories|dictsort %}
+		<div>
+			<input type="checkbox" id="check{{loop.index}}_{{pair[0]}}" name="check{{loop.index}}_{{pair[0]}}">
+			<label for="check{{loop.index}}">{{pair[0]}} ({{pair[1]}})</label>
+		</div>
+		{% endfor %}
+		<br/>
+		<div><button type="submit">Submit</button></div>
+	</form>
+</div>
+<hr/>
+<code><pre>
+{{json}}
+</pre></code>
+</div>
+{% endblock %}

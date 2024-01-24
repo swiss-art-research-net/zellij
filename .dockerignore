@@ -1,0 +1,4 @@
+mysql-data/
+docker-compose.yml
+docker-compose-noco.yml
+venv/

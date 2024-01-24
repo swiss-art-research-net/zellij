@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>{% block title %}{% endblock %}</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='error.css') }}" />
+</head>
+<body>
+<header>
+{% block header %}
+	<h1>Oops!</h1>
+	<h3>Something went wrong.<h3>
+	<h4>{{estring.split(":")[0]}}</h4>
+{% endblock %}
+</header>
+<p><p>
+<section class="content">
+{% block content %}
+	<p class="error detail">{{":".join( estring.split(":")[1:] )}}</p>
+	<div class="error obfuscated">
+		<div class="header">The following is your unique error code, to aid support:</div>
+		<div class="badcode">{{traceback["obfuscated"]}}</div>
+	</div>
+{#
+	<div class="error trace">
+		<div class="badfile">{{traceback["codefile"]}}</div>
+		<div class="badfunc">{{traceback["codefunction"]}}</div>
+		<div class="badcode"><span class="number">{{traceback["codeline"]}}</span> <span class="line">|</span> <span class="code">{{traceback["code"]}}</span></div>
+		<div class="exception"><span class="name">{{traceback["error"].split(":")[0]}}</span> {{":".join( traceback["error"].split(":")[1:] )}}</div>
+	</div>
+#}
+{% endblock %}
+</section>
+</body>

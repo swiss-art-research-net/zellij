@@ -1,0 +1,30 @@
+#banner > div:first-child {
+	background-image: linear-gradient(rgba(255,255,255,0.5),rgba(255,255,255,0.5)), url(zellijbanner4x1.jpg);
+	background-repeat: no-repeat;
+	background-size: 100%;
+	padding: 8px;
+}
+#banner > div:first-child > img {
+	width: 58%;
+	height: 58%;
+	display: block;
+	padding-right:14%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#banner h1 { text-align: center; font-size: 3.4vw; }
+
+#banner > div:nth-child(2) {
+	margin: 0; padding: 0;
+	height: 64px;
+	background: url("/static/banner1.desktop.jpg");
+	background-size: auto 64px;
+	background-repeat: repeat-x;
+}
+#banner > div:nth-child(2)::after { content: ""; display: table; clear: both; 
+}
+div.ui {
+	max-width: 768px;
+	margin: auto;
+}

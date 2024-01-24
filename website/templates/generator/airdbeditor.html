@@ -1,0 +1,36 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+    <h1>{% block title %}{{ "Update" if existing else "Create" }} AirTable Database{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <form method="post">
+        <div class="fields">
+            <label for="apiname">Name</label>
+            <input name="apiname" id="apiname" required value="{{ existing["dbasename"] }}">
+            <label for="secret">API Key</label>
+            <input name="apikey" id="apikey" required value="{{ existing["dbaseapikey"] }}">
+
+            <button type="submit">{{ "Update" if existing else "Create" }} Database</button>
+            {% if existing %}
+                <button type="button" id="delete-button">Delete Database</button>
+            {% endif %}
+        </div>
+    </form>
+
+    <script>
+        function deleteDB() {
+            $.ajax({
+                url: "{{ url_for('datasources.airTableDatabaseDelete', accountid=existing['airtableaccountkey'], dbaseid=existing['dbaseid']) }}",
+                type: "DELETE",
+                success: function () {
+                    window.location.href = "{{ url_for('datasources.connections') }}";
+                }
+            });
+        }
+
+        const deleteButton = document.getElementById('delete-button');
+        deleteButton.addEventListener('click', deleteDB);
+    </script>
+{% endblock %}

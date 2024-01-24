@@ -1,0 +1,60 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+    <h1>{% block title %}AirTable “Scraper”{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="scraper">
+        {# verify that this scraper exists inside one of our AirTables #}
+        {% if not base %}
+            <p>This AirTable API link isn't one of yours.</p>
+        {% elif not scraper %}
+            <p>No scraper specified.</p>
+        {% elif not prefill and not edit %}
+            <p>Not a valid scraper.</p>
+        {% else %}
+            <h3>[{{ base["accountname"] }}] {{ base["dbasename"] }} ({{ base["dbaseapikey"] }})</h3>
+            <div>
+                <h3>
+                    <label for="scrapername">“Scraper” Name:</label>
+                    <span id="scrapername">{{ prefill['scrapername'] }}</span>
+                </h3>
+                {# what I'm about to do is crap, but I'm running out of time and CSS isn't playing nice. #}
+                {# TODO: fix this. #}
+                <table>
+                    <tr>
+                        <td>Table</td>
+                        <td>{{ prefill['data_table'] }}</td>
+                    </tr>
+                    {% for pfkey, pfval in prefill["Data"].items() %}
+                        <tr>
+                            <td>{{ pfkey }}</td>
+                            <td>{{ pfval }}</td>
+                        </tr>
+                    {%- endfor %}
+                    <tr>
+                        <td>Group By</td>
+                        <td>{{ prefill['data_groupby'] }}</td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td>Table</td>
+                        <td>{{ prefill['group_table'] }}</td>
+                    </tr>
+                    {% for pfkey, pfval in prefill["Group"].items() %}
+                        <tr>
+                            <td>{{ pfkey }}</td>
+                            <td>{{ pfval }}</td>
+                        </tr>
+                    {%- endfor %}
+                </table>
+
+
+            </div>
+            <p><a href="{{ url_for('datasources.displayScraper2', apikey=apikey, scraper=scraper) }}">Edit</a></p>
+            <p><a href="{{ url_for('datasources.connections') }}">Return to Data Sources</a></p>
+        {% endif %}
+{% endblock %}

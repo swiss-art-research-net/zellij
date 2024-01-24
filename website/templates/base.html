@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<!-- Zellīj Ontological Toolkit -->
+<head>
+    <meta charset="utf-8"/>
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='zellij.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='zellijui.css') }}"/>
+    {% include 'favicons.snippet.html' %}
+    <script src="https://kit.fontawesome.com/cfb94ed7c3.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+{% block menu %}{% endblock %}
+<header>
+    {% block header %}{% endblock %}
+</header>
+
+<section class="flash">
+    {%- with errors = get_flashed_messages(category_filter=["error"]) %}
+        {%- if errors %}
+            <div class="flasherrors">
+                <i class="fas fa-exclamation-circle"></i>
+                <ul>
+                    {%- for message in errors %}
+                        <li>{{ message|safe }}</li>
+                    {%- endfor %}
+                </ul>
+            </div>
+        {%- endif %}
+    {%- endwith %}
+    {%- with warnings = get_flashed_messages(category_filter=["warning"]) %}
+        {%- if warnings %}
+            <div class="flashwarnings">
+                <i class="fas fa-exclamation-triangle"></i>
+                <ul>
+                    {%- for message in warnings %}
+                        <li>{{ message|safe }}</li>
+                    {%- endfor %}
+                </ul>
+            </div>
+        {%- endif %}
+    {%- endwith %}
+    {%- with infos = get_flashed_messages(category_filter=["info"]) %}
+        {%- if infos %}
+            <div class="flashinfos">
+                <i class="fas fa-info-circle"></i>
+                <ul>
+                    {%- for message in infos %}
+                        <li>{{ message|safe }}</li>
+                    {%- endfor %}
+                </ul>
+            </div>
+        {%- endif %}
+    {%- endwith %}
+    {%- with others = [] %}
+        {%- for category, message in get_flashed_messages(with_categories=true) %}
+            {%- if category not in ["error", "warning", "info"] %}{% set others = others.append(message) %}{% endif %}
+        {%- endfor %}
+        {%- if others %}
+            <div class="flashother">
+                <ul>
+                    {%- for message in others %}
+                        <li>{{ message|safe }}</li>
+                    {%- endfor %}
+                </ul>
+            </div>
+        {%- endif %}
+    {%- endwith %}
+</section>
+
+<section class="content">
+    {% block content %}
+    {% endblock %}
+</section>
+</body>

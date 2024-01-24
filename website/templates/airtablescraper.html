@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<div class="ui">
+  <h1>{% block title %}AirTable Scraper{% endblock %}</h1>
+  <p>This will generate HTML ontological documentation from a Zellīj-compatible AirTable “base” (database).
+     You must enter your AirTable bearer token (keep this secure!), and also the AirTable API identifier
+     of the desired base. Then you must specify the field names for the needed fields from the relevant fields table
+     and also its aggregating table.</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="ui">
+  <form method="post">
+    <input type="hidden" name="category" id="category" value="{{category}}">
+    <table style="width:80%; margin:auto;">
+    <tr><td style="width:16.6%"></td><td style="width:33.3%"></td><td style="width:16.6%"></td><td style="width:33.3%"></td></tr>
+    <tr><td colspan="4">Enter the needed API fields here. You can optionally enter a title for the documentation here too.</td></tr>
+    <tr>
+      <td><label for="bearertoken">Bearer Token</label></td>
+      <td><input type="password" name="bearertoken" id="bearertoken" required></td>
+      <td><label for="airtableid">AirTable API identifier</label></td>
+      <td><input name="airtableid" id="airtableid" required></td>
+    </tr>
+    <tr>
+      <td><label for="optionaltitle">Optional Title</label></td>
+      <td colspan="3"><input name="optionaltitle" id="optionaltitle" style="width:92%" value="Getty’s Linked.Art"></td>
+    </tr>
+    <tr><td colspan="4">
+      <br />
+      <p>Define the field names we'll be pulling the data from. Currently they default to the settings for Getty’s <b><i>Linked.Art</i></b> base,
+      and the <b>{{defaultname}}</b> tables therein.</p>
+      <p>To load different defaults, click one of the following links:</p>
+      <p><a href="/airtable/field">Fields</a>, <a href="/airtable/collection">Collection</a>, <a href="/airtable/Model">Model</a>.</p>
+    </td></tr>
+    <tr>
+      <td colspan="2"><b><center>Aggregate Data Table</center></b></td>
+      <td colspan="2"><b><center>Detailed Data Table</center></b></td>
+    </tr>
+    <tr>
+      <td><label for="aggTable">Table Name</label></td>
+      <td><input name="aggTable" id="aggTable" value="{{defaults['aggTable']}}" required></td>
+      <td><label for="fldTable">Table Name</label></td>
+      <td><input name="fldTable" id="fldTable" value="{{defaults['fldTable']}}" required></td>
+    </tr>
+    <tr>
+      <td colspan="2"><b><center>Define Column Names</center></b></td>
+      <td colspan="2"><b><center>Define Column Names</center></b></td>
+    </tr>
+    <tr class="help">
+      <td colspan="4"><b>Parent Link:</b> Links the Details back to the Aggregate; in AirTable fields will have an actual record link.</td>
+    </tr>
+    <tr>
+      <td></td><td></td>
+      <td><label for="fldParent">Parent Link</label></td>
+      <td><input name="fldParent" id="fldParent" value="{{defaults['fldParent']}}" required></td>
+    </tr>
+    <tr class="help">
+      <td colspan="4"><b>Identifier:</b> The numeric or key part, which sorts the data; e.g. "1", or "LAM.4", etc.</td>
+    </tr>
+    <tr>
+      <td><label for="aggIdent">Identifier</label></td>
+      <td><input name="aggIdent" id="aggIdent" value="{{defaults['aggIdent']}}" required></td>
+      <td><label for="fldIdent">Identifier</label></td>
+      <td><input name="fldIdent" id="fldIdent" value="{{defaults['fldIdent']}}" required></td>
+    </tr>
+    <tr class="help">
+      <td colspan="4"><b>Name:</b> Human-readable item name; e.g. "Activity", or "Temporal Relations".</td>
+    </tr>
+    <tr>
+      <td><label for="aggName">Name</label></td>
+      <td><input name="aggName" id="aggName" value="{{defaults['aggName']}}" required></td>
+      <td><label for="fldName">Name</label>
+      <td><input name="fldName" id="fldName" value="{{defaults['fldName']}}" required></td>
+    </tr>
+    <tr class="help">
+      <td colspan="4"><b>Full Name:</b> Identifiers + names; e.g. "[LAM.1] Activity_[LAF.6] Name_content".</td>
+    </tr>
+    <tr>
+      <td><label for="aggFull">Full Name</label></td>
+      <td><input name="aggFull" id="aggFull" value="{{defaults['aggFull']}}" required></td>
+      <td><label for="fldFull">Full Name</label></td>
+      <td><input name="fldFull" id="fldFull" value="{{defaults['fldFull']}}" required></td>
+    </tr>
+    <tr class="help">
+      <td colspan="4"><b>Description:</b> Long text description.</td>
+    </tr>
+    <tr>
+      <td><label for="aggDesc">Description</label></td>
+      <td><input name="aggDesc" id="aggDesc" value="{{defaults['aggDesc']}}" required></td>
+      <td><label for="fldDesc">Description</label></td>
+      <td><input name="fldDesc" id="fldDesc" value="{{defaults['fldDesc']}}" required></td>
+    </tr>
+    <tr class="help">
+      <td colspan="4"><b>Turtle RDF:</b> The most complete RDF, including headers.</td>
+    </tr>
+    <tr>
+      <td><label for="aggTurtle">Turtle RDF</label></td>
+      <td><input name="aggTurtle" id="aggTurtle" value="{{defaults['aggTurtle']}}" required></td>
+      <td><label for="fldTurtle">Turtle RDF</label></td>
+      <td><input name="fldTurtle" id="fldTurtle" value="{{defaults['fldTurtle']}}" required></td>
+    </tr>
+    <tr class="help">
+      <td colspan="4"><b>CRM Path:</b> Contains the CRM Path, e.g. "-&gt;p1-&gt;E33_E41[4_1]-&gt;p190-&gt;rdf:literal".</td>
+    </tr>
+    <tr>
+      <td></td><td></td>
+      <td><label for="fldCRM">CRM Path</label></td>
+      <td><input name="fldCRM" id="fldCRM" value="{{defaults['fldCRM']}}" required></td>
+    </tr>
+    <tr>
+      <td></td><td></td><td></td>
+      <td><br /><input type="submit" value="Generate {{defaultname}} Docs"></td>
+    </tr>
+	</table>
+  </form>
+</div>
+{% endblock %}

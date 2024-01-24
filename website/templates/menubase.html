@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block menu %}
+	<nav>
+		<ul id="mainmenu">
+			<img class="logo2" src="{{ url_for('static', filename='banner1arc.desktop.png') }}" />
+			<img class="logo2" src="{{ url_for('static', filename='favicon-128.png') }}" />
+{%- include 'menu.snippet.html' %}
+		</ul>
+	</nav>
+{% endblock %}

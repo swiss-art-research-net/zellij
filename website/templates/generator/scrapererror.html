@@ -1,0 +1,27 @@
+{% extends 'menubase.html' %}
+
+{% block head %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='zellijscraper.css') }}" />
+{% endblock %}
+
+{% block header %}
+  <h1>{% block title %}AirTable “Scraper” Error{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="scraper">
+{# verify that this scraper exists inside one of our AirTables #}
+{% if not base %}
+  <p>This AirTable API link isn't one of yours.</p>
+{% else %}
+	<h3>[{{ base["accountname"] }}] {{ base["dbasename"] }} ({{ base["dbaseapikey"] }})</h3>
+	<div><form method="post">
+		<p>The scraper you've selected is damaged or out-of-date. I'm afraid it's now useless.</p>
+		<div class="buttonrow">
+			{% if scraperid and delete != "confirm" %}
+			<button type="submit" class="delete" name="deleter" id="delete" value="confirm">Delete</button>
+			{% endif %} 
+		</div>
+	</form></div>
+{% endif %}
+{% endblock %}
