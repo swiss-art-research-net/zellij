@@ -1,0 +1,9 @@
+{%- if error %}
+	<i class="status unknown far fa-question-circle"></i>
+{%- elif valu['name'] not in samples.keys() %}
+	<i class="status unknown far fa-question-circle"></i>
+{%- elif valu['sortable'] or valu['groupable'] or valu['hideable'] %}
+	<i class="status fas fa-ban"></i>
+{%- else %}
+	<i class="status far fa-circle"></i>
+{%- endif %}

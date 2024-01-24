@@ -1,0 +1,9 @@
+	<h1 id="pattern{{poidx}}">{{po.name}}<h1>
+	<table class="toc">
+		<tr><th>Identifier</th><th>Name</th><th>Function / Description</th></tr>
+{% for grp in po.values()|sort(attribute='Identifier') %}
+		<tr><td>{{grp["Identifier"]}}</td><td>{% if grp.GroupedData()|length > 0 %}<a href="{{url_for()}}">{% endif %}{{grp["Name"]}}{% if grp.GroupedData()|length > 0 %}</a>{% endif %}</td><td>{{grp["Description"]}}</td></tr>
+{% endfor %}
+	</table>
+	<br />
+	{# individual details #}

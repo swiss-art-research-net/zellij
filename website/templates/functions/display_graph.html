@@ -1,0 +1,67 @@
+<div class="tabset">
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_ontgraph" hidden aria-hidden="true"
+           checked>
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_instgraph" hidden aria-hidden="true">
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_turtle" hidden aria-hidden="true">
+    {% if graphs.error is defined %}
+        <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_rdfwarn" hidden aria-hidden="true">
+    {% endif %}
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_jsonld" hidden aria-hidden="true">
+    <ul hidden aria-hidden="true">
+        <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
+        </li>
+        <li><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+        <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+        {% if graphs.error is defined %}
+            <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                warnings</label></li>
+        {% endif %}
+        {% if graphs.error is undefined %}
+            <li><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+        {% else %}
+            <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
+                Error</label></li>
+        {% endif %}
+    </ul>
+    <div>
+        <section id="ontologyGraph">
+            <h2>Ontology Graph</h2>
+            <div id="ontology-graph" class="mermaid">{{ graphs["ontology"] }}</div>
+        </section>
+        <section id="instanceGraph">
+            <h2>Instance Graph</h2>
+            <div id="instance-graph" class="mermaid">{{ graphs["instance"] }}</div>
+        </section>
+        <section id="turtleRDF">
+            <h2>Turtle RDF</h2>
+            <textarea rows="32" readonly="readonly">
+                    {{ graphs["turtle"] }}
+                </textarea>
+            <br/>
+        </section>
+        {% if graphs.error is defined %}
+            <section>
+                <h2>RDF Warnings</h2>
+                <div class="rdfwarning">
+                    {{ graphs.error|safe }}
+                </div>
+                <br/>
+            </section>
+        {% endif %}
+        {% if graphs.error is undefined %}
+            <section id="jsonLD">
+                <h2>JSON-LD</h2>
+                <textarea rows="32" readonly="readonly">
+            				{{ graphs["jsonld"] }}
+            			</textarea>
+            </section>
+        {% else %}
+            <section>
+                <h2 class="error">RDF Error</h2>
+                <div class="errormessage">
+                    {{ graphs.error|safe }}
+                </div>
+            </section>
+        {% endif %}
+    </div>
+</div>

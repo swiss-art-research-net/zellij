@@ -1,0 +1,47 @@
+<table class="toc attributes-table">
+    {% set fields = data.keys() %}
+
+    {% set sortable_keys = [] %}
+    {% set hideable_keys= [] %}
+    {% set link_keys = [] %}
+    {% for key, value in prefill_group.items() %}
+        {% if value.sortable == True %}
+            {% set _ = sortable_keys.append(key) %}
+        {% endif %}
+        {% if value.hideable == True %}
+            {% set _ = hideable_keys.append(key) %}
+        {% endif %}
+        {% if value.groupable == True %} {# for the link checkbox #}
+            {% set _ = link_keys.append(key) %}
+        {% endif %}
+    {% endfor %}
+
+        {% for field in fields %}
+            <tr>
+            {% if loop.index > 1 %}
+                {% if field not in hideable_keys %}
+                    {% if data[field] is string %}
+                        {% set fld_f_list = [data[field]] %}
+                    {% elif data[field] is integer %}
+                        {% set fld_f_list = [data[field]|string] %}
+                    {% elif data[field] is mapping %}
+                        {% set fld_f_list = [data[field]] %}
+                    {% else %}
+                        {% set fld_f_list = data[field] %}
+                    {% endif %}
+
+                    <th>
+                        <div>
+                            {{ field }}
+                        </div>
+                    </th>
+                    <td>
+                        <div>
+                            {{ data[field] }}
+                        </div>
+                    </td>
+                {% endif %}
+            {% endif %}
+            </tr>
+        {% endfor %}
+</table>

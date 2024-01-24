@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>SortableJS sample page</title>
+	<script src="https://kit.fontawesome.com/cfb94ed7c3.js" crossorigin="anonymous"></script>
+	<!-- jsDelivr :: Sortable :: Latest (https://www.jsdelivr.com/package/npm/sortablejs) -->
+	<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+	<link rel="stylesheet" href="../static/zellij.css" />
+	<link rel="stylesheet" href="../static/zellijui.css" />
+	<script>
+		/*
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>1</sub>
+			<input type="text" class="nom" name="datanom_1" id="datanom_1" value="Identifier">─<input type="text" class="val" name="dataval_1" id="dataval_1" list="dlist_1" value="Name">
+			<i class="status far fa-circle"></i>
+		</li>
+		*/
+
+		function addSortable(thing) {
+			//alert('Add code to add list item\n' + thing);
+			var prefix = thing.id.substring(0, thing.id.indexOf("ScraperList"));
+			
+			var cntobj = document.getElementById(thing.id + "Count");
+			cntobj.value = parseInt(cntobj.value) + 1;
+			var newitem = document.createElement("li");
+			newitem.classList.add("list-group-item");
+			var obj = document.createElement("i");
+			obj.classList.add("drag-handle");
+			obj.classList.add("fas");
+			obj.classList.add("fa-bars");
+			newitem.appendChild(obj);
+			var obj = document.createElement("sub");
+			obj.innerHTML = thing.childElementCount;	// the hidden INPUT is already incrementing this by one
+			newitem.appendChild(obj);
+			newitem.appendChild( document.createTextNode(" ") );
+			var obj = document.createElement("input");
+			obj.type = "text";
+			obj.name=prefix+"nom_"+cntobj.value;
+			obj.id=prefix+"nom_"+cntobj.value;
+			obj.value="";
+			obj.classList.add("nom");
+			newitem.appendChild(obj);
+			newitem.appendChild( document.createTextNode("─") );
+			var obj = document.createElement("input");
+			obj.type = "text";
+			obj.name=prefix+"val_"+cntobj.value;
+			obj.id=prefix+"val_"+cntobj.value;
+			obj.setAttribute("list", prefix+"list");
+			obj.value="";
+			obj.classList.add("val");
+			newitem.appendChild(obj);
+			var obj = document.createElement("i");
+			obj.classList.add("status");
+			obj.classList.add("far");
+			obj.classList.add("fa-circle");
+			newitem.appendChild(obj);
+			thing.appendChild(newitem);
+		}
+		
+		function renumber(draggablelistobject) {
+			j = 1;
+			for (var i = 0; i < draggablelistobject.children.length; i++) {
+				var obj = draggablelistobject.children[i];
+				if (obj.nodeName == "LI") {
+					var item = obj.getElementsByTagName("sub")[0];
+					item.innerHTML = j;
+					var item = obj.getElementsByTagName("input")[0];
+					if (item.type == "hidden") {
+						item.value = j;
+					}
+					j++;
+				}
+			}
+		}
+	</script>
+	<style>
+	.scraperlist { list-style-type: none; margin:0px; padding:0; }
+	.scraperlist li { border:1px solid #99F; margin: 4px; padding: 2px; background-color: #EEF; border-radius: 4px; }
+	.scraperlist li i.drag-handle { cursor: move; color:#99F; }
+	.scraperlist li sub:first-of-type { font-family: Arial; font-size: 8pt; color:#99F;}
+	/*.scraperlist li { display: flex; align-items: center; }*/
+	.list-group-item .nom { font-size: 10pt; width: 90px; margin:0; padding:0; }
+	.list-group-item .val { font-size: 10pt; width: 180px;}
+	.columnheaders { background-color: blue; width:100%; font-size: 6pt; line-height:100%;  }
+	.columnheaders > span { display: inline-block; background-color:black; color: white; padding:2px; font-family: Arial, sans-serif; text-align: center; }
+	.columnheaders > span:first-child { width:90px; margin-left: 30px; }
+	.columnheaders > span:nth-child(2) { width:183px; margin-left: 10px; }
+	.columnheaders { content: ""; display: table; clear: both; /* "clearfix */ }
+	.scraperlistcontainer { border: 1px solid black; width: 360px; }
+	.scraperlistcontainer { content: ""; display: table; clear: both; /* "clearfix */ }
+	.scraperlist li i.status { color: #DDF; float: right; margin-top: 4px; }
+	.scraperlistcontainer .iconbar { font-size: 16pt; margin-top: 1em; }
+	.scraperlistcontainer .columnheaders { content: ""; display: table; clear: both; /* "clearfix */ }
+	.scraperlistcontainer .iconbar > :nth-child(1) { float: left; padding: 4px; color: #900;}
+	.scraperlistcontainer .iconbar > :nth-child(2) { float: right; padding: 4px; cursor: pointer; }
+	.trash li { display:none; }
+	.airtablename { padding: 4px; font-family: Arial, sans-serif; }
+	.airtablename label { font-size: 9pt; font-weight: 700; width: 76px; padding: 1px 2px; margin-left: 26px; display:inline-block; text-align: right; }
+	.airtablename label:after { content: ":"; }
+	.airtablename input { font-size: 10pt; font-weight: 700; width: 200px; }
+	.airtablename i.status { color: #EEE; float: right; margin-top: 4px; }
+	.airtablename i.status.good { color: #9F9; }
+	.airtablename i.status.bad { color: #F99; }
+	#groupbydivider .groupbyname { width: 360px; border: 1px solid black; font-family: Arial, sans-serif; }
+	#groupbydivider .groupbyname label { font-size: 9pt; font-weight: 700; width: 76px; margin:4px; padding: 1px 2px; margin-left: 26px; display:inline-block; text-align: right; }
+	#groupbydivider .groupbyname label:after { content: ":"; }
+	#groupbydivider .groupbyname input { font-size: 10pt; font-weight: 400; width: 200px; margin:4px; }
+	#groupbydivider .groupbyname .status  { color: #EEE; float: right; margin-top: 8px; margin-right: 4px;} 
+	#groupbydivider p { margin:0; padding:0; }
+	#groupbydivider p:nth-of-type(1) { width: 180px; border-right: 3px solid black; }
+	#groupbydivider p:nth-of-type(1) { height: 1em; }
+	#groupbydivider p:nth-of-type(2) { height: 2em; }
+	</style>
+<body>
+
+<!-- Simple List -->
+<div class="scraperlistcontainer">
+	<div class="airtablename">
+		<label for="data_table">Data Table</label>
+		<input name="data_table" id="data_table" type="text" value="Model_fields" required>
+		<i class="status far fa-circle"></i>
+	</div>
+	<div class="columnheaders">
+		<span>Label</span><span>Data Column Name</span>
+	</div>
+	<ul id="dataScraperList" class="list-group scraperlist">
+		<input type="hidden" name="dataScraperListCount" id="dataScraperListCount" value="5"/>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>1</sub>
+			<input type="hidden" name="datasort_1" id="datasort_1" value="1"/>
+			<input type="text" class="nom" name="datanom_1" id="datanom_1" value="Identifier">─<input type="text" class="val" name="dataval_1" id="dataval_1" list="datalist" value="Name">
+			<i class="status far fa-circle"></i>
+		</li>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>2</sub>
+			<input type="hidden" name="datasort_2" id="datasort_2" value="2"/>
+			<input type="text" class="nom" name="datanom_2" id="datanom_2" value="Name">─<input type="text" class="val" name="dataval_2" id="dataval_2" list="datalist" value="Field Name">
+			<i class="status far fa-circle"></i>
+		</li>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>3</sub>
+			<input type="hidden" name="datasort_3" id="datasort_3" value="3"/>
+			<input type="text" class="nom" name="datanom_3" id="datanom_3" value="Description">─<input type="text" class="val" name="dataval_3" id="dataval_3" list="datalist" value="Description">
+			<i class="status far fa-circle"></i>
+		</li>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>4</sub>
+			<input type="hidden" name="datasort_4" id="datasort_4" value="4"/>
+			<input type="text" class="nom" name="datanom_4" id="datanom_4" value="CRM Path">─<input type="text" class="val" name="dataval_4" id="dataval_4" list="datalist" value="CRM Path">
+			<i class="status far fa-circle"></i>
+		</li>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>5</sub>
+			<input type="hidden" name="datasort_5" id="datasort_5" value="5"/>
+			<input type="text" class="nom" name="datanom_5" id="datanom_5" value="Turtle RDF">─<input type="text" class="val" name="dataval_5" id="dataval_5" list="datalist" value="Model_Fields_Total_Turtle">
+			<i class="status far fa-circle"></i>
+		</li>
+	</ul>
+	<div class="iconbar">
+		<div id="dataScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
+		<a onclick="addSortable(dataScraperList)"><i class="fas fa-plus-square"></i></a>
+	</div>
+</div>
+<div id="groupbydivider">
+	<p>&nbsp;</p>
+	<div class="groupbyname">
+		<label for="data_groupby">Group By</label>
+		<input name="data_groupby" id="data_groupby" list="datalist" type="text" value="Model">
+		<i class="status far fa-circle"></i>
+	</div>
+	<p>&nbsp;</p>
+</div>
+
+<div class="scraperlistcontainer">
+	<div class="airtablename">
+		<label for="group_table">Group Table</label>
+		<input name="group_table" id="group_table" type="text" value="Model">
+		<i class="status far fa-circle"></i>
+	</div>
+	<div class="columnheaders">
+		<span>Label</span><span>Data Column Name</span>
+	</div>
+	<ul id="groupScraperList" class="list-group scraperlist">
+		<input type="hidden" name="groupScraperListCount" id="groupScraperListCount" value="4"/>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>1</sub>
+			<input type="hidden" name="groupsort_1" id="groupsort_1" value="1"/>
+			<input type="text" class="nom" name="groupnom_1" id="groupnom_1" value="Identifier">─<input type="text" class="val" name="groupval_1" id="groupval_1" list="grouplist" value="Identifier">
+			<i class="status far fa-circle"></i>
+		</li>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>2</sub>
+			<input type="hidden" name="groupsort_2" id="groupsort_2" value="2"/>
+			<input type="text" class="nom" name="groupnom_2" id="groupnom_2" value="Name">─<input type="text" class="val" name="groupval_2" id="groupval_2" list="grouplist" value="Name">
+			<i class="status far fa-circle"></i>
+		</li>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>3</sub>
+			<input type="hidden" name="groupsort_3" id="groupsort_3" value="3"/>
+			<input type="text" class="nom" name="groupnom_3" id="groupnom_3" value="Description">─<input type="text" class="val" name="groupval_3" id="groupval_3" list="grouplist" value="Description">
+			<i class="status far fa-circle"></i>
+		</li>
+		<li class="list-group-item">
+			<i class="drag-handle fas fa-bars"></i><sub>4</sub>
+			<input type="hidden" name="groupsort_4" id="groupsort_4" value="4"/>
+			<input type="text" class="nom" name="groupnom_4" id="groupnom_4" value="CRM Path">─<input type="text" class="val" name="groupval_4" id="groupval_4" list="grouplist" value="CRM Path">
+			<i class="status far fa-circle"></i>
+		</li>
+	</ul>
+	<div class="iconbar">
+		<div id="groupScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
+		<a onclick="addSortable(groupScraperList)"><i class="fas fa-plus-square"></i></a>
+	</div>
+</div>
+
+<datalist id="datalist">
+	<option>Model</option>
+	<option>Field</option>
+	<option>Name</option>
+	<option>Model_Domain_Turtle</option>
+	<option>Field_Turtle</option>
+	<option>Model_Fields_Total_Turtle</option>
+	<option>Collection</option>
+	<option>CRM Path</option>
+	<option>Field Name</option>
+	<option>Description</option>
+	<option>Last Mod</option>
+	<option>field_id_version</option>
+	<option>turtle_field</option>
+	<option>Field_JSON</option>
+	<option>CRM Class</option>
+	<option>Expected Value Type</option>
+	<option>Field Identifier</option>
+</datalist>
+<datalist id="grouplist">
+	<option>Name</option>
+	<option>Description</option>
+	<option>Model_Fields</option>
+	<option>Field 2</option>
+	<option>CRM Base Entity</option>
+	<option>Status</option>
+	<option>Version</option>
+	<option>Authors</option>
+	<option>Users</option>
+	<option>Weight</option>
+	<option>Tag</option>
+	<option>Model_Domain_Turtle</option>
+	<option>Model_RDFCheck_Comment</option>
+	<option>Prefix</option>
+	<option>Identifier</option>
+	<option>ID</option>
+	<option>Name Collection Turtle</option>
+	<option>Identifier Collection Turtle</option>
+	<option>Statement Collection Turtle</option>
+	<option>Temporal Relations Collection Turtle</option>
+	<option>Model_Turtle</option>
+	<option>Model_Turtle_Prefix</option>
+</datalist>
+
+
+<script>
+	// Simple list
+	Sortable.create(dataScraperList, {
+		handle: ".drag-handle",
+		group: "datascraper",
+		onEnd: function(evt) {
+			renumber(evt.from);
+		}
+	});
+	Sortable.create(dataScraperTrash, {
+		group: "datascraper",
+		onAdd: function(evt) {
+			var el = evt.item;
+			renumber(evt.from);
+			el.parentNode.removeChild(el);
+		}
+	});
+	Sortable.create(groupScraperList, {
+		handle: ".drag-handle",
+		group: "groupscraper",
+		onEnd: function(evt) {
+			renumber(evt.from);
+		}
+	});
+	Sortable.create(groupScraperTrash, {
+		group: "groupscraper",
+		onAdd: function(evt) {
+			var el = evt.item;
+			renumber(evt.from);
+			el.parentNode.removeChild(el);
+		}
+	});
+</script>

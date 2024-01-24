@@ -1,0 +1,16 @@
+			{% if samples %}
+				<p>Available fields for table <b>{{tablename}}</b>, with examples.</p>
+				<table>
+					<tr><th>Field</th><th>Example</th></tr>
+				{%- for k, v in samples.items() %}
+					<tr><td>{{k}}</td><td>{{v|safe}}</td></tr>
+				{%- endfor %}
+				</table>
+    		{% endif %}
+			{% if dataerror %}
+				{% if error.status_code == 401 %}
+				<p>[401] Authentication required.</p>
+				{% else %}
+				<p>Application <span class="code">{{dbasekey}}</span> doesn't have a table named “<b>{{tablename}}</b>”.</p>
+				{% endif %}
+			{% endif %}

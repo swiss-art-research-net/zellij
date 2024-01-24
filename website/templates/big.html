@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<!-- Zellīj Ontological Toolkit -->
+<head>
+	<meta charset="utf-8" />
+	<title>Zellīj Ontological Toolkit</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='zellij.css') }}" />
+	<link rel="stylesheet" href="{{ url_for('static', filename='zellijui.css') }}" />
+	<link rel="stylesheet" href="{{ url_for('static', filename='zellijbig.css') }}" />
+{% include 'favicons.snippet.html' %}
+</head>
+<body>
+	<nav id="banner">
+		<div><img src="{{ url_for('static', filename='zellij_logo_nano.svg') }}" /></div>
+		<div><ul id="mainmenu">
+{% include 'menu.snippet.html' %}
+		</ul></div>
+		<h1><i>Zellīj</i> Ontological Toolkit</h1>
+	</nav>
+<section class="content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</section>

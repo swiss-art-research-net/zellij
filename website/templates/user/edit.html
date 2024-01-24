@@ -1,0 +1,16 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+  <h1>{% block title %}Edit User{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+	<form method="post">
+	<div class="fields">
+		<label for="username">Username</label>
+		<input name="username" id="username" required value="{{ g.user['username'] }}">
+		<label for="password">Password</label>
+		<input type="password" name="password" id="password" required>
+    	<button type="submit">Save</button>
+  </form>
+{% endblock %}

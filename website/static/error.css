@@ -1,0 +1,100 @@
+header {
+	background: url('error.banner.jpg') rgb(0,0,0);
+	background-repeat: no-repeat;
+	background-size: 585px 330px;
+	height: 330px;
+}
+header {
+	text-align: right;
+	color: white;
+	font-family: Helvetica, Arial, sans-serif;
+	padding-right: 12px;
+}
+header > :first-child {
+	font-family: Impact, sans-serif;
+	font-size: 48pt;
+	font-weight: 400;
+	margin: 0;
+}
+header > h4 {
+	font-family: Impact, sans-serif;
+	font-size: 24pt;
+	font-weight: 400;
+	color: red;
+}
+header + p {
+	height:48px;
+	background-image: linear-gradient(180deg, rgb(0,0,0),rgb(255,255,255));
+	padding: 0; margin: 0;
+}
+
+
+.error.trace {
+	margin-top: 1em;
+}
+.error.trace .badfile {
+	border: 1px solid black;
+	border-bottom: none;
+	display: inline-block;
+	font-family: Helvetica, Arial, sans-serif;
+	padding: 2px 8px;
+	font-size: 10pt;
+}
+.error.trace .badfunc {
+	border: 1px solid black;
+	border-bottom: none;
+	font-family: monospace;
+	margin: 0; padding: 0;
+	padding-top: 0.4em;
+}
+.error.trace .badfunc::before {
+	content: "def ";
+}
+.error.trace .badfunc::after {
+	content: "():\A...";
+	white-space: pre-wrap;
+}
+.error.trace .badcode {
+	border: 1px solid black;
+	border-top: none;
+	font-family: monospace;
+	margin: 0; padding: 0;
+	padding-bottom: 0.4em;
+}
+.error.trace .badcode::after {
+	content: "\A...";
+	white-space: pre-wrap;
+}
+.error.trace .number, .error.trace .line {
+	color: #999;
+}
+.error.trace .badcode .code {
+	color: #900;
+}
+.error.trace .exception {
+	font-family: Georgia, serif;
+	color: red;
+	margin-top: 0.4em;
+}
+.error.trace .exception .name {
+	font-family: Helvetica, Arial, sans-serif;
+	font-weight: 700;
+}
+
+.error.obfuscated .header {
+	margin-top: 0.4em;
+	border: 1px solid black;
+	border-bottom: none;
+	display: inline-block;
+	font-family: Helvetica, Arial, sans-serif;
+	padding: 2px 8px;
+	font-size: 10pt;
+}
+.error.obfuscated .badcode {
+	border: 1px solid black;
+	color: #900;
+	background: #FEE;
+	font-family: monospace;
+	margin: 0; padding: 0;
+	padding: 0.4em;
+}

@@ -1,0 +1,484 @@
+<style>
+    .tab-box {
+        display: flex;
+        flex-direction: column;
+        width: 500px;
+        border: 1px solid #ccc;
+        padding: 10px;
+    }
+
+    .tab-link {
+        background-color: #f2f2f2;
+        color: #333;
+        padding: 10px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .tab-link.active {
+        background-color: #ccc;
+        color: white;
+    }
+
+    .tab-content {
+        display: none;
+        padding: 10px;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+</style>
+<script>
+    function openTab(evt, tabName) {
+        const table = document.getElementById(tabName);
+        const tabContent = table.getElementsByClassName("tab-content");
+        for (let i = 0; i < tabContent.length; i++) {
+            tabContent[i].style.display = "none";
+        }
+        const tabLink = table.getElementsByClassName("tab-link");
+        for (i = 0; i < tabLink.length; i++) {
+            tabLink[i].className = tabLink[i].className.replace(" active", "");
+        }
+        table.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+</script>
+
+<script src='https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js'></script>
+<script>
+    mermaid.initialize({startOnLoad: true});
+</script>
+<script>
+
+    function makeTableSortable(table) {
+        const headers = table.querySelectorAll('th');
+        let sortCount = 0;
+        const originalRows = [];
+        let rows = table.rows;
+        for (const row of rows) {
+            originalRows.push(row);
+        }
+
+        // Add click listeners to each header
+        for (var i = 0; i < headers.length; i++) {
+            headers[i].addEventListener('click', function () {
+                var ascIcon = this.querySelector('.fa-sort-amount-asc');
+                var descIcon = this.querySelector('.fa-sort-amount-desc');
+
+                // If this column was previously sorted, toggle sort order
+                if (this.getAttribute('data-sorted') === 'asc') {
+                    this.setAttribute('data-sorted', 'desc');
+                    ascIcon.style.display = 'none';
+                    descIcon.style.display = 'inline';
+                } else {
+                    this.setAttribute('data-sorted', 'asc');
+                    ascIcon.style.display = 'inline';
+                    descIcon.style.display = 'none';
+                }
+
+                // Sort rows
+                var colIndex = this.cellIndex;
+                var sortDirection = this.getAttribute('data-sorted');
+                var switching = true;
+                while (switching) {
+                    switching = false;
+                    rows = table.rows;
+                    for (var i = 1; i < rows.length - 1; i++) {
+                        var shouldSwitch = false;
+                        var x = rows[i].getElementsByTagName('td')[colIndex];
+                        var y = rows[i + 1].getElementsByTagName('td')[colIndex];
+                        if (!isNaN(parseInt(x.innerHTML.trim(), 10)) && !isNaN(parseInt(y.innerHTML.trim(), 10))) {
+                            if (sortDirection === 'asc' && parseInt(x.innerHTML.trim()) > parseInt(y.innerHTML.trim())) {
+                                shouldSwitch = true;
+                                break;
+                            } else if (sortDirection === 'desc' && parseInt(x.innerHTML.trim()) < parseInt(y.innerHTML.trim())) {
+                                shouldSwitch = true;
+                                break;
+                            }
+                        } else {
+                            if (sortDirection === 'asc' && x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                                shouldSwitch = true;
+                                break;
+                            } else if (sortDirection === 'desc' && x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                                shouldSwitch = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (shouldSwitch) {
+                        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                        switching = true;
+                    }
+                }
+                // Increment sort count and restore original order after 3 clicks
+                sortCount++;
+                if (sortCount === 3) {
+                    for (let i = 0; i < originalRows.length; i++) {
+                        table.appendChild(originalRows[i]);
+                    }
+                    sortCount = 0;
+                    for (let i = 0; i < headers.length; i++) {
+                        headers[i].setAttribute('data-sorted', '');
+                        headers[i].querySelector('.fa-sort-amount-asc').style.display = 'none';
+                        headers[i].querySelector('.fa-sort-amount-desc').style.display = 'none';
+                    }
+                }
+            });
+
+            // Add sort icons to header
+            headers[i].innerHTML = headers[i].innerHTML + '<span class="fa fa-sort-amount-asc" style="display: none;"></span><span class="fa fa-sort-amount-desc" style="display: none;"></span>';
+        }
+    }
+
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            var lastPage = window.sessionStorage.getItem('lastPage');
+            if (lastPage != null) {
+                window.location.href = lastPage;
+            }
+        }
+    });
+</script>
+
+<h1 id="{{ patternitem['Name'] }}">{{ patternitem["Name"] }}</h1>
+<h2>Attributes</h2>
+{% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
+    {% include 'docs/showattributes.html' %}
+{% endwith %}
+<h2>Fields</h2>
+
+{% set ns = namespace(fields=[]) %}
+{% for prefix, values in patternitem.GroupedFields() %}
+    {% for entry in values %}
+        {% for field in entry.keys() %}
+            {% if field not in ns.fields %}
+                {% set _ = ns.fields.append(field)  %}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+{% endfor %}
+{% set fields = ns.fields %}
+
+{% for prefix, values in patternitem.GroupedFields() %}
+    {% if patternitem.GroupedFields()|length > 1 %}
+        <h3>{{ prefix }}</h3>
+    {% endif %}
+    <div class="table-wrapper">
+        <div>
+            <table class="toc" id="table-{{ prefix }}">
+                {% if prefill == "default" %}
+                    <tr>
+                        {% for field in fields %}
+                            {% if loop.index > 1 %}
+                                <th>
+                                    {{ field }}
+                                </th>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% else %}
+                    {% set sortable_keys = [] %}
+                    {% set hideable_keys= [] %}
+                    {% set link_keys = [] %}
+                    {% for key, value in prefill.items() %}
+                        {% if value.sortable == True %}
+                            {% set _ = sortable_keys.append(key) %}
+                        {% endif %}
+                        {% if value.hideable == True %}
+                            {% set _ = hideable_keys.append(key) %}
+                        {% endif %}
+                        {% if value.groupable == True %} {# for the link checkbox #}
+                            {% set _ = link_keys.append(key) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    <tr>
+                        {% for field in fields %}
+                            {% if loop.index > 1 %}
+                                {% if field == sortable_keys[0] and field not in hideable_keys %}
+                                    <th>
+                                        {{ field }}
+                                        <i class="fa fa-sort-amount-asc sort-asc"></i>
+                                    </th>
+                                {% elif field not in hideable_keys %}
+                                    <th>
+                                        {{ field }}
+                                    </th>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endif %}
+
+                {% if prefill == "default" %}
+                    {% for fld in values|sort(attribute='Identifier') %}
+                        {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                        {% set segments = base_url.rsplit('/', 1) %}
+                        <tr>
+                            {% for f in fields %}
+                                {% if loop.index > 1 and f not in hideable_keys %}
+                                    {% if fld[f] is string %}
+                                        {% set fld_f_list = [fld[f]] %}
+                                    {% elif fld[f] is integer %}
+                                        {% set fld_f_list = [fld[f]|string] %}
+                                    {% elif fld[f] is mapping %}
+                                        {% set fld_f_list = [fld[f]] %}
+                                    {% else %}
+                                        {% set fld_f_list = fld[f] %}
+                                    {% endif %}
+                                    <td>
+                                        {% for item in fld_f_list %}
+                                            {% if item.id is defined %}
+                                                {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/") + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                                                <a href="{{ record_url }}"
+                                                   target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                                                {% if not loop.last %}, {% endif %}
+                                            {% else %}
+                                                {{ item }}{% if not loop.last %}, {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+
+                {# after select checkbox for sorting index and click save #}
+
+                {% if prefill != "default" %}
+                    {% set sortable_keys = [] %}
+                    {% for key, value in prefill.items() %}
+                        {% if value.sortable == True %}
+                            {% set _ = sortable_keys.append(key) %}
+                        {% endif %}
+                        {% if value.groupable == True %} {# for the link checkbox #}
+                            {% set _ = link_keys.append(key) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if sortable_keys|length > 1 %}
+                        {% for fld in values| sort(attribute=sortable_keys[0]) |sort(attribute=sortable_keys[1]) %}
+                            {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                            {% set segments = base_url.rsplit('/', 1) %}
+                            <tr>
+                                {% for f in fields %}
+                                    {% if loop.index > 1 and f not in hideable_keys %}
+                                        {% if fld[f] is string %}
+                                            {% set fld_f_list = [fld[f]] %}
+                                        {% elif fld[f] is integer %}
+                                            {% set fld_f_list = [fld[f]|string] %}
+                                        {% elif fld[f] is mapping %}
+                                            {% set fld_f_list = [fld[f]] %}
+                                        {% else %}
+                                            {% set fld_f_list = fld[f] %}
+                                        {% endif %}
+                                        <td>
+                                            {% for item in fld_f_list %}
+                                                {% if item.id is defined %}
+                                                    {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/") + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                                                    <a href="{{ record_url }}"
+                                                       target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                                                    {% if not loop.last %}, {% endif %}
+                                                {% else %}
+                                                    {{ item }}{% if not loop.last %}, {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        {% for fld in values|sort(attribute=sortable_keys[0]) %}
+                            {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                            {% set segments = base_url.rsplit('/', 1) %}
+                            <tr>
+                                {% for f in fields %}
+                                    {% if loop.index > 1 and f not in hideable_keys %}
+                                        {% if fld[f] is string %}
+                                            {% set fld_f_list = [fld[f]] %}
+                                        {% elif fld[f] is integer %}
+                                            {% set fld_f_list = [fld[f]|string] %}
+                                        {% elif fld[f] is mapping %}
+                                            {% set fld_f_list = [fld[f]] %}
+                                        {% else %}
+                                            {% set fld_f_list = fld[f] %}
+                                        {% endif %}
+                                        <td>
+                                            {% for item in fld_f_list %}
+                                                {% if item.id is defined %}
+                                                    {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/") + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                                                    <a href="{{ record_url }}"
+                                                       target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                                                    {% if not loop.last %}, {% endif %}
+                                                {% else %}
+                                                    {{ item }}{% if not loop.last %}, {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            </table>
+        </div>
+        {% for key, options in prefill.items() %}
+            {% if options["function"] is defined %}
+                {% if options["function"] in functions %}
+                    {% set value_list = [] %}
+                    {% for value in values %}
+                        {% if value[key] is defined %}
+                            {% set _ = value_list.append(value[key]) %}
+                        {% endif %}
+                    {% endfor %}
+                    <div>
+                        {{ functions[options["function"]]["function"](prefix, value_list, patternitem)|safe }}
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endfor %}
+
+{% if patternitem.GroupedFields()|length > 1 %}
+    <div class="tabset">
+        <input type="radio" name="tabset_max" id="tabset_max_ontgraph" hidden aria-hidden="true"
+               checked>
+        <input type="radio" name="tabset_max" id="tabset_max_instgraph" hidden aria-hidden="true">
+        <input type="radio" name="tabset_max" id="tabset_max_turtle" hidden aria-hidden="true">
+        {% if patternitem.rdf_warnings() %}
+            <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
+        {% endif %}
+        <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
+        <ul hidden aira-hidden="true">
+            <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
+            </li>
+            <li><label for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if patternitem.rdf_warnings() %}
+                <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            {% if patternitem.is_jsonld() %}
+                <li><label for="tabset_max_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+            {% else %}
+                <li><label for="tabset_max_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
+                    Error</label></li>
+            {% endif %}
+        </ul>
+        <div>
+            <section id="ontologyGraph">
+                <h2>Ontology Graph</h2>
+                <div id="ontology-graph" class="mermaid">{{ patternitem.OntologyGraph }}</div>
+            </section>
+            <section id="instanceGraph">
+                <h2>Instance Graph</h2>
+                <div id="instance-graph" class="mermaid">{{ patternitem.InstanceGraph }}</div>
+            </section>
+            <section id="turtleRDF">
+                <h2>Turtle RDF</h2>
+                <textarea rows="32" readonly="readonly">
+					{% if patternitem.is_rdferror() or patternitem.rdf_warnings() %}
+                        {{ patternitem.Turtle.text() }}{% else %}{{ patternitem.turtle() }}{% endif %}
+			</textarea>
+                <br/>
+            </section>
+            {% if patternitem.rdf_warnings() %}
+                <section>
+                    <h2>RDF Warnings</h2>
+                    <div class="rdfwarning">
+                        {{ patternitem.rdf_warnings()|safe }}
+                    </div>
+                    <br/>
+                </section>
+            {% endif %}
+            {% if patternitem.is_jsonld() %}
+                <section id="jsonLD">
+                    <h2>JSON-LD</h2>
+                    <textarea rows="32" readonly="readonly">
+				{{ patternitem.jsonld() }}
+			</textarea>
+                </section>
+            {% else %}
+                <section>
+                    <h2 class="error">RDF Error</h2>
+                    <div class="errormessage">
+                        {{ patternitem.jsonld_error()|safe }}
+                    </div>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+<script>
+    const config = {
+        startOnLoad: true,
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis',
+            rankSpacing: 50,
+        }
+    };
+    mermaid.initialize(config);
+
+    window.addEventListener("load", function () {
+        const ontologyGraphs = document.querySelectorAll("#ontology-graph > svg");
+        document.querySelectorAll("#ontology-graph").forEach(graph => (graph.style.width = "100%"));
+        for (const graph of ontologyGraphs) {
+            graph.style.height = "300px";
+            svgPanZoom(graph, {
+                zoomEnabled: true,
+                controlIconsEnabled: true,
+                fit: true,
+                center: true
+            });
+        }
+
+        const instanceGraphs = document.querySelectorAll("#instance-graph > svg");
+        document.querySelectorAll("#instance-graph").forEach(graph => (graph.style.width = "100%"));
+        for (const graph of instanceGraphs) {
+            graph.style.height = "300px";
+            svgPanZoom(graph, {
+                zoomEnabled: true,
+                controlIconsEnabled: true,
+                fit: true,
+                center: true
+            });
+        }
+    })
+
+    const tables = document.querySelectorAll("table");
+    for (const table of tables) {
+        makeTableSortable(table);
+    }
+</script>
+
+<script>
+    var currentUrl = window.location.href;
+    console.log("curl", currentUrl);
+
+    const match = currentUrl.match(/\/app([a-zA-Z0-9]+)\b/);
+    const baseid = match ? 'app' + match[1] : null;
+    console.log(baseid);
+
+    const data = JSON.parse(localStorage.getItem('formData')) || [];
+    const formDataDiv = document.getElementById('formData');
+    for (const item of data) {
+        if (item.additionalVariable === baseid) {
+            const ul = document.createElement('ul');
+            for (const [name, value] of Object.entries(item.data)) { // iterate over the data object and retrieve the values
+                const li = document.createElement('li');
+                li.textContent = `${name}: ${value}`;
+                ul.appendChild(li);
+            }
+            formDataDiv.appendChild(ul);
+        }
+    }
+</script>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>{% block title %}{% endblock %}</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='error.css') }}" />
+</head>
+<body>
+<header>
+{% block header %}
+	<h1>Error Decoder</h1>
+	<h3>(not available from production)<h3>
+{% endblock %}
+</header>
+<p><p>
+<section class="content">
+{% block content %}
+	<form method="post">
+	<div class="fields">
+		<label for="errorcode">Error Code String</label>
+		<textarea name="errorcode" id="errorcode" required></textarea>
+		<button type="submit">Decode</button>
+	</div>
+	</form>
+{% if traceback %}
+	<div class="error trace">
+		<div class="badfile">{{traceback["codefile"]}}</div>
+		<div class="badfunc">{{traceback["codefunction"]}}</div>
+		<div class="badcode"><span class="number">{{traceback["codeline"]}}</span> <span class="line">|</span> <span class="code">{{traceback["code"]}}</span></div>
+		<div class="exception"><span class="name">{{traceback["error"].split(":")[0]}}</span> {{":".join( traceback["error"].split(":")[1:] )}}</div>
+	</div>
+{% endif %}
+{% endblock %}
+</section>
+</body>

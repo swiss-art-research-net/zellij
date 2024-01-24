@@ -1,0 +1,104 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+    <h1>{% block title %}Data Source “Scrapers”{% endblock %}</h1>
+{% endblock %}
+
+
+
+
+
+{% block content %}
+    <!-- Selection bar  -->
+    <div>
+        <h>Filter the type of Scrapper you want</h>
+        <br/>
+        <div>
+            <button><a href= {{ url_for('datasources.filteredScrapper', scrapername = "Fields") }}>Fields</a></button>
+            <button><a href= {{ url_for('datasources.filteredScrapper', scrapername = "Collections") }}>Collections</a>
+            </button>
+            <button><a href= {{ url_for('datasources.filteredScrapper', scrapername = "Model") }}>Model</a></button>
+        </div>
+        <br/>
+    </div>
+    {% for a in accounts.values() %}
+        <div class="account airtable">
+            <div>{{ a["accountname"] }} <a
+                    href="{{ url_for('datasources.airTableAccountCreateEdit', accountid=a["accountid"]) }}"><i
+                    class="fas fa-edit"></i></a></div>
+            <div>
+                {% if not a["airtables"] %}
+                    <p>No scrapers exist yet.</p>
+                {% else %}
+                    {% for dbases in a["airtables"].values() %}
+                        <div class="dbase">
+                            <div>{{ dbases["dbasename"] }}{# [{{ dbases["dbaseid"] }}]#} <span
+                                    class="api">({{ dbases["dbaseapikey"] }})</span><a
+                                    href="{{ url_for('datasources.airTableDatabaseCreateEdit', accountid=a["accountid"], dbaseid=dbases["dbaseid"]) }}"><i
+                                    class="fas fa-edit"></i></a></div>
+                            <div>
+                                {% for scr in dbases["scrapers"].values() %}
+                                    <a class="scraper"
+                                       href="{{ url_for('datasources.displayScraper2', apikey=dbases['dbaseapikey'], scraper=scr['scraperid']) }}">
+                                        <div class="name">{{ scr["scrapername"] }}</div>
+                                        {% if scr["data_groupby"] %}
+                                            {% if scr["group_table"] %}
+                                                <div class="tables">{{ scr["group_table"] }}, {{ scr["data_table"] }}</div>
+                                            {% else %}
+                                                <div class="tables">{{ scr["data_groupby"] }}, {{ scr["data_table"] }}</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="tables">{{ scr["data_table"] }}</div>
+                                        {% endif %}
+                                        <div style="padding-top: 5px;">
+                                            <button type="button" id="copyButton"
+                                                    onclick="setCopiedScraper({{ scr["scraperid"] }})">
+                                                <img src="../../static/copyIcon.png" width="15px" height="15px"
+                                                     style="vertical-align: middle;"/>
+                                            </button>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                                <a class="scraper add"
+                                   href="{{ url_for('datasources.displayScraper2', apikey=dbases['dbaseapikey']) }}">+</a>
+
+                                <!-- add scraper pasting here -->
+                                <div>
+                                    <a class="scraper add scraper-paste"
+                                       href="{{ url_for('datasources.pasteInManageDataSources' , dbId=dbases['dbaseid'], scraperId='') }}">
+                                        <img src="../../static/pasteIcon.png" width="15" height="15"
+                                             style="vertical-align: middle;">
+                                    </a>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <p class="new"><a
+                        href="{{ url_for('datasources.airTableDatabaseCreateEdit', accountid=a["accountid"]) }}">+</a>
+                </p>
+            </div>
+        </div>
+    {% endfor %}
+    <p><a href="{{ url_for('datasources.airTableAccountCreateEdit') }}">Create a new AirTable account</a></p>
+
+    <script>
+        const scraperIdToPaste = localStorage.getItem("scraperId");
+        const pasterScraperBtns = document.querySelectorAll(".scraper-paste");
+        for (const btn of pasterScraperBtns) {
+            if (!scraperIdToPaste) {
+                btn.parentElement.setAttribute("hidden", "true");
+            } else {
+                btn.href += scraperIdToPaste;
+            }
+        }
+
+        function setCopiedScraper(id) {
+            event.preventDefault();
+            localStorage.setItem("scraperId", id)
+            alert("Successfully copied scraper!")
+        }
+    </script>
+{% endblock %}

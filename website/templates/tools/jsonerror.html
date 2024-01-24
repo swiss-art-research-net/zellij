@@ -1,0 +1,15 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+  <h1>{% block title %}Convert RDF to JSON-LD ERROR{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+{% if "pretty" in error %}
+{{error["pretty"]}}
+{% else %}
+<code><pre>
+{{error["error"]}}
+</pre></code>
+{% endif %}
+{% endblock %}

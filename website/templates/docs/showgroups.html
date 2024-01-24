@@ -1,0 +1,281 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+    <!-- <h1>{% block title %}List{% endblock %}</h1> -->
+{% endblock %}
+
+{% block content %}
+
+    <div class="container-sidebar">
+        <!-- <div class="menu-btn">
+              <i class="fas fa-bars"></i>
+          </div> -->
+
+        <iframe class="contents" id="iframe-contents"></iframe>
+        <div class="contents" id="grouping">
+            <h1 class="h1">{{ scraper }}</h1>
+            <table class="toc">
+                {% set list = lists[scraper] %}
+                {% set fields = list[0].keys() %}
+
+                {% set sortable_keys = [] %}
+                {% set hideable_keys= ['Contains'] %}
+                {% for key, value in prefill_group.items() %}
+                    {% if value.sortable == True %}
+                        {% set _ = sortable_keys.append(key) %}
+                    {% endif %}
+                    {% if value.hideable == True %}
+                        {% set _ = hideable_keys.append(key) %}
+                    {% endif %}
+                {% endfor %}
+
+                <tr>
+                    {% for field in fields %}
+                        {% if field == sortable_keys[0] and field not in hideable_keys %}
+                            <th>
+                                {{ field }}
+                                <i class="fa fa-sort-amount-asc sort-asc"></i>
+                            </th>
+                        {% elif field not in hideable_keys %}
+                            <th>
+                                {{ field }}
+                            </th>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+
+                {% if sortable_keys|length > 0 %}
+                    {% set sorted_list = list|sort(attribute=sortable_keys[0]) %}
+                {% else %}
+                    {% set sorted_list = list %}
+                {% endif %}
+
+                {% for item in sorted_list %}
+                    {% if item["Contains"]|length > 0 %}
+                        <tr>
+                            {% for field in fields if field not in hideable_keys %}
+                                {% if field == 'Name' %}
+                                    <td>
+                                        <a href="#"
+                                           onclick="onItemClick('{{ url_for('docs.patternitemdisplay', apikey=apikey, pattern=scraper, search=item['KeyField']) }}')">
+                                            {{ item["Name"] }}
+                                        </a>
+                                    </td>
+                                {% else %}
+                                    <td>
+                                        <div style="height: 25vh; overflow-y: scroll">{{ item[field] }}</div>
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="side-bar">
+            <!-- <div class="close-btn">
+                    <i class="fas fa-times"></i>
+                </div> -->
+            <h1 class="h1">List</h1>
+
+            <div class="menu">
+                <div class="item">
+                    {% for listname, thelist in lists.items() %}
+                        <div>
+                            <a class="sub-btn">{{ listname }}<i class="fas fa-angle-right dropdown"></i></a>
+                            <div class="sub-menu">
+                                {% for listitem in thelist %}
+                                    {%- if listitem["Contains"]|length > 0 -%}
+                                        <a href="{{ url_for('docs.patternitemdisplay', apikey=apikey, pattern=listname, search=listitem['KeyField']) }}"
+                                           tabindex="1"
+                                           data-description="{{ listitem['Description'] }}">{{ listitem["Name"] }}</a>
+                                        <span class="nav-link-description"
+                                              id="desc-{{ loop.index }}">{{ listitem["Description"] }}</span>
+                                    {%- endif -%}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const navLinkDescriptions = document.querySelectorAll('.nav-link-description');
+        navLinkDescriptions.forEach((description) => {
+            const parentLink = description.previousElementSibling;
+            parentLink.addEventListener('mouseover', () => {
+                description.style.visibility = 'visible';
+                description.style.opacity = 1;
+            });
+            parentLink.addEventListener('mouseout', () => {
+                description.style.visibility = 'hidden';
+                description.style.opacity = 0;
+            });
+        });
+
+        $(document).ready(function () {
+            //jquery for toggle sub menus
+            $('.sub-btn').each(function (index, element) {
+                const el = $(element);
+                el.on("click", function() {
+                    if (el.text() !== "{{ scraper }}") {
+                        window.location.replace(`{{ url_for('docs.patternlistall', apikey=apikey) }}?scraper=${el.text()}`);
+                    } else {
+                        el.next('.sub-menu').slideToggle();
+                        el.find('.dropdown').toggleClass('rotate');
+                    }
+                });
+
+                if (el.text() === '{{ scraper }}') {
+                    el.addClass("selected-list-item");
+                    el.trigger('click');
+                }
+            });
+        });
+
+        const searchParams = new URLSearchParams(window.location.search);
+        const flagValue = parseInt(searchParams.get('flag')) || 0;
+        const menuItems = document.querySelectorAll('.sub-menu a');
+        const contentFrame = document.querySelector('#iframe-contents');
+
+        let defaultMenuItemUrl = '';
+
+        if (localStorage.getItem('selectedMenuItem') !== null) {
+            defaultMenuItemUrl = menuItems[0].getAttribute('href');
+            console.log("defaultMenuItemUrl2", defaultMenuItemUrl);
+        }
+
+        if (searchParams.has('selectedMenuItem')) {
+            defaultMenuItemUrl = searchParams.get('selectedMenuItem');
+            console.log("defaultMenuItemUrl3", defaultMenuItemUrl);
+
+        }
+
+        contentFrame.src = defaultMenuItemUrl;
+
+        console.log(defaultMenuItemUrl);
+        if (defaultMenuItemUrl !== '') {
+            document.querySelector("#grouping").setAttribute("hidden", "true");
+        } else {
+            document.querySelector("#grouping").removeAttribute("hidden");
+        }
+
+        function onItemClick(url) {
+            event.preventDefault();
+
+            document.querySelector("#grouping").setAttribute("hidden", "true");
+
+            contentFrame.src = url;
+
+
+            // check if we need it
+            const newUrl = flagValue !== 0 ?
+                `${window.location.origin}${window.location.pathname}?flag=${flagValue}&selectedMenuItem=${encodeURIComponent(url)}` :
+                `${window.location.origin}${window.location.pathname}?scraper={{ scraper }}&selectedMenuItem=${encodeURIComponent(url)}`;
+            window.history.pushState({}, '', newUrl);
+
+            console.log("url", url);
+        }
+
+        menuItems.forEach((menuItem) => {
+            menuItem.addEventListener('click', () => onItemClick(menuItem.getAttribute("href")));
+        });
+
+        function makeTableSortable(table) {
+            const headers = table.querySelectorAll('th');
+            let sortCount = 0;
+            const originalRows = [];
+            let rows = table.rows;
+            for (const row of rows) {
+                originalRows.push(row);
+            }
+
+            // Add click listeners to each header
+            for (var i = 0; i < headers.length; i++) {
+                headers[i].addEventListener('click', function () {
+                    var ascIcon = this.querySelector('.fa-sort-amount-asc');
+                    var descIcon = this.querySelector('.fa-sort-amount-desc');
+
+                    // If this column was previously sorted, toggle sort order
+                    if (this.getAttribute('data-sorted') === 'asc') {
+                        this.setAttribute('data-sorted', 'desc');
+                        ascIcon.style.display = 'none';
+                        descIcon.style.display = 'inline';
+                    } else {
+                        this.setAttribute('data-sorted', 'asc');
+                        ascIcon.style.display = 'inline';
+                        descIcon.style.display = 'none';
+                    }
+
+                    // Sort rows
+                    var colIndex = this.cellIndex;
+                    var sortDirection = this.getAttribute('data-sorted');
+                    var switching = true;
+                    while (switching) {
+                        switching = false;
+                        rows = table.rows;
+                        for (var i = 1; i < rows.length - 1; i++) {
+                            var shouldSwitch = false;
+                            var x = rows[i].getElementsByTagName('td')[colIndex];
+                            var y = rows[i + 1].getElementsByTagName('td')[colIndex];
+
+                            if (x.firstElementChild) {
+                                x = x.firstElementChild;
+                            }
+
+                            if (y.firstElementChild) {
+                                y = y.firstElementChild;
+                            }
+
+                            if (!isNaN(parseInt(x.innerHTML.trim(), 10)) && !isNaN(parseInt(y.innerHTML.trim(), 10))) {
+                                if (sortDirection === 'asc' && parseInt(x.innerHTML.trim()) > parseInt(y.innerHTML.trim())) {
+                                    shouldSwitch = true;
+                                    break;
+                                } else if (sortDirection === 'desc' && parseInt(x.innerHTML.trim()) < parseInt(y.innerHTML.trim())) {
+                                    shouldSwitch = true;
+                                    break;
+                                }
+                            } else {
+                                console.log(x.innerHTML.toLowerCase());
+                                if (sortDirection === 'asc' && x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                                    shouldSwitch = true;
+                                    break;
+                                } else if (sortDirection === 'desc' && x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                                    shouldSwitch = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (shouldSwitch) {
+                            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                            switching = true;
+                        }
+                    }
+                    // Increment sort count and restore original order after 3 clicks
+                    sortCount++;
+                    if (sortCount === 3) {
+                        for (let i = 0; i < originalRows.length; i++) {
+                            table.appendChild(originalRows[i]);
+                        }
+                        sortCount = 0;
+                        for (let i = 0; i < headers.length; i++) {
+                            headers[i].setAttribute('data-sorted', '');
+                            headers[i].querySelector('.fa-sort-amount-asc').style.display = 'none';
+                            headers[i].querySelector('.fa-sort-amount-desc').style.display = 'none';
+                        }
+                    }
+                });
+
+                // Add sort icons to header
+                headers[i].innerHTML = headers[i].innerHTML + '<span class="fa fa-sort-amount-asc" style="display: none;"></span><span class="fa fa-sort-amount-desc" style="display: none;"></span>';
+            }
+        }
+        const table = document.querySelector("#grouping > table");
+        makeTableSortable(table);
+    </script>
+
+{% endblock %}

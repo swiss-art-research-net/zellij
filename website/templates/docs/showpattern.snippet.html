@@ -1,0 +1,95 @@
+{#
+	<div>{{po}}</div>
+	<div>{{po.listGroupFields()}}</div>
+	<div>{{po.listGroupFieldsTabular()}}</div>
+	<div>{{po.listFields()}}</div>
+	<div>{{po.listFieldsTabular()}}</div>
+	<hr />
+#}
+	{# create TOC #}
+	
+	<h1 id="pattern{{poidx}}">{{po.name}}<h1>
+	<table class="toc">
+		<tr><th>Identifier</th><th>Name</th><th>Function / Description</th></tr>
+{% for grp in po.values()|sort(attribute='Identifier') %}
+		<tr><td>{{grp["Identifier"]}}</td><td>{% if grp.GroupedData()|length > 0 %}<a href="#{{grp["Name"]}}">{% endif %}{{grp["Name"]}}{% if grp.GroupedData()|length > 0 %}</a>{% endif %}</td><td>{{grp["Description"]}}</td></tr>
+{% endfor %}
+	</table>
+	<br />
+	{# individual details #}
+{% for grp in po.values()|sort(attribute='Identifier') %}
+	{% if grp.GroupedData()|length > 0 %}
+	<h2 id="{{grp["Name"]}}">{{grp["Name"]}}</h2>
+	<table class="toc">
+		<tr><th>Identifier</th><th>Name</th><th>Function / Description</th><th>CRM Path</th></tr>
+		{% for fld in grp.values()|sort(attribute='Identifier') %}
+		<tr><td>{{fld["Identifier"]}}</td><td>{{fld["Name"]}}</td><td>{{fld["Description"]}}</td><td>{{fld["CRM Path"]}}</td></tr>
+		{% endfor %}
+	</table>
+	<p></p>
+	<div class="tabset">
+		<input type="radio" name="tabset_{{poidx}}_{{loop.index}}" id="tabset_{{poidx}}_{{loop.index}}_ontgraph" hidden aria-hidden="true" checked>
+		<input type="radio" name="tabset_{{poidx}}_{{loop.index}}" id="tabset_{{poidx}}_{{loop.index}}_instgraph" hidden aria-hidden="true">
+		<input type="radio" name="tabset_{{poidx}}_{{loop.index}}" id="tabset_{{poidx}}_{{loop.index}}_turtle" hidden aria-hidden="true">
+{% if grp.rdf_warnings() %}
+		<input type="radio" name="tabset_{{poidx}}_{{loop.index}}" id="tabset_{{poidx}}_{{loop.index}}_rdfwarn" hidden aria-hidden="true">
+{% endif %}
+		<input type="radio" name="tabset_{{poidx}}_{{loop.index}}" id="tabset_{{poidx}}_{{loop.index}}_jsonld" hidden aria-hidden="true">
+		<ul hidden aira-hidden="true">
+			<li><label for="tabset_{{poidx}}_{{loop.index}}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label></li>
+			<li><label for="tabset_{{poidx}}_{{loop.index}}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+			<li><label for="tabset_{{poidx}}_{{loop.index}}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+			{% if grp.rdf_warnings() %}
+			<li><label for="tabset_{{poidx}}_{{loop.index}}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF warnings</label></li>
+			{% endif %}
+			{% if grp.is_jsonld() %}
+			<li><label for="tabset_{{poidx}}_{{loop.index}}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+			{% else %}
+			<li><label for="tabset_{{poidx}}_{{loop.index}}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF Error</label></li>
+			{% endif %}
+		</ul>
+		<div>
+			<section>
+				<h2>Ontology Graph</h2>
+				<div class="mermaid">{{grp.OntologyGraph}}</div>
+			</section>
+			<section>
+				<h2>Instance Graph</h2>
+				<div class="mermaid">{{grp.InstanceGraph}}</div>
+			</section>
+			<section>
+				<h2>Turtle RDF</h2>
+				<textarea rows="32" readonly="readonly">
+{% if grp.is_rdferror() or grp.rdf_warnings() %}{{grp.Turtle}}{% else %}{{grp.turtle()}}{% endif %}
+				</textarea>
+				<br />
+			</section>
+			{% if grp.rdf_warnings() %}
+			<section>
+				<h2>RDF Warnings</h2>
+				<div class="rdfwarning">
+{{grp.rdf_warnings()|safe}}
+				</div>
+				<br />
+			</section>
+			{% endif %}
+			{% if grp.is_jsonld() %}
+			<section>
+				<h2>JSON-LD</h2>
+				<textarea rows="32" readonly="readonly">
+{{grp.jsonld()}}
+				</textarea>
+			</section>
+			{% else %}
+			<section>
+				<h2 class="error">RDF Error</h2>
+				<div class="errormessage">
+{{grp.jsonld_error()|safe}}
+				</div>
+			</section>
+			{% endif %}
+		</div>
+	</div><!-- end tabset -->
+	<br />
+	{% endif %}
+{% endfor %}

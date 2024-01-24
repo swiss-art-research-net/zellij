@@ -1,0 +1,39 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+    <h1>{% block title %}Index{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+    <h1>Alphabetical Index</h1>
+
+    {% for letter in fields.keys()|sort %}
+        <a href="#{{ letter }}">{{ letter|upper }}</a>&nbsp;&nbsp;
+    {% endfor %}
+
+    <br><br>
+    {% for letter in fields.keys()|sort %}
+        <h2 id="{{ letter }}">{{ letter|upper }}</h2>
+        <table class="toc">
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Database</th>
+                <th>Authority</th>
+            </tr>
+            {% for item in fields[letter]|sort(attribute='name') %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('docs.patternitemdisplay', apikey=item['apikey'], pattern=item['type'], search=item['id']) }}">{{ item['name'] }}</a>
+                    </td>
+                    <td>{{ item['type'] }}</td>
+                    <td>
+                        <a href="{{ url_for('docs.patternlistall', apikey=item['apikey']) }}">{{ item['db'] }}</a>
+                    </td>
+                    <td>{{ item['authority'] }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+{% endblock %}

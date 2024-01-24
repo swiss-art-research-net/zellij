@@ -1,0 +1,28 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+  <h1>{% block title %}Convert RDF to JSON-LD{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div>
+	<div class="fields">
+	<h4>Upload an RDF file (<code>.txt</code>, <code>.rdf</code>, or <code>.turtle</code>)</h4>
+	<form method="post" enctype="multipart/form-data">
+		<input type="file" name="file" id="file">
+		<button type="submit">Upload</button>
+	</form>
+	</div>
+</div>
+
+<div>
+	<form method="post">
+		<div class="bigfields">
+			<h4>...or, submit pasted text</h4>
+			<label for="rdftext">RDF text</label>
+			<div><textarea name="rdftext" id="rdftext"></textarea></div>
+			<button type="submit">Convert</button>
+		</div>
+	</form>
+</div>
+{% endblock %}
