@@ -5,7 +5,7 @@ Created on Mar. 16, 2021
 '''
 import functools
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, Markup
+    Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from website.db import get_db, dict_gen_one, dict_gen_many
@@ -20,7 +20,7 @@ def create():
         db = get_db()
         c = db.cursor()
         error = None
-        
+
         if not username:
             error = "Username is required."
         elif not password:
@@ -32,7 +32,7 @@ def create():
             r = dict_gen_one(c)
             if r is not None:
                 error = "User {} is already registered.".format(username)
-        
+
         if error is None:
             c.execute(
                 'INSERT INTO Users (username, password) VALUES (%s,%s)',
@@ -41,10 +41,10 @@ def create():
             db.commit()
             c.close()
             return redirect(url_for("user.login"))
-        
+
         c.close()
         flash(error)
-        
+
     return render_template("user/create.html")
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -65,14 +65,14 @@ def login():
             error = "Incorrect username."
         elif not check_password_hash(user["password"], password):
             error = "Incorrect password."
-        
+
         if error is None:
             session.clear()
             session["user_id"] = user["userid"]
             return redirect(url_for("index"))
-        
+
         flash(error)
-        
+
     return render_template("user/login.html")
 
 @bp.route("/edit", methods=["GET", "POST"])
@@ -83,7 +83,7 @@ def edit():
         db = get_db()
         c = db.cursor()
         error = None
-        
+
         if not username:
             error = "Username is required."
         elif not password:
@@ -96,7 +96,7 @@ def edit():
                 r = dict_gen_one(c)
                 if r is not None:
                     error = "User name {} is already in use.".format(username)
-        
+
         if error is None:
             c.execute(
                 'UPDATE Users SET username=%s, password=%s' +
@@ -106,10 +106,10 @@ def edit():
             db.commit()
             c.close()
             return redirect(url_for("user.login"))
-        
+
         c.close()
         flash(error)
-        
+
     return render_template("user/edit.html", original=g.user)
 
 @bp.before_app_request
