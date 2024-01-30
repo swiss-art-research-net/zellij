@@ -45,13 +45,12 @@ class AirTableConnection(object):
 
     def enrich_linked_data(self, data_dict, data_key, record, record_key, table):
         for model_id in record["fields"][record_key]:
-            resource_url = self._getUrl(table, [], recordId=model_id)
-            resource_response = requests.get(resource_url, headers=self.headers)
+            group_table = self.airtable.table(self.airTableBaseAPI, table)
+            response = group_table.get(model_id, fields=[])
             if data_dict.get(data_key) is None:
                 data_dict[data_key] = []
-            resource_response_json = resource_response.json()
-            resource_response_json["table"] = table
-            data_dict[data_key].append(resource_response_json)
+            response["table"] = table
+            data_dict[data_key].append(response)
 
     def getSingleGroupedItem(self, idsearchterm, schema, maxrecords=None, sort=None, prefill_data=None, group_sort=None):
         """
@@ -115,8 +114,8 @@ class AirTableConnection(object):
         out = SingleGroupedItem(highout)
 
         # Now get all the low items grouped under the group record.
-        low_table = self.airtable.table(self.airTableBaseAPI, low_table)
-        low_records = low_table.all(
+        low_airtable = self.airtable.table(self.airTableBaseAPI, low_table)
+        low_records = low_airtable.all(
             fields=low_fields,
             formula=f'SEARCH("{searchtext}",{{{low_group_by}}})',
         )
