@@ -11,7 +11,7 @@
               <i class="fas fa-bars"></i>
           </div> -->
 
-        <iframe class="contents" id="iframe-contents"></iframe>
+        <div class="contents" id="iframe-contents"></div>
         <div class="contents" id="grouping">
             <h1 class="h1">{{ scraper }}</h1>
             <table class="toc">
@@ -137,10 +137,22 @@
             });
         });
 
+        function loadModel(url) {
+            document.querySelector("#grouping").setAttribute("hidden", "true");
+            $.ajax({
+                url: url,
+                type: 'GET',
+                beforeSend: function () {
+                },
+                success: function (data) {
+                    $('#iframe-contents').html(data);
+                },
+            })
+        }
+
         const searchParams = new URLSearchParams(window.location.search);
         const flagValue = parseInt(searchParams.get('flag')) || 0;
         const menuItems = document.querySelectorAll('.sub-menu a');
-        const contentFrame = document.querySelector('#iframe-contents');
 
         let defaultMenuItemUrl = '';
 
@@ -152,14 +164,10 @@
         if (searchParams.has('selectedMenuItem')) {
             defaultMenuItemUrl = searchParams.get('selectedMenuItem');
             console.log("defaultMenuItemUrl3", defaultMenuItemUrl);
-
         }
 
-        contentFrame.src = defaultMenuItemUrl;
-
-        console.log(defaultMenuItemUrl);
         if (defaultMenuItemUrl !== '') {
-            document.querySelector("#grouping").setAttribute("hidden", "true");
+            loadModel(defaultMenuItemUrl);
         } else {
             document.querySelector("#grouping").removeAttribute("hidden");
         }
@@ -167,18 +175,13 @@
         function onItemClick(url) {
             event.preventDefault();
 
-            document.querySelector("#grouping").setAttribute("hidden", "true");
-
-            contentFrame.src = url;
-
+            loadModel(url)
 
             // check if we need it
             const newUrl = flagValue !== 0 ?
                 `${window.location.origin}${window.location.pathname}?flag=${flagValue}&selectedMenuItem=${encodeURIComponent(url)}` :
                 `${window.location.origin}${window.location.pathname}?scraper={{ scraper }}&selectedMenuItem=${encodeURIComponent(url)}`;
             window.history.pushState({}, '', newUrl);
-
-            console.log("url", url);
         }
 
         menuItems.forEach((menuItem) => {

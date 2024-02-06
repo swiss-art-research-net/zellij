@@ -3,7 +3,6 @@ Created on Mar. 18, 2021
 @author: Pete Harris
 """
 import logging
-from typing_extensions import LiteralString
 
 from flask import Blueprint, render_template, request, abort
 
@@ -12,7 +11,6 @@ from website.datasources import get_prefill
 from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt
 from website.functions import functions
 
-# from ZellijTable.PatternObject import PatternObject
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
 
@@ -35,18 +33,6 @@ def main():
     return render_template("docs/databaselist.html", databases=dblist, fields={})
 
 
-# search bar __start
-
-# @bp.route('/submit-form', methods=['POST'])
-# def submit_form():
-#     name = request.form['name']
-#     email = request.form['email']
-
-#     # do something with the form data here
-#     # you can store it in a database or file, or send it back as a response
-
-
-#     return Response('Form submitted successfully', mimetype='text/plain')
 @bp.route("/searchBaseList", methods=["GET", "POST"])
 def search_baselist():
     search_query = request.args.get("search_query")
@@ -122,17 +108,6 @@ def search_baselist():
         fields=fields,
         search_query=search_query,
     )
-
-
-# @bp.route('/submit-form', methods=['POST'])
-# def submit_form():
-#     name = request.form['name']
-#     email = request.form['email']
-
-#     # do something with the form data here
-#     # you can store it in a database or file, or send it back as a response
-
-#     return Response('Form submitted successfully', mimetype='text/plain')
 
 
 @bp.route("/MultIndex", methods=["GET", "POST"])
@@ -300,19 +275,3 @@ def patternitemdisplay(apikey, pattern):
         functions=functions,
         group_sort=group_sort,
     )
-
-
-# @bp.route("/generate/<apikey>", methods=["GET", "POST"])
-# def generate(apikey):
-#     schema, secretkey = generate_airtable_schema(apikey)
-#     obj = AggregateDataCollector(schema)
-#     data = obj.get(decrypt(secretkey), apikey)
-
-#     if isinstance(data, EnhancedResponse):
-#         return render_template("error/airtableerror.html", error=data)
-
-#     if request.method == "POST":
-#         # do stuff here
-#         pass
-
-#     return render_template("docs/show.html", data=data)
