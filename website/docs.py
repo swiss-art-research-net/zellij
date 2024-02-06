@@ -2,8 +2,8 @@
 Created on Mar. 18, 2021
 @author: Pete Harris
 """
+import asyncio
 import logging
-import time
 
 from flask import Blueprint, render_template, request, abort
 
@@ -35,7 +35,7 @@ def main():
 
 
 @bp.route("/searchBaseList", methods=["GET", "POST"])
-def search_baselist():
+async def search_baselist():
     search_query = request.args.get("search_query")
 
     if search_query is None:
@@ -66,42 +66,17 @@ def search_baselist():
         FROM AirTableDatabases AS atst
     """
     c.execute(db_query)
+
+    tasks = []
     fields = {}
     for db_result in dict_gen_many(c):
         api_key = db_result["dbaseapikey"]
         db_name = db_result["dbasename"]
 
         schemas, secretkey = generate_airtable_schema(api_key)
-        airtable = AirTableConnection(decrypt(secretkey), api_key)
-        for schema in schemas:
-            airtable_results = airtable.getListOfGroups(schemas[schema])
-            if schema not in fields:
-                fields[schema] = []
+        tasks.append(asyncio.create_task(searchAirtable(api_key, db_name, fields, schemas, search_query, secretkey)))
 
-            if isinstance(airtable_results, EnhancedResponse):
-                continue
-
-            for result in airtable_results:
-                if len(result.get("Name", "")) == 0:
-                    continue
-
-                if isinstance(result.get("Name", ""), list):
-                    continue
-
-                if search_query.lower() not in result.get("Name", "").lower():
-                    continue
-
-                if len(result["Contains"]) == 0:
-                    continue
-
-                data = {
-                    "type": schema,
-                    "apikey": api_key,
-                    "name": result["Name"],
-                    "id": result["KeyField"],
-                    "db": db_name,
-                }
-                fields[schema].append(data)
+    await asyncio.gather(*tasks)
 
     return render_template(
         "docs/databaselist.html",
@@ -109,6 +84,39 @@ def search_baselist():
         fields=fields,
         search_query=search_query,
     )
+
+
+async def searchAirtable(api_key, db_name, fields, schemas, search_query, secretkey):
+    airtable = AirTableConnection(decrypt(secretkey), api_key)
+    for schema in schemas:
+        airtable_results = airtable.getListOfGroups(schemas[schema])
+        if schema not in fields:
+            fields[schema] = []
+
+        if isinstance(airtable_results, EnhancedResponse):
+            continue
+
+        for result in airtable_results:
+            if len(result.get("Name", "")) == 0:
+                continue
+
+            if isinstance(result.get("Name", ""), list):
+                continue
+
+            if search_query.lower() not in result.get("Name", "").lower():
+                continue
+
+            if len(result["Contains"]) == 0:
+                continue
+
+            data = {
+                "type": schema,
+                "apikey": api_key,
+                "name": result["Name"],
+                "id": result["KeyField"],
+                "db": db_name,
+            }
+            fields[schema].append(data)
 
 
 @bp.route("/MultIndex", methods=["GET", "POST"])
