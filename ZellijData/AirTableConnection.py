@@ -5,6 +5,7 @@ Created on Mar. 9, 2021
 """
 import logging
 import re
+import time
 from urllib.parse import urlencode, unquote_plus, urlparse
 
 import requests
@@ -207,13 +208,14 @@ class AirTableConnection(object):
                 highfields = list(fieldlist.values())
                 hightable = tablename
 
-        """ The key field for the high table is what we use for SEARCH(). """
-        pass
         """
-            There is always a field in the high list that has the same name as the low table, which contains a list
-            of references. So if the list is empty, there are no matching low fields in the category. We want that list
-            so we can skip the hyperlink.
+        The key field for the high table is what we use for SEARCH().
+        
+        There is always a field in the high list that has the same name as the low table, which contains a list
+        of references. So if the list is empty, there are no matching low fields in the category. We want that list
+        so we can skip the hyperlink.
         """
+
         if lowtable is not None and lowtable not in highfields:
             highfields.append(lowtable)
             highremapper["Contains"] = lowtable
@@ -221,35 +223,22 @@ class AirTableConnection(object):
         if hightable is None:
             return out
 
-        offset = ""
-        done = False
-        while not done:
-            url = self._getUrl(
-                hightable, highfields, offset=offset, maxrecords=maxrecords, sort=sort
-            )
-            highresponse = requests.get(url, headers=self.headers)
-            if highresponse.status_code != 200:
-                return EnhancedResponse(
-                    url,
-                    highresponse,
-                    dbasename=self.friendlyname,
-                    apikey=self.airTableBaseAPI,
+        table = self.airtable.table(self.airTableBaseAPI, hightable)
+
+        records = table.all(
+            fields=highfields,
+        )
+
+        for rec in records:
+            remapped = {}
+            for mykey, theirkey in highremapper.items():
+                remapped[mykey] = (
+                    rec["fields"][theirkey]
+                    if theirkey in rec["fields"]
+                    else ""
                 )
-            else:
-                if "offset" in highresponse.json():
-                    offset = highresponse.json()["offset"]
-                else:
-                    done = True
-                if "records" in highresponse.json():
-                    for rec in highresponse.json()["records"]:
-                        remapped = {}
-                        for mykey, theirkey in highremapper.items():
-                            remapped[mykey] = (
-                                rec["fields"][theirkey]
-                                if theirkey in rec["fields"]
-                                else ""
-                            )
-                        out.append(remapped)
+            out.append(remapped)
+
         return out
 
     def getsinglecall(self, tablename, fieldlist, maxrecords=None):
