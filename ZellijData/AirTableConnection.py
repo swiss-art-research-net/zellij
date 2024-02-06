@@ -241,55 +241,16 @@ class AirTableConnection(object):
 
         return out
 
-    def getsinglecall(self, tablename, fieldlist, maxrecords=None):
-        """
-        A single call (not counting offset loops) to the AirTable, returning a JSON set of results.
-        """
-        table = tablename
-        fields = fieldlist.values()
-        # sort = self.fieldNameMap["aggregate"]["Full Name"]
-        sort = None
-        offset = ""
-        done = None
-        out = {}
-        while not done:
-            url = self._getUrl(
-                table, fields, sort=sort, offset=offset, maxrecords=maxrecords
-            )
-            response = requests.get(url, headers=self.headers)
-            if response.status_code != 200:  # 200: Success
-                return EnhancedResponse(
-                    url,
-                    response,
-                    dbasename=self.friendlyname,
-                    apikey=self.airTableBaseAPI,
-                )
-            else:
-                if "offset" in response.json():
-                    offset = response.json()["offset"]
-                else:
-                    done = True
-                out.update(self._iterateResponse(response, fieldlist))
-        return out
-
-    def getsinglerecord(self, tablename, fieldlist, maxrecords=None, offset=None):
+    def getsinglerecord(self, tablename, fieldlist):
         """
         A single call to the AirTable, returning the unprocessed JSON result from AirTable.
         """
-        table = tablename
         fields = fieldlist.values()
-        # sort = self.fieldNameMap["aggregate"]["Full Name"]
-        sort = None
-        url = self._getUrl(
-            table, fields, sort=sort, offset=offset, maxrecords=maxrecords
-        )
-        response = requests.get(url, headers=self.headers)
-        if response.status_code != 200:  # 200: Success
-            return EnhancedResponse(
-                url, response, dbasename=self.friendlyname, apikey=self.airTableBaseAPI
-            )
-        else:
-            return response
+
+        table = self.airtable.table(self.airTableBaseAPI, tablename)
+        record = table.first(fields=fields)
+
+        return record
 
     def _iterateResponse(self, response, fieldlist):
         out = {}

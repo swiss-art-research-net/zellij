@@ -282,29 +282,18 @@ def displayScraper2(apikey):
         secret = decrypt(encryptedtoken)
         connection = AirTableConnection(secret, apikey)
         if prefill.data_table:
-            validatedata = connection.getsinglerecord(
-                prefill.data_table, {}, maxrecords=1
-            )
+            validatedata = connection.getsinglerecord(prefill.data_table, {})
 
-            if isinstance(validatedata, EnhancedResponse):
-                error = "Not a valid request."
-                dataerrors = validatedata
-            else:
-                datasamples = dict()
-                for k, v in validatedata.json()["records"][0]["fields"].items():
-                    datasamples[k] = _cleanseSampleData(v)
+            datasamples = dict()
+            for k, v in validatedata["fields"].items():
+                datasamples[k] = _cleanseSampleData(v)
 
         if prefill.group_table:
-            validategroup = connection.getsinglerecord(
-                prefill.group_table, {}, maxrecords=1
-            )
-            if isinstance(validategroup, EnhancedResponse):
-                error = "Not a valid request."
-                grouperrors = validategroup
-            else:
-                groupsamples = dict()
-                for k, v in validategroup.json()["records"][0]["fields"].items():
-                    groupsamples[k] = _cleanseSampleData(v)
+            validategroup = connection.getsinglerecord(prefill.group_table, {})
+
+            groupsamples = dict()
+            for k, v in validategroup["fields"].items():
+                groupsamples[k] = _cleanseSampleData(v)
 
     # now let's finish up processing the POST
     if request.method == "POST":
