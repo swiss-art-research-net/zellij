@@ -5,14 +5,11 @@ Created on Mar. 9, 2021
 """
 import logging
 import re
-import time
-from urllib.parse import urlencode, unquote_plus, urlparse
+from urllib.parse import unquote_plus, urlparse
 
-import requests
 from pyairtable import Api
 
 from ZellijData.SingleGroupedItem import SingleGroupedItem
-from ZellijData.TurtleCodeBlock import TurtleCodeBlock
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -193,8 +190,10 @@ class AirTableConnection(object):
         The lower-level data can be identified because it contains a GroupBy field, which is mandatory.
         """
         out = []
-        lowtable = None
-        hightable = None
+        low_table = None
+        high_table = None
+        high_fields = []
+        high_remapper = {}
 
         for tablename, fieldlist in schema.items():
             # of the two item pairs, need to exclude the "low", so we ignore the one with "GroupBy" in it
@@ -202,11 +201,11 @@ class AirTableConnection(object):
                 continue
 
             if "GroupBy" in fieldlist:
-                lowtable = tablename
+                low_table = tablename
             else:
-                highremapper = fieldlist
-                highfields = list(fieldlist.values())
-                hightable = tablename
+                high_remapper = fieldlist
+                high_fields = list(fieldlist.values())
+                high_table = tablename
 
         """
         The key field for the high table is what we use for SEARCH().
@@ -216,22 +215,22 @@ class AirTableConnection(object):
         so we can skip the hyperlink.
         """
 
-        if lowtable is not None and lowtable not in highfields:
-            highfields.append(lowtable)
-            highremapper["Contains"] = lowtable
+        if low_table is not None and low_table not in high_fields:
+            high_fields.append(low_table)
+            high_remapper["Contains"] = low_table
 
-        if hightable is None:
+        if high_table is None:
             return out
 
-        table = self.airtable.table(self.airTableBaseAPI, hightable)
+        table = self.airtable.table(self.airTableBaseAPI, high_table)
 
         records = table.all(
-            fields=highfields,
+            fields=high_fields,
         )
 
         for rec in records:
             remapped = {}
-            for mykey, theirkey in highremapper.items():
+            for mykey, theirkey in high_remapper.items():
                 remapped[mykey] = (
                     rec["fields"][theirkey]
                     if theirkey in rec["fields"]
@@ -251,61 +250,6 @@ class AirTableConnection(object):
         record = table.first(fields=fields)
 
         return record
-
-    def _iterateResponse(self, response, fieldlist):
-        out = {}
-        for rec in response.json()["records"]:
-            data = {}
-            for flabel, fname in fieldlist.items():
-                data[flabel] = rec["fields"][fname] if fname in rec["fields"] else ""
-                if isinstance(data[flabel], list):
-                    if flabel == "Turtle RDF":
-                        data[flabel] = "\n".join(data[flabel])
-                    else:
-                        data[flabel] = data[flabel][0]
-            if "CRM Path" in data:
-                data["CRM Path"] = self._fixarrows(data["CRM Path"])
-            if "Turtle RDF" in data:
-                data["Turtle RDF"] = TurtleCodeBlock(data["Turtle RDF"])
-
-            out[rec["id"]] = data
-        return out
-
-    def _getUrl(
-        self,
-        table,
-        fieldlist=[],
-        formula=None,
-        sort=None,
-        offset=None,
-        maxrecords=None,
-        recordId="",
-    ):
-        url = (
-            "https://api.airtable.com/v0/"
-            + self.airTableBaseAPI
-            + "/"
-            + table
-            + "/"
-            + recordId
-        )
-        print(url)
-        urlparams = []
-        if sort:
-            urlparams.append(urlencode({"sort[0][field]": sort}))
-        if fieldlist:
-            for f in fieldlist:
-                urlparams.append(urlencode({"fields[]": f}))
-        if offset:
-            urlparams.append("offset=" + offset)
-        if maxrecords:
-            urlparams.append("maxRecords=" + str(maxrecords))
-        if formula:
-            urlparams.append(urlencode({"filterByFormula": formula}))
-            # urlparams.append(urlencode({"filterByFormula": 'SEARCH("'+val+'",{'+key+'})'}))
-        if urlparams:
-            url += "?" + "&".join(urlparams)
-        return url
 
     def _fixarrows(self, txt):
         """Convert text arrows to Unicode arrows"""
