@@ -332,17 +332,10 @@ def displayScraper2(apikey):
         ):
             if set_airtable_pattern(prefill):
                 flash("Save successful.", "info")
-                # print("\n\n\n\n\n mpika sto save")
-
             else:
                 flash("Save failed.", "error")
 
-        # duplicate request - continue here (probabbly)
-        # duplicate request paste
-
         if request.form.get("submitter") == "Paste":
-            print("\n\n\n\n\n mpika sto paste")
-
             db = get_db()
             c = db.cursor()
 
@@ -362,11 +355,6 @@ def displayScraper2(apikey):
                 LIMIT 1;
             """
             c.execute(query, (dbkeytemp,))
-            # query = """
-            #     SELECT `scraperid` FROM `Scrapers`
-            # """
-            # c.execute(query)
-            # Re_sid = c.fetchone()
             db.commit()
 
         return render_template(
