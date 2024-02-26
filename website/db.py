@@ -22,7 +22,7 @@ def get_db():
             user=os.getenv("MYSQL_USER"),
             passwd=os.getenv("MYSQL_PASSWORD"),
             db=os.getenv("MYSQL_DB"),
-            port=int(os.getenv("MYSQL_POST", 3306)),
+            port=int(os.getenv("MYSQL_PORT", 3306)),
             host=os.getenv("MYSQL_HOST"),
         )
     return g.db

@@ -45,12 +45,7 @@
     }
 
 </script>
-
-<script src='https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js'></script>
-<script>
-    mermaid.initialize({startOnLoad: true});
-</script>
 <script>
 
     function makeTableSortable(table) {
@@ -416,9 +411,12 @@
         </div>
     </div>
 {% endif %}
-<script>
+
+<script type="module" defer>
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
     const config = {
-        startOnLoad: true,
+        startOnLoad: false,
         flowchart: {
             useMaxWidth: true,
             htmlLabels: true,
@@ -428,36 +426,49 @@
     };
     mermaid.initialize(config);
 
-    window.addEventListener("load", function () {
-        const ontologyGraphs = document.querySelectorAll("#ontology-graph > svg");
-        document.querySelectorAll("#ontology-graph").forEach(graph => (graph.style.width = "100%"));
-        for (const graph of ontologyGraphs) {
-            graph.style.height = "300px";
-            svgPanZoom(graph, {
-                zoomEnabled: true,
-                controlIconsEnabled: true,
-                fit: true,
-                center: true
-            });
-        }
+    await mermaid.run();
 
-        const instanceGraphs = document.querySelectorAll("#instance-graph > svg");
-        document.querySelectorAll("#instance-graph").forEach(graph => (graph.style.width = "100%"));
-        for (const graph of instanceGraphs) {
-            graph.style.height = "300px";
-            svgPanZoom(graph, {
-                zoomEnabled: true,
-                controlIconsEnabled: true,
-                fit: true,
-                center: true
-            });
-        }
-    })
+    const ontologyGraphs = document.querySelectorAll("#ontology-graph > svg");
+
+    document.querySelectorAll("#ontology-graph").forEach(graph => (graph.style.width = "100%"));
+    for (const graph of ontologyGraphs) {
+        graph.style.height = "300px";
+        const panZoom = svgPanZoom(graph, {
+            zoomEnabled: true,
+            controlIconsEnabled: true,
+            fit: true,
+            center: true
+        });
+        panZoom.fit();
+
+        graph.style.width = '95%';
+        graph.style.maxWidth = '95%';
+
+        console.log("zoom", panZoom);
+
+        panZoom.updateBBox();
+        panZoom.resize();
+        panZoom.fit();
+        panZoom.center();
+    }
+
+    const instanceGraphs = document.querySelectorAll("#instance-graph > svg");
+    document.querySelectorAll("#instance-graph").forEach(graph => (graph.style.width = "100%"));
+    for (const graph of instanceGraphs) {
+        graph.style.height = "300px";
+        svgPanZoom(graph, {
+            zoomEnabled: true,
+            controlIconsEnabled: true,
+            fit: true,
+            center: true
+        });
+    }
 
     const tables = document.querySelectorAll("table");
     for (const table of tables) {
         makeTableSortable(table);
     }
+
 </script>
 
 <script>

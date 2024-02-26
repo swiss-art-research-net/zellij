@@ -5,12 +5,11 @@ Created on Mar. 9, 2021
 """
 import logging
 import re
-from urllib.parse import urlencode, unquote_plus, urlparse
+from urllib.parse import unquote_plus, urlparse
 
-import requests
+from pyairtable import Api
 
 from ZellijData.SingleGroupedItem import SingleGroupedItem
-from ZellijData.TurtleCodeBlock import TurtleCodeBlock
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -39,40 +38,17 @@ class AirTableConnection(object):
         self.bearerToken = bearerToken
         self.airTableBaseAPI = dbaseAPI
         self.friendlyname = friendlyname
+        self.airtable = Api(self.bearerToken)
         self.headers = {"Authorization": "Bearer " + self.bearerToken}
-
-    def get(self):
-        out = []
-
-        for patternkey, pattern in self.schema.items():
-            p = PatternObject(patternkey)
-            low = None
-            high = None
-            error = None
-            for tablename, fieldlist in pattern.items():
-                if "GroupBy" in fieldlist:
-                    low = self.getsinglecall(tablename, fieldlist)
-                else:
-                    high = self.getsinglecall(tablename, fieldlist)
-            if isinstance(low, EnhancedResponse):
-                return low
-            if isinstance(high, EnhancedResponse):
-                return high
-            p.addGroup(high)
-            p.addData(low)
-            p.generateGraphs()
-            out.append(p)
-        return out
 
     def enrich_linked_data(self, data_dict, data_key, record, record_key, table):
         for model_id in record["fields"][record_key]:
-            resource_url = self._getUrl(table, [], recordId=model_id)
-            resource_response = requests.get(resource_url, headers=self.headers)
+            group_table = self.airtable.table(self.airTableBaseAPI, table)
+            response = group_table.get(model_id, fields=[])
             if data_dict.get(data_key) is None:
                 data_dict[data_key] = []
-            resource_response_json = resource_response.json()
-            resource_response_json["table"] = table
-            data_dict[data_key].append(resource_response_json)
+            response["table"] = table
+            data_dict[data_key].append(response)
 
     def getSingleGroupedItem(self, idsearchterm, schema, maxrecords=None, sort=None, prefill_data=None, group_sort=None):
         """
@@ -95,85 +71,71 @@ class AirTableConnection(object):
             }
         The lower-level data can be identified because it contains a GroupBy field, which is mandatory.
         """
+        high_table = None
+        high_fields = None
+        high_remapper = None
+
+        low_remapper = None
+        low_fields = None
+        low_table = None
+        low_group_by = None
+
         for tablename, fieldlist in schema.items():
             if not isinstance(fieldlist, dict):
                 continue
 
             if "GroupBy" in fieldlist:
-                lowremapper = fieldlist
-                lowfields = list(fieldlist.values())
-                lowtable = tablename
-                lowgroupby = fieldlist["GroupBy"]
+                low_remapper = fieldlist
+                low_fields = list(fieldlist.values())
+                low_table = tablename
+                low_group_by = fieldlist["GroupBy"]
             else:
-                highremapper = fieldlist
-                highfields = list(fieldlist.values())
-                hightable = tablename
+                high_remapper = fieldlist
+                high_fields = list(fieldlist.values())
+                high_table = tablename
 
-        url = self._getUrl(hightable, highfields, formula='{ID}="' + idsearchterm + '"')
-        highresponse = requests.get(url, headers=self.headers)
-        logging.debug(
-            "%s*****getSingleGroupedItem-list-response*******", highresponse.json()
-        )
+        table = self.airtable.table(self.airTableBaseAPI, high_table)
+        records = table.all(formula=f'{{ID}}="{idsearchterm}"', fields=high_fields)
+
         # parse response here
-        if len(highresponse.json()["records"]) == 0:
+        if len(records) == 0:
             return None
-        groupid = highresponse.json()["records"][0]["id"]
-        searchtext = highresponse.json()["records"][0]["fields"]["ID"]
+
+        searchtext = records[0]["fields"]["ID"]
         highout = {"ID": searchtext}
-        for mykey, theirkey in highremapper.items():
+        for mykey, theirkey in high_remapper.items():
             highout[mykey] = (
-                highresponse.json()["records"][0]["fields"][theirkey]
-                if theirkey in highresponse.json()["records"][0]["fields"]
+                records[0]["fields"][theirkey]
+                if theirkey in records[0]["fields"]
                 else ""
             )
         out = SingleGroupedItem(highout)
 
         # Now get all the low items grouped under the group record.
-        offset = ""
-        done = False
-        while not done:
-            url = self._getUrl(
-                lowtable,
-                lowfields,
-                formula='SEARCH("' + searchtext + '",{' + lowgroupby + "})",
-                offset=offset,
-                maxrecords=maxrecords,
-                sort=sort,
-            )
-            lowresponse = requests.get(url, headers=self.headers)
-            if lowresponse.status_code != 200:
-                return EnhancedResponse(
-                    url,
-                    lowresponse,
-                    dbasename=self.friendlyname,
-                    apikey=self.airTableBaseAPI,
-                )
-            else:
-                if "offset" in lowresponse.json():
-                    offset = lowresponse.json()["offset"]
-                else:
-                    done = True
-                if "records" in lowresponse.json():
-                    path_grouped = {}
-                    for rec in lowresponse.json()["records"]:
-                        remapped = {}
-                        for mykey, theirkey in lowremapper.items():
-                            if theirkey not in rec["fields"]:
-                                continue
+        low_airtable = self.airtable.table(self.airTableBaseAPI, low_table)
+        low_records = low_airtable.all(
+            fields=low_fields,
+            formula=f'SEARCH("{searchtext}",{{{low_group_by}}})',
+        )
+        for rec in low_records:
+            remapped = {}
+            for mykey, theirkey in low_remapper.items():
+                if theirkey not in rec["fields"]:
+                    continue
 
-                            if mykey in prefill_data and prefill_data[mykey]['groupable'] and group_sort:
-                                table = group_sort['table']
-                                self.enrich_linked_data(
-                                    remapped, mykey, rec, theirkey, table
-                                )
-                            elif mykey in prefill_data and prefill_data[mykey]['link']:
-                                table = prefill_data[mykey]['link']
-                                self.enrich_linked_data(
-                                    remapped, mykey, rec, theirkey, table
-                                )
-                            else:
-                                remapped[mykey] = rec["fields"][theirkey]
-                        out.addFields(rec["id"], remapped)
+                if mykey in prefill_data and prefill_data[mykey]['groupable'] and group_sort:
+                    table = group_sort['table']
+                    self.enrich_linked_data(
+                        remapped, mykey, rec, theirkey, table
+                    )
+                elif mykey in prefill_data and prefill_data[mykey]['link']:
+                    table = prefill_data[mykey]['link']
+                    self.enrich_linked_data(
+                        remapped, mykey, rec, theirkey, table
+                    )
+                else:
+                    remapped[mykey] = rec["fields"][theirkey]
+            out.addFields(rec["id"], remapped)
 
         # Need to parse the object's data now.
         out.generateTurtle()
@@ -228,8 +190,10 @@ class AirTableConnection(object):
         The lower-level data can be identified because it contains a GroupBy field, which is mandatory.
         """
         out = []
-        lowtable = None
-        hightable = None
+        low_table = None
+        high_table = None
+        high_fields = []
+        high_remapper = {}
 
         for tablename, fieldlist in schema.items():
             # of the two item pairs, need to exclude the "low", so we ignore the one with "GroupBy" in it
@@ -237,161 +201,55 @@ class AirTableConnection(object):
                 continue
 
             if "GroupBy" in fieldlist:
-                lowtable = tablename
+                low_table = tablename
             else:
-                highremapper = fieldlist
-                highfields = list(fieldlist.values())
-                hightable = tablename
+                high_remapper = fieldlist
+                high_fields = list(fieldlist.values())
+                high_table = tablename
 
-        """ The key field for the high table is what we use for SEARCH(). """
-        pass
         """
-            There is always a field in the high list that has the same name as the low table, which contains a list
-            of references. So if the list is empty, there are no matching low fields in the category. We want that list
-            so we can skip the hyperlink.
+        The key field for the high table is what we use for SEARCH().
+        
+        There is always a field in the high list that has the same name as the low table, which contains a list
+        of references. So if the list is empty, there are no matching low fields in the category. We want that list
+        so we can skip the hyperlink.
         """
-        if lowtable is not None and lowtable not in highfields:
-            highfields.append(lowtable)
-            highremapper["Contains"] = lowtable
 
-        if hightable is None:
+        if low_table is not None and low_table not in high_fields:
+            high_fields.append(low_table)
+            high_remapper["Contains"] = low_table
+
+        if high_table is None:
             return out
 
-        offset = ""
-        done = False
-        while not done:
-            url = self._getUrl(
-                hightable, highfields, offset=offset, maxrecords=maxrecords, sort=sort
-            )
-            highresponse = requests.get(url, headers=self.headers)
-            if highresponse.status_code != 200:
-                return EnhancedResponse(
-                    url,
-                    highresponse,
-                    dbasename=self.friendlyname,
-                    apikey=self.airTableBaseAPI,
+        table = self.airtable.table(self.airTableBaseAPI, high_table)
+
+        records = table.all(
+            fields=high_fields,
+        )
+
+        for rec in records:
+            remapped = {}
+            for mykey, theirkey in high_remapper.items():
+                remapped[mykey] = (
+                    rec["fields"][theirkey]
+                    if theirkey in rec["fields"]
+                    else ""
                 )
-            else:
-                if "offset" in highresponse.json():
-                    offset = highresponse.json()["offset"]
-                else:
-                    done = True
-                if "records" in highresponse.json():
-                    for rec in highresponse.json()["records"]:
-                        remapped = {}
-                        for mykey, theirkey in highremapper.items():
-                            remapped[mykey] = (
-                                rec["fields"][theirkey]
-                                if theirkey in rec["fields"]
-                                else ""
-                            )
-                        out.append(remapped)
+            out.append(remapped)
+
         return out
 
-    def getsinglecall(self, tablename, fieldlist, maxrecords=None):
-        """
-        A single call (not counting offset loops) to the AirTable, returning a JSON set of results.
-        """
-        table = tablename
-        fields = fieldlist.values()
-        # sort = self.fieldNameMap["aggregate"]["Full Name"]
-        sort = None
-        offset = ""
-        done = None
-        out = {}
-        while not done:
-            url = self._getUrl(
-                table, fields, sort=sort, offset=offset, maxrecords=maxrecords
-            )
-            response = requests.get(url, headers=self.headers)
-            if response.status_code != 200:  # 200: Success
-                return EnhancedResponse(
-                    url,
-                    response,
-                    dbasename=self.friendlyname,
-                    apikey=self.airTableBaseAPI,
-                )
-            else:
-                if "offset" in response.json():
-                    offset = response.json()["offset"]
-                else:
-                    done = True
-                out.update(self._iterateResponse(response, fieldlist))
-        return out
-
-    def getsinglerecord(self, tablename, fieldlist, maxrecords=None, offset=None):
+    def getsinglerecord(self, tablename, fieldlist):
         """
         A single call to the AirTable, returning the unprocessed JSON result from AirTable.
         """
-        table = tablename
         fields = fieldlist.values()
-        # sort = self.fieldNameMap["aggregate"]["Full Name"]
-        sort = None
-        url = self._getUrl(
-            table, fields, sort=sort, offset=offset, maxrecords=maxrecords
-        )
-        response = requests.get(url, headers=self.headers)
-        if response.status_code != 200:  # 200: Success
-            return EnhancedResponse(
-                url, response, dbasename=self.friendlyname, apikey=self.airTableBaseAPI
-            )
-        else:
-            return response
 
-    def _iterateResponse(self, response, fieldlist):
-        out = {}
-        for rec in response.json()["records"]:
-            data = {}
-            for flabel, fname in fieldlist.items():
-                data[flabel] = rec["fields"][fname] if fname in rec["fields"] else ""
-                if isinstance(data[flabel], list):
-                    if flabel == "Turtle RDF":
-                        data[flabel] = "\n".join(data[flabel])
-                    else:
-                        data[flabel] = data[flabel][0]
-            if "CRM Path" in data:
-                data["CRM Path"] = self._fixarrows(data["CRM Path"])
-            if "Turtle RDF" in data:
-                data["Turtle RDF"] = TurtleCodeBlock(data["Turtle RDF"])
+        table = self.airtable.table(self.airTableBaseAPI, tablename)
+        record = table.first(fields=fields)
 
-            out[rec["id"]] = data
-        return out
-
-    def _getUrl(
-        self,
-        table,
-        fieldlist=[],
-        formula=None,
-        sort=None,
-        offset=None,
-        maxrecords=None,
-        recordId="",
-    ):
-        url = (
-            "https://api.airtable.com/v0/"
-            + self.airTableBaseAPI
-            + "/"
-            + table
-            + "/"
-            + recordId
-        )
-        print(url)
-        urlparams = []
-        if sort:
-            urlparams.append(urlencode({"sort[0][field]": sort}))
-        if fieldlist:
-            for f in fieldlist:
-                urlparams.append(urlencode({"fields[]": f}))
-        if offset:
-            urlparams.append("offset=" + offset)
-        if maxrecords:
-            urlparams.append("maxRecords=" + str(maxrecords))
-        if formula:
-            urlparams.append(urlencode({"filterByFormula": formula}))
-            # urlparams.append(urlencode({"filterByFormula": 'SEARCH("'+val+'",{'+key+'})'}))
-        if urlparams:
-            url += "?" + "&".join(urlparams)
-        return url
+        return record
 
     def _fixarrows(self, txt):
         """Convert text arrows to Unicode arrows"""
