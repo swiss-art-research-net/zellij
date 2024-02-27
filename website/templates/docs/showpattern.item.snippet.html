@@ -486,9 +486,10 @@
                             console.log(text)
                             return
                         }
+                        console.log(text)
 
                         const {svg} = await mermaid.render(id, text);
-                        parent.innerHTML = `<div id="${id}" data-turtle="${turtle_text}">${svg}</div`;
+                        parent.innerHTML = `<div id="${id}">${svg}</div`;
 
                         const graph = parent.querySelector("svg");
                         graph.style.height = "300px";
