@@ -426,44 +426,6 @@
     };
     mermaid.initialize(config);
 
-    await mermaid.run();
-
-    const ontologyGraphs = document.querySelectorAll("#ontology-graph > svg");
-
-    document.querySelectorAll("#ontology-graph").forEach(graph => (graph.style.width = "100%"));
-    for (const graph of ontologyGraphs) {
-        graph.style.height = "300px";
-        const panZoom = svgPanZoom(graph, {
-            zoomEnabled: true,
-            controlIconsEnabled: true,
-            fit: true,
-            center: true
-        });
-        panZoom.fit();
-
-        graph.style.width = '95%';
-        graph.style.maxWidth = '95%';
-
-        console.log("zoom", panZoom);
-
-        panZoom.updateBBox();
-        panZoom.resize();
-        panZoom.fit();
-        panZoom.center();
-    }
-
-    const instanceGraphs = document.querySelectorAll("#instance-graph > svg");
-    document.querySelectorAll("#instance-graph").forEach(graph => (graph.style.width = "100%"));
-    for (const graph of instanceGraphs) {
-        graph.style.height = "300px";
-        svgPanZoom(graph, {
-            zoomEnabled: true,
-            controlIconsEnabled: true,
-            fit: true,
-            center: true
-        });
-    }
-
     const tables = document.querySelectorAll("table");
     for (const table of tables) {
         makeTableSortable(table);
@@ -492,4 +454,71 @@
             formDataDiv.appendChild(ul);
         }
     }
+</script>
+
+<script defer type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+    const callback = (entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const target = entry.target;
+
+                const ontologyGraph = target.querySelector("div[id$='ontology-graph']");
+                const turtle_text = ontologyGraph.dataset.turtle;
+
+                if (!turtle_text) {
+                    return;
+                }
+
+                const parent = ontologyGraph.parentElement;
+                const id = ontologyGraph.id;
+                if (ontologyGraph.innerText !== "") {
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.set("turtle_text", turtle_text);
+                fetch('/functions/ontology', {method: "POST", body: formData})
+                    .then(res => res.text())
+                    .then(async text => {
+                        if (text.includes("ERROR:")) {
+                            console.log(text)
+                            return
+                        }
+
+                        const {svg} = await mermaid.render(id, text);
+                        parent.innerHTML = `<div id="${id}" data-turtle="${turtle_text}">${svg}</div`;
+
+                        const graph = parent.querySelector("svg");
+                        graph.style.height = "300px";
+                        const panZoom = svgPanZoom(graph, {
+                            zoomEnabled: true,
+                            controlIconsEnabled: true,
+                            fit: true,
+                            center: true
+                        });
+
+                        panZoom.fit();
+
+                        graph.style.width = '95%';
+                        graph.style.maxWidth = '95%';
+
+                        panZoom.updateBBox();
+                        panZoom.resize();
+                        panZoom.fit();
+                        panZoom.center();
+                    })
+            }
+        })
+    }
+
+    const observerOptions = {
+        threshold: 0.6,
+    }
+
+    let observer = new IntersectionObserver(callback, observerOptions);
+    document.querySelectorAll(".tabset").forEach(i => {
+        if (i) {observer.observe(i)}
+    });
 </script>

@@ -1,3 +1,60 @@
+<script src='https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'></script>
+<script>
+    {% autoescape false %}
+    function generateInstanceGraph(prefix, turtle_text) {
+        prefix = prefix.replaceAll(" ", "_");
+        const instanceGraph = $(`#${prefix}-instance-graph`);
+        if (instanceGraph.text() !== "") {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.set("turtle_text", turtle_text);
+        fetch('/functions/instance', {method: "POST", body: formData})
+            .then(res => res.text())
+            .then(async text => {
+                instanceGraph.text(text);
+                await mermaid.run({
+                    querySelector: `#${prefix}-instance-graph`,
+                });
+
+                const graph = instanceGraph.find("svg")[0];
+                graph.style.height = "300px";
+                const panZoom = svgPanZoom(graph, {
+                    zoomEnabled: true,
+                    controlIconsEnabled: true,
+                    fit: true,
+                    center: true
+                });
+
+                panZoom.fit();
+
+                graph.style.width = '95%';
+                graph.style.maxWidth = '95%';
+
+                panZoom.updateBBox();
+                panZoom.resize();
+                panZoom.fit();
+                panZoom.center();
+            })
+    }
+
+    function generateJsonLD(prefix, turtle_text) {
+        prefix = prefix.replaceAll(" ", "_");
+        const jsonLD = $(`#${prefix}-json-ld`);
+        if (jsonLD.text() !== "") {
+            return;
+        }
+        const formData = new FormData();
+        formData.set("turtle_text", turtle_text);
+        fetch('/functions/jsonld', {method: "POST", body: formData})
+            .then(res => res.text())
+            .then(text => {
+                jsonLD.text(text)
+            })
+    }
+    {% endautoescape %}
+</script>
 <div class="tabset">
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_ontgraph" hidden aria-hidden="true"
            checked>
@@ -10,14 +67,14 @@
     <ul hidden aria-hidden="true">
         <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
         </li>
-        <li><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+        <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
         <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
         {% if graphs.error is defined %}
             <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
                 warnings</label></li>
         {% endif %}
         {% if graphs.error is undefined %}
-            <li><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+            <li onclick="generateJsonLD('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
         {% else %}
             <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
                 Error</label></li>
@@ -26,11 +83,11 @@
     <div>
         <section id="ontologyGraph">
             <h2>Ontology Graph</h2>
-            <div id="ontology-graph" class="mermaid">{{ graphs["ontology"] }}</div>
+            <div id="{{ prefix|replace(' ', '_') }}-ontology-graph" data-turtle="{{ graphs['turtle_text'] }}"></div>
         </section>
         <section id="instanceGraph">
             <h2>Instance Graph</h2>
-            <div id="instance-graph" class="mermaid">{{ graphs["instance"] }}</div>
+            <div id="{{ prefix|replace(' ', '_') }}-instance-graph"></div>
         </section>
         <section id="turtleRDF">
             <h2>Turtle RDF</h2>
@@ -51,9 +108,7 @@
         {% if graphs.error is undefined %}
             <section id="jsonLD">
                 <h2>JSON-LD</h2>
-                <textarea rows="32" readonly="readonly">
-            				{{ graphs["jsonld"] }}
-            			</textarea>
+                <textarea rows="32" readonly="readonly" id="{{ prefix|replace(' ', '_') }}-json-ld"></textarea>
             </section>
         {% else %}
             <section>
