@@ -69,6 +69,9 @@ def create_app(test_config=None):
 
     app.register_blueprint(error.bp)
 
+    from website import functions
+    app.register_blueprint(functions.bp)
+
     return app
 
 
