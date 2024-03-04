@@ -1,9 +1,43 @@
-from flask import render_template
+from flask import render_template, Blueprint, request
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
 from CRITERIA import criteria
 from ZellijData.RDFCodeBlock import RDFCodeBlock
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
+
+
+bp = Blueprint("functions", __name__, url_prefix="/functions")
+
+
+@bp.route("/ontology", methods=["POST"])
+def generate_ontology_graph():
+    rdf = RDFCodeBlock(request.form['turtle_text'])
+
+    try:
+        return criteria.ontology(rdf.turtle())
+    except Exception as e:
+        return "ERROR: " + str(e)
+
+
+@bp.route("/instance", methods=["POST"])
+def generate_instance_graph():
+    rdf = RDFCodeBlock(request.form['turtle_text'])
+
+    try:
+        return criteria.instance(rdf.turtle())
+    except Exception as e:
+        return str(e)
+
+
+@bp.route("/jsonld", methods=["POST"])
+def generate_json_ld():
+    rdf = RDFCodeBlock(request.form['turtle_text'])
+
+    try:
+        return rdf.jsonld()
+    except Exception as e:
+        print(e)
+        return str(e)
 
 
 def display_graph(prefix, input, item):
@@ -17,8 +51,10 @@ def display_graph(prefix, input, item):
 
     allturtle = TurtlePrefix + "\n\n" + allturtle
     turtle = TurtleCodeBlock(allturtle)
+    graphs["turtle_text"] = turtle.text()
     try:
         rdf = RDFCodeBlock(turtle.text())
+        graphs["rdf"] = rdf
     except BadSyntax as bs:
         rdf = str(bs)
         graphs["error"] = rdf
@@ -28,25 +64,9 @@ def display_graph(prefix, input, item):
     else:
         graphs["turtle"] = rdf.turtle()
 
-    if "error" not in graphs:
-        try:
-            graphs["ontology"] = criteria.ontology(rdf.turtle())
-        except Exception as e:
-            graphs["ontology"] = str(e)
-
-    if "error" not in graphs:
-        try:
-            graphs["instance"] = criteria.instance(rdf.turtle())
-        except Exception as e:
-            graphs["instance"] = str(e)
-
-    if "error" not in graphs:
-        try:
-            graphs["jsonld"] = rdf.jsonld()
-        except Exception as e:
-            graphs["jsonld"] = str(e)
-
-    graphs["rdf"] = rdf
+    graphs["generateOntology"] = generate_ontology_graph
+    graphs["generateInstance"] = generate_instance_graph
+    graphs["generateJsonLD"] = generate_json_ld
 
     return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs)
 
