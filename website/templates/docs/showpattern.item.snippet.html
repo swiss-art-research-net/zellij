@@ -473,6 +473,7 @@
 
                 const parent = ontologyGraph.parentElement;
                 const id = ontologyGraph.id;
+                console.log(id)
                 if (ontologyGraph.innerText !== "") {
                     return;
                 }
@@ -486,7 +487,6 @@
                             console.log(text)
                             return
                         }
-                        console.log(text)
 
                         const {svg} = await mermaid.render(id, text);
                         parent.innerHTML = `<div id="${id}">${svg}</div`;

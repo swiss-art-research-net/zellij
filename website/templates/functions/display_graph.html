@@ -1,8 +1,12 @@
 <script src='https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'></script>
 <script>
     {% autoescape false %}
+    function normalizeId(id) {
+        return id.replaceAll(" ", "_").replaceAll(".", "_").replaceAll("&", "_").replaceAll("?", "_");
+    }
+
     function generateInstanceGraph(prefix, turtle_text) {
-        prefix = prefix.replaceAll(" ", "_");
+        prefix = normalizeId(prefix);
         const instanceGraph = $(`#${prefix}-instance-graph`);
         if (instanceGraph.text() !== "") {
             return;
@@ -40,7 +44,7 @@
     }
 
     function generateJsonLD(prefix, turtle_text) {
-        prefix = prefix.replaceAll(" ", "_");
+        prefix = normalizeId(prefix);
         const jsonLD = $(`#${prefix}-json-ld`);
         if (jsonLD.text() !== "") {
             return;
@@ -83,11 +87,11 @@
     <div>
         <section id="ontologyGraph">
             <h2>Ontology Graph</h2>
-            <div id="{{ prefix|replace(' ', '_') }}-ontology-graph" data-turtle="{{ graphs['turtle_text'] }}"></div>
+            <div id="{{ prefix|replace(' ', '_')|replace('.', '_')|replace('&', '_')|replace('?', '_') }}-ontology-graph" data-turtle="{{ graphs['turtle_text'] }}"></div>
         </section>
         <section id="instanceGraph">
             <h2>Instance Graph</h2>
-            <div id="{{ prefix|replace(' ', '_') }}-instance-graph"></div>
+            <div id="{{ prefix|replace(' ', '_')|replace('.', '_')|replace('&', '_')|replace('?', '_') }}-instance-graph"></div>
         </section>
         <section id="turtleRDF">
             <h2>Turtle RDF</h2>
@@ -108,7 +112,7 @@
         {% if graphs.error is undefined %}
             <section id="jsonLD">
                 <h2>JSON-LD</h2>
-                <textarea rows="32" readonly="readonly" id="{{ prefix|replace(' ', '_') }}-json-ld"></textarea>
+                <textarea rows="32" readonly="readonly" id="{{ prefix|replace(' ', '_')|replace('.', '_')|replace('&', '_')|replace('?', '_') }}-json-ld"></textarea>
             </section>
         {% else %}
             <section>
