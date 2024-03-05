@@ -41,16 +41,16 @@ class AirTableConnection(object):
         self.airtable = Api(self.bearerToken)
         self.headers = {"Authorization": "Bearer " + self.bearerToken}
 
-    def enrich_linked_data(self, data_dict, data_key, record, record_key, table):
+    def enrich_linked_data(self, data_dict, data_key, record, record_key, table, records):
         for model_id in record["fields"][record_key]:
-            group_table = self.airtable.table(self.airTableBaseAPI, table)
-            response = group_table.get(model_id, fields=[])
+            response = records.get(model_id)
             if data_dict.get(data_key) is None:
                 data_dict[data_key] = []
             response["table"] = table
             data_dict[data_key].append(response)
 
-    def getSingleGroupedItem(self, idsearchterm, schema, maxrecords=None, sort=None, prefill_data=None, group_sort=None):
+    def getSingleGroupedItem(self, idsearchterm, schema, maxrecords=None, sort=None, prefill_data=None,
+                             group_sort=None):
         """
         Schema is a two-entry dictionary containing tablename:{fields}, that identify the paired Group and Base Data; i.e.
              {
@@ -117,6 +117,7 @@ class AirTableConnection(object):
             fields=low_fields,
             formula=f'SEARCH("{searchtext}",{{{low_group_by}}})',
         )
+        cache = {}
         for rec in low_records:
             remapped = {}
             for mykey, theirkey in low_remapper.items():
@@ -125,13 +126,27 @@ class AirTableConnection(object):
 
                 if mykey in prefill_data and prefill_data[mykey]['groupable'] and group_sort:
                     table = group_sort['table']
+                    group_table = self.airtable.table(self.airTableBaseAPI, table)
+
+                    if table not in cache:
+                        cache[table] = {}
+                        for r in group_table.all(fields=[]):
+                            cache[table][r["id"]] = r
+
                     self.enrich_linked_data(
-                        remapped, mykey, rec, theirkey, table
+                        remapped, mykey, rec, theirkey, table, cache[table]
                     )
                 elif mykey in prefill_data and prefill_data[mykey]['link']:
                     table = prefill_data[mykey]['link']
+                    group_table = self.airtable.table(self.airTableBaseAPI, table)
+
+                    if table not in cache:
+                        cache[table] = {}
+                        for r in group_table.all(fields=[]):
+                            cache[table][r["id"]] = r
+
                     self.enrich_linked_data(
-                        remapped, mykey, rec, theirkey, table
+                        remapped, mykey, rec, theirkey, table, cache[table]
                     )
                 else:
                     remapped[mykey] = rec["fields"][theirkey]
@@ -162,7 +177,9 @@ class AirTableConnection(object):
         item._GroupedFields = item._GroupedFields.items()
         try:
             if group_sort:
-                item._GroupedFields = sorted(item._GroupedFields, key=lambda x: x[1][0][group_sort['table']][0]['fields'][group_sort['order']])
+                item._GroupedFields = sorted(item._GroupedFields,
+                                             key=lambda x: x[1][0][group_sort['table']][0]['fields'][
+                                                 group_sort['order']])
         except Exception as ex:
             print(ex)
 
