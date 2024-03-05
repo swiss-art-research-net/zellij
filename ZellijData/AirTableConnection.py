@@ -5,6 +5,7 @@ Created on Mar. 9, 2021
 """
 import logging
 import re
+import time
 from urllib.parse import unquote_plus, urlparse
 
 from pyairtable import Api
@@ -80,6 +81,8 @@ class AirTableConnection(object):
         low_table = None
         low_group_by = None
 
+        cache = {}
+
         for tablename, fieldlist in schema.items():
             if not isinstance(fieldlist, dict):
                 continue
@@ -95,18 +98,26 @@ class AirTableConnection(object):
                 high_table = tablename
 
         table = self.airtable.table(self.airTableBaseAPI, high_table)
-        records = table.all(formula=f'{{ID}}="{idsearchterm}"', fields=high_fields)
+        records = table.all(fields=high_fields)
+        high_records = []
+
+        if high_table not in cache:
+            cache[high_table] = {}
+            for r in records:
+                if r['fields']['ID'] == idsearchterm:
+                    high_records.append(r)
+                cache[high_table][r["id"]] = r
 
         # parse response here
-        if len(records) == 0:
+        if len(high_records) == 0:
             return None
 
-        searchtext = records[0]["fields"]["ID"]
+        searchtext = high_records[0]["fields"]["ID"]
         highout = {"ID": searchtext}
         for mykey, theirkey in high_remapper.items():
             highout[mykey] = (
-                records[0]["fields"][theirkey]
-                if theirkey in records[0]["fields"]
+                high_records[0]["fields"][theirkey]
+                if theirkey in high_records[0]["fields"]
                 else ""
             )
         out = SingleGroupedItem(highout)
@@ -117,7 +128,7 @@ class AirTableConnection(object):
             fields=low_fields,
             formula=f'SEARCH("{searchtext}",{{{low_group_by}}})',
         )
-        cache = {}
+
         for rec in low_records:
             remapped = {}
             for mykey, theirkey in low_remapper.items():
@@ -126,9 +137,9 @@ class AirTableConnection(object):
 
                 if mykey in prefill_data and prefill_data[mykey]['groupable'] and group_sort:
                     table = group_sort['table']
-                    group_table = self.airtable.table(self.airTableBaseAPI, table)
 
                     if table not in cache:
+                        group_table = self.airtable.table(self.airTableBaseAPI, table)
                         cache[table] = {}
                         for r in group_table.all(fields=[]):
                             cache[table][r["id"]] = r
@@ -138,9 +149,9 @@ class AirTableConnection(object):
                     )
                 elif mykey in prefill_data and prefill_data[mykey]['link']:
                     table = prefill_data[mykey]['link']
-                    group_table = self.airtable.table(self.airTableBaseAPI, table)
 
                     if table not in cache:
+                        group_table = self.airtable.table(self.airTableBaseAPI, table)
                         cache[table] = {}
                         for r in group_table.all(fields=[]):
                             cache[table][r["id"]] = r
