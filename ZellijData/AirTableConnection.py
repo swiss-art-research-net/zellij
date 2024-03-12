@@ -163,11 +163,11 @@ class AirTableConnection(object):
                     remapped[mykey] = rec["fields"][theirkey]
             out.addFields(rec["id"], remapped)
 
-        # Need to parse the object's data now.
-        out.generateTurtle()
-        out.generateRDF()
-        out.generateOntologyGraph()
-        out.generateInstanceGraph()
+        if any([prefill_data[key]['function'] == 'graph_display' for key in prefill_data]):
+            # Need to parse the object's data now.
+            out.generateTurtle()
+            out.generateRDF()
+
         return out
 
     def groupFields(self, item, field=None, group_sort=None):
