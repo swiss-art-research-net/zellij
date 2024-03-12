@@ -354,34 +354,28 @@
         <ul hidden aira-hidden="true">
             <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
             </li>
-            <li><label for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
             <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
             {% if patternitem.rdf_warnings() %}
                 <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
                     warnings</label></li>
             {% endif %}
-            {% if patternitem.is_jsonld() %}
-                <li><label for="tabset_max_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
-            {% else %}
-                <li><label for="tabset_max_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
-                    Error</label></li>
-            {% endif %}
+            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
         </ul>
         <div>
             <section id="ontologyGraph">
                 <h2>Ontology Graph</h2>
-                <div id="ontology-graph" class="mermaid">{{ patternitem.OntologyGraph }}</div>
+                <div id="aggregated-ontology-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
             </section>
             <section id="instanceGraph">
                 <h2>Instance Graph</h2>
-                <div id="instance-graph" class="mermaid">{{ patternitem.InstanceGraph }}</div>
+                <div id="aggregated-instance-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
             </section>
             <section id="turtleRDF">
                 <h2>Turtle RDF</h2>
                 <textarea rows="32" readonly="readonly">
-					{% if patternitem.is_rdferror() or patternitem.rdf_warnings() %}
-                        {{ patternitem.Turtle.text() }}{% else %}{{ patternitem.turtle() }}{% endif %}
-			</textarea>
+                        {{ patternitem.turtle() }}
+                </textarea>
                 <br/>
             </section>
             {% if patternitem.rdf_warnings() %}
@@ -396,9 +390,7 @@
             {% if patternitem.is_jsonld() %}
                 <section id="jsonLD">
                     <h2>JSON-LD</h2>
-                    <textarea rows="32" readonly="readonly">
-				{{ patternitem.jsonld() }}
-			</textarea>
+                    <textarea rows="32" readonly="readonly" id="aggregated-json-ld"></textarea>
                 </section>
             {% else %}
                 <section>
@@ -425,7 +417,6 @@
         }
     };
     mermaid.initialize(config);
-    await mermaid.run();
 
     let graph = document.querySelector("#ontology-graph svg");
     graph.style.height = "300px";

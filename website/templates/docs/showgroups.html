@@ -11,7 +11,24 @@
               <i class="fas fa-bars"></i>
           </div> -->
 
-        <div class="contents" id="iframe-contents"></div>
+        <div class="contents" id="iframe-contents">
+            <div style="display: flex; justify-content: center; align-items: center">
+                <div class="lds-spinner">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+        </div>
         <div class="contents" id="grouping">
             <h1 class="h1">{{ scraper }}</h1>
             <table class="toc">
@@ -121,7 +138,7 @@
             //jquery for toggle sub menus
             $('.sub-btn').each(function (index, element) {
                 const el = $(element);
-                el.on("click", function() {
+                el.on("click", function () {
                     if (el.text() !== "{{ scraper }}") {
                         window.location.replace(`{{ url_for('docs.patternlistall', apikey=apikey) }}?scraper=${el.text()}`);
                     } else {
@@ -277,6 +294,7 @@
                 headers[i].innerHTML = headers[i].innerHTML + '<span class="fa fa-sort-amount-asc" style="display: none;"></span><span class="fa fa-sort-amount-desc" style="display: none;"></span>';
             }
         }
+
         const table = document.querySelector("#grouping > table");
         makeTableSortable(table);
     </script>

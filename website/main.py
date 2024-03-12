@@ -8,9 +8,7 @@ import dotenv
 from socket import gethostname
 from flask import Flask
 
-
 dotenv.load_dotenv()
-
 
 def create_app(test_config=None):
     # create and configure the app
