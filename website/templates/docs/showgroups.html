@@ -12,7 +12,7 @@
           </div> -->
 
         <div class="contents" id="iframe-contents">
-            <div style="display: flex; justify-content: center; align-items: center">
+            <div style="display: flex; justify-content: center; align-items: center; height: 100%">
                 <div class="lds-spinner">
                     <div></div>
                     <div></div>
@@ -160,6 +160,7 @@
                 url: url,
                 type: 'GET',
                 beforeSend: function () {
+                    $('.lds-spinner').css('visibility', 'visible');
                 },
                 success: function (data) {
                     $('#iframe-contents').html(data);
