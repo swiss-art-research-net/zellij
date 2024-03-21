@@ -74,7 +74,13 @@ async def search_baselist():
         db_name = db_result["dbasename"]
 
         schemas, secretkey = generate_airtable_schema(api_key)
-        tasks.append(asyncio.create_task(searchAirtable(api_key, db_name, fields, schemas, search_query, secretkey)))
+        tasks.append(
+            asyncio.create_task(
+                searchAirtable(
+                    api_key, db_name, fields, schemas, search_query, secretkey
+                )
+            )
+        )
 
     await asyncio.gather(*tasks)
 
@@ -249,9 +255,15 @@ def patternitemdisplay(apikey, pattern):
 
     schema = schemas[pattern]
     prefill_data, prefill_group, group_sort = get_prefill(apikey, schema.get("id"))
-    item = airtable.getSingleGroupedItem(groupref, schema, prefill_data=prefill_data, group_sort=group_sort)
+    item = airtable.getSingleGroupedItem(
+        groupref, schema, prefill_data=prefill_data, group_sort=group_sort
+    )
 
-    if isinstance(item, EnhancedResponse) or item is None or isinstance(prefill_data, str):
+    if (
+        isinstance(item, EnhancedResponse)
+        or item is None
+        or isinstance(prefill_data, str)
+    ):
         return render_template("error/airtableerror_simple.html", error=item)
 
     fields_to_group = [

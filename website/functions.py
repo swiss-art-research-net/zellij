@@ -11,7 +11,7 @@ bp = Blueprint("functions", __name__, url_prefix="/functions")
 
 @bp.route("/ontology", methods=["POST"])
 def generate_ontology_graph():
-    rdf = RDFCodeBlock(request.form['turtle_text'])
+    rdf = RDFCodeBlock(request.form["turtle_text"])
 
     try:
         return criteria.ontology(rdf.turtle())
@@ -21,7 +21,7 @@ def generate_ontology_graph():
 
 @bp.route("/instance", methods=["POST"])
 def generate_instance_graph():
-    rdf = RDFCodeBlock(request.form['turtle_text'])
+    rdf = RDFCodeBlock(request.form["turtle_text"])
 
     try:
         return criteria.instance(rdf.turtle())
@@ -31,7 +31,7 @@ def generate_instance_graph():
 
 @bp.route("/jsonld", methods=["POST"])
 def generate_json_ld():
-    rdf = RDFCodeBlock(request.form['turtle_text'])
+    rdf = RDFCodeBlock(request.form["turtle_text"])
 
     try:
         return rdf.jsonld()

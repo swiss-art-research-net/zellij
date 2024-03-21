@@ -340,7 +340,17 @@ def new_airtable_pattern(apikey, validateuserid, db=None):
 
     #    def DataScraper.__init__(self, apikey, name, tablename, groupby, groupname, tabledata={}, groupdata={}, dbid=None):
     return DataScraper(
-        apikey, "", "", "", "", "", "", "", "", "", encryptedtoken=data.get("secrettoken")
+        apikey,
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        encryptedtoken=data.get("secrettoken"),
     )
 
 
@@ -362,7 +372,9 @@ def set_airtable_pattern(datascraper, forcepermission=False, db=None):
         )
         airtable = dict_gen_one(c)
 
-        if airtable is not None and (forcepermission or permission(user=airtable["userkey"])):
+        if airtable is not None and (
+            forcepermission or permission(user=airtable["userkey"])
+        ):
             c.execute(
                 """INSERT INTO Scrapers
                 (dbasekey, scrapername, data_table, data_keyfield, data_groupby, group_table, group_keyfield, group_sorttable, group_sortcolumn, group_sortname) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
