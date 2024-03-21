@@ -61,6 +61,9 @@
                                     <span><i class="fas fa-sort-alpha-down" title="Sort"></i></span>
                                     <span><i class="fas fa-indent" title="Group"></i></span>
                                     <span><i class="fas fa-eye-slash" title="Hide"></i></span>
+                                    <span><i class="fas fa-file-export" title="Export"></i></span>
+                                    <span>Linked Table</span>
+                                    <span>Function</span>
                                 </div>
                                 <div class="keyvalpair">
                                     <input type="text" class="nom" name="data_keyfieldname" id="data_keyfieldname"
@@ -78,7 +81,7 @@
 								justify-content: center;
 								align-items: center;
 							">
-                                            <i class="drag-handle fas fa-bars"></i><sub>{{ loop.index + 1 }}</sub>
+                                            <i class="drag-handle fas fa-bars"></i><sub style="margin-right: 6px;"></sub>
                                             <input type="hidden" name="datasort_{{ loop.index + 1 }}"
                                                    id="datasort_{{ loop.index + 1 }}"
                                                    value="{{ loop.index + 1 }}"/>
@@ -100,13 +103,16 @@
                                             <input type="checkbox" name="datahider_{{ loop.index + 1 }}"
                                                    id="datahider_{{ loop.index + 1 }}"
                                                     {{ "checked" if pfval['hideable'] }}>
+                                            <input type="checkbox" name="datahider_{{ loop.index + 1 }}"
+                                                   id="datahider_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['hideable'] }}>
                                             <input type="text" class="val"
                                                    name="datalink_{{ loop.index + 1 }}"
                                                    id="datalink_{{ loop.index + 1 }}" list="datalist"
                                                    value="{{ pfval['link'] }}">
                                             <select name="datafunction_{{ loop.index + 1 }}"
-                                                    id="datafunction_{{ loop.index + 1 }}">
-                                                <option value="">-</option>
+                                                    id="datafunction_{{ loop.index + 1 }}" style="margin-left: 1px; background: white; border: 1px solid darkgrey;">
+                                                <option value=""></option>
                                                 {% for key, function in functions.items() %}
                                                     {% if key == pfval['function'] %}
                                                         <option value="{{ key }}"
@@ -116,7 +122,6 @@
                                                     {% endif %}
                                                 {% endfor %}
                                             </select>
-                                            <!-- delete each field  -->
                                             <button onclick="removeSingleScraperItem(this)">
                                                 <div id="groupScraperTrash" class="trash"><i
                                                         class="fas fa-trash-alt"></i></div>
