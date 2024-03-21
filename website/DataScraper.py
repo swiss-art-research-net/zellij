@@ -126,6 +126,7 @@ class DataScraper(object):
         hideable=False,
         function=None,
         link=None,
+        exportable=None,
     ):
         self.Data[key] = {
             "name": val,
@@ -134,6 +135,7 @@ class DataScraper(object):
             "hideable": hideable,
             "function": function,
             "link": link,
+            "exportable": exportable,
         }
 
     def addGroupItem(
@@ -145,6 +147,7 @@ class DataScraper(object):
         hideable=False,
         function=None,
         link=None,
+        exportable=None,
     ):
         self.Group[key] = {
             "name": val,
@@ -153,6 +156,7 @@ class DataScraper(object):
             "hideable": hideable,
             "function": function,
             "link": link,
+            "exportable": exportable,
         }
 
     def dict(self):

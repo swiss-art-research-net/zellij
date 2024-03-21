@@ -284,6 +284,7 @@ def _get_airtable_pattern_by_name_or_id(
                 "hideable": (rec["hideable"] == True),
                 "function": rec["function"],
                 "link": rec["link"] if rec["link"] else "",
+                "exportable": (rec["exportable"] == True),
             }
         if rec["tablename"] == rec["group_table"]:
             grpdata[rec["fieldlabel"]] = {
@@ -293,6 +294,7 @@ def _get_airtable_pattern_by_name_or_id(
                 "hideable": (rec["hideable"] == True),
                 "function": rec["function"],
                 "link": rec["link"] if rec["link"] else "",
+                "exportable": (rec["exportable"] == True),
             }
     c.close()
     if name and tblname:
@@ -439,7 +441,7 @@ def set_airtable_pattern(datascraper, forcepermission=False, db=None):
             for i, (key, val) in enumerate(datascraper.Data.items(), start=1):
                 c.execute(
                     "INSERT INTO ScraperFields"
-                    + " (scraperkey, sortorder, tablename, fieldlabel, fieldname, sortable, groupable, hideable, function, link) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    + " (scraperkey, sortorder, tablename, fieldlabel, fieldname, sortable, groupable, hideable, function, link, exportable) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     (
                         datascraper.dbid,
                         i,
@@ -451,12 +453,13 @@ def set_airtable_pattern(datascraper, forcepermission=False, db=None):
                         val["hideable"],
                         val["function"],
                         val["link"] if val["link"] else None,
+                        val["exportable"],
                     ),
                 )
             for i, (key, val) in enumerate(datascraper.Group.items(), start=1):
                 c.execute(
                     "INSERT INTO ScraperFields"
-                    + " (scraperkey, sortorder, tablename, fieldlabel, fieldname, sortable, groupable, hideable, function, link) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    + " (scraperkey, sortorder, tablename, fieldlabel, fieldname, sortable, groupable, hideable, function, link, exportable) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     (
                         datascraper.dbid,
                         i,
@@ -468,6 +471,7 @@ def set_airtable_pattern(datascraper, forcepermission=False, db=None):
                         val["hideable"],
                         val["function"],
                         val["link"] if val["link"] else None,
+                        val["exportable"],
                     ),
                 )
             c.execute("COMMIT")

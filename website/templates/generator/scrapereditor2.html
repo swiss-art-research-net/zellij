@@ -103,9 +103,9 @@
                                             <input type="checkbox" name="datahider_{{ loop.index + 1 }}"
                                                    id="datahider_{{ loop.index + 1 }}"
                                                     {{ "checked" if pfval['hideable'] }}>
-                                            <input type="checkbox" name="datahider_{{ loop.index + 1 }}"
-                                                   id="datahider_{{ loop.index + 1 }}"
-                                                    {{ "checked" if pfval['hideable'] }}>
+                                            <input type="checkbox" name="dataexporter_{{ loop.index + 1 }}"
+                                                   id="dataexporter_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['exportable'] }}>
                                             <input type="text" class="val"
                                                    name="datalink_{{ loop.index + 1 }}"
                                                    id="datalink_{{ loop.index + 1 }}" list="datalist"
