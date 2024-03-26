@@ -279,6 +279,13 @@ class AirTableConnection(object):
 
         return record
 
+    def get_record_by_id(self, table, record_id):
+        """
+        A single call to the AirTable, returning the unprocessed JSON result from AirTable.
+        """
+        table = self.airtable.table(self.airTableBaseAPI, table)
+        return table.get(record_id)
+
     def _fixarrows(self, txt):
         """Convert text arrows to Unicode arrows"""
         return re.sub(r"\-\>", "→", txt)

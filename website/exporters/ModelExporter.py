@@ -12,6 +12,7 @@ class ModelExporter(Exporter):
     _results: list
     _prefill_group: dict
     _item: str
+    _airtable: AirTableConnection
 
     def __init__(self):
         super().__init__()
@@ -56,6 +57,20 @@ class ModelExporter(Exporter):
                     description_preference = ET.SubElement(description, "description_preference")
                     description_preference.text = "Preferred"
 
+                if self._prefill_group.get(key, {}).get('name') == "Ontological_Scope":
+                    ontological_scopes = ET.SubElement(root, "ontological_scopes")
+                    for record_id in val:
+                        record = self._airtable.get_record_by_id('CRM Class', record_id)
+
+                        ontology_class = ET.SubElement(ontological_scopes, "ontology_class")
+                        class_name = ET.SubElement(ontology_class, "class_name")
+                        class_name.text = record.get("fields", {}).get("ID")
+
+                        class_uri = ET.SubElement(ontology_class, "class_URI")
+                        class_uri.text = record.get("fields", {}).get("Subject")
+
+
+
 
         rough_string = ET.tostring(root, "utf-8")
         reparsed = minidom.parseString(rough_string)
@@ -64,12 +79,12 @@ class ModelExporter(Exporter):
 
     def initialize(self, selected_scheme: str, api_key: str, item: str):
         schemas, secretkey = generate_airtable_schema(api_key)
-        airtable = AirTableConnection(decrypt(secretkey), api_key)
+        self._airtable = AirTableConnection(decrypt(secretkey), api_key)
 
         schema = schemas[selected_scheme]
         _, prefill_group, _ = get_prefill(api_key, schema.get("id"))
 
-        self._results = airtable.getListOfGroups(schema)
+        self._results = self._airtable.getListOfGroups(schema)
         self._prefill_group = prefill_group
         self._item = item
 
