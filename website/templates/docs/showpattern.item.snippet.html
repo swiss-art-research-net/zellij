@@ -564,6 +564,6 @@
 
     $('#export-model-btn').on("click", function (e) {
         e.preventDefault();
-        window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, model=pattern, item=patternitem['ID']) }}";
+        window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
     })
 </script>

@@ -209,11 +209,14 @@ def patternlistall(apikey):
     return _patternlister(apikey)
 
 
-@bp.route("/list/<apikey>/export/model/<model>", methods=["GET"])
-def patternlistexport(apikey, model):
+@bp.route("/list/<apikey>/export/<exportType>/<model>", methods=["GET"])
+def patternlistexport(apikey, exportType, model):
+    exporters = {
+        'model': ModelExporter,
+    }
+
     item = request.args.get("item")
-    print(item)
-    exporter = ModelExporter()
+    exporter = exporters[exportType]()
     exporter.initialize(model, apikey, item)
 
     file = exporter.export()
