@@ -138,7 +138,12 @@
     });
 </script>
 
-<h1 id="{{ patternitem['Name'] }}">{{ patternitem["Name"] }}</h1>
+<h1 id="{{ patternitem['Name'] }}">
+    {{ patternitem["Name"] }}
+    <button id="export-model-btn">
+        <div><i class="fas fa-file-export"></i></div>
+    </button>
+</h1>
 <h2>Attributes</h2>
 {% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
     {% include 'docs/showattributes.html' %}
@@ -556,4 +561,9 @@
     document.querySelectorAll(".tabset").forEach(i => {
         if (i) {observer.observe(i)}
     });
+
+    $('#export-model-btn').on("click", function (e) {
+        e.preventDefault();
+        window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, model=pattern, item=patternitem['ID']) }}";
+    })
 </script>

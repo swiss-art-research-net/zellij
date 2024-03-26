@@ -11,6 +11,7 @@ from flask import Blueprint, render_template, request, abort, send_file
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
 from website.datasources import get_prefill
 from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt
+from website.exporters.ModelExporter import ModelExporter
 from website.functions import functions
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
@@ -210,26 +211,12 @@ def patternlistall(apikey):
 
 @bp.route("/list/<apikey>/export/model/<model>", methods=["GET"])
 def patternlistexport(apikey, model):
-    scraper = request.args.get("scraper")
-    schemas, secretkey = generate_airtable_schema(apikey)
-    airtable = AirTableConnection(decrypt(secretkey), apikey)
+    item = request.args.get("item")
+    print(item)
+    exporter = ModelExporter()
+    exporter.initialize(model, apikey, item)
 
-    schema = schemas[model]
-    _, prefill_group, _ = get_prefill(apikey, schema.get("id"))
-
-    results = airtable.getListOfGroups(schema)
-
-    file = io.BytesIO()
-
-    for result in results:
-        for key, val in result.items():
-            if not prefill_group.get(key, {}).get("exportable", False):
-                continue
-            print("export model", key, val)
-
-
-    file.write('<?xml version="1.0" encoding="UTF-8"?>\n'.encode("utf-8"))
-    file.seek(0)
+    file = exporter.export()
 
     return send_file(file, as_attachment=True, download_name="test.xml", mimetype="text/xml")
 
@@ -317,6 +304,7 @@ def patternitemdisplay(apikey, pattern):
 
     return render_template(
         "docs/showitem.html",
+        apikey=apikey,
         item=item,
         pattern=pattern,
         prefill=prefill_data,

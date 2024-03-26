@@ -30,12 +30,7 @@
             </div>
         </div>
         <div class="contents" id="grouping">
-            <h1>
-                {{ scraper }}
-                <button id="export-model-btn">
-                    <div><i class="fas fa-file-export"></i></div>
-                </button>
-            </h1>
+            <h1>{{ scraper }}</h1>
             <table class="toc">
                 {% set list = lists[scraper] %}
                 {% set fields = list[0].keys() %}
@@ -304,11 +299,6 @@
 
         const table = document.querySelector("#grouping > table");
         makeTableSortable(table);
-
-        $('#export-model-btn').on("click", function (e) {
-            e.preventDefault();
-            window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, model=scraper) }}";
-        })
     </script>
 
 {% endblock %}

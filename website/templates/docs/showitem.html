@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-    {% with patternitem = item, prefill=prefill, prefill_group=prefill_group, unique = "", functions=functions, group_sort=group_sort %}
+    {% with patternitem = item, pattern=pattern, apikey=apikey, prefill=prefill, prefill_group=prefill_group, unique = "", functions=functions, group_sort=group_sort %}
         {% include 'docs/showpattern.item.snippet.html' %}
     {% endwith %}
 
