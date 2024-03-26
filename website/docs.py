@@ -3,9 +3,10 @@ Created on Mar. 18, 2021
 @author: Pete Harris
 """
 import asyncio
+import io
 import logging
 
-from flask import Blueprint, render_template, request, abort
+from flask import Blueprint, render_template, request, abort, send_file
 
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
 from website.datasources import get_prefill
@@ -205,6 +206,33 @@ def multipleIndexGeneration():
 @bp.route("/list/<apikey>", methods=["GET"])
 def patternlistall(apikey):
     return _patternlister(apikey)
+
+
+@bp.route("/list/<apikey>/export/model/<model>", methods=["GET"])
+def patternlistexport(apikey, model):
+    scraper = request.args.get("scraper")
+    schemas, secretkey = generate_airtable_schema(apikey)
+    airtable = AirTableConnection(decrypt(secretkey), apikey)
+
+    schema = schemas[model]
+    _, prefill_group, _ = get_prefill(apikey, schema.get("id"))
+
+    results = airtable.getListOfGroups(schema)
+
+    file = io.BytesIO()
+
+    for result in results:
+        for key, val in result.items():
+            if not prefill_group.get(key, {}).get("exportable", False):
+                continue
+            print("export model", key, val)
+
+
+    file.write('<?xml version="1.0" encoding="UTF-8"?>\n'.encode("utf-8"))
+    file.seek(0)
+
+    return send_file(file, as_attachment=True, download_name="test.xml", mimetype="text/xml")
+
 
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
