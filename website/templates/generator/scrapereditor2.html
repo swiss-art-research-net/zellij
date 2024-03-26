@@ -172,26 +172,34 @@
                                     <label for="group_table">Group Table</label>
                                     <input name="group_table" id="group_table" type="text"
                                            value="{{ prefill['group_table'] }}">
-                                    {%- if grouperror and grouperror.type == "TABLE_NOT_FOUND" %}
-                                        <i class="status bad fas fa-exclamation-circle"></i>
-                                    {% else %}
-                                        <i class="status far fa-circle"></i>
-                                    {% endif %}
                                 </div>
                                 <div class="columnheaders">
-                                    <span>Label</span><span>Data Column Name</span>
+                                    <span>Label</span>
+                                    <span>Data Column Name</span>
                                     <span><i class="fas fa-sort-alpha-down" title="Sort"></i></span>
                                     <span><i class="fas fa-eye-slash" title="Hide"></i></span>
+                                    <span><i class="fas fa-file-export" title="Export"></i></span>
                                 </div>
                                 <ul id="groupScraperList" class="list-group scraperlist">
                                     <input type="hidden" name="groupScraperListCount" id="groupScraperListCount"
                                            value="{{ prefill['Group']|length }}"/>
                                     <div class="keyvalpair">
-                                        <input type="text" class="nom" name="group_keyfieldname" id="group_keyfieldname"
-                                               value="KeyField" readonly>─<input type="text" class="val"
-                                                                                 name="group_keyfield"
-                                                                                 id="group_keyfield" list="grouplist"
-                                                                                 value="{{ prefill['group_keyfield'] }}">
+                                        <input
+                                            type="text"
+                                            class="nom"
+                                            name="group_keyfieldname"
+                                            id="group_keyfieldname"
+                                            value="KeyField"
+                                            readonly
+                                        >
+                                        ─
+                                        <input
+                                            type="text"
+                                            class="val"
+                                            name="group_keyfield"
+                                            id="group_keyfield" list="grouplist"
+                                            value="{{ prefill['group_keyfield'] }}"
+                                        >
                                     </div>
                                     {%- for pfkey, pfval in prefill["Group"].items() %}
                                         <li class="list-group-item keyvalpair" style="
@@ -220,14 +228,13 @@
                                             <input type="checkbox" name="grouphider_{{ loop.index + 1 }}"
                                                    id="grouphider_{{ loop.index + 1 }}"
                                                     {{ "checked" if pfval['hideable'] }}>
+                                            <input type="checkbox" name="groupexporter_{{ loop.index + 1 }}"
+                                                   id="groupexporter_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['exportable'] }}>
                                             <button onclick="removeSingleScraperItem(this)">
                                                 <div id="groupScraperTrash" class="trash"><i
                                                         class="fas fa-trash-alt"></i></div>
                                             </button>
-
-                                            {%- with error=grouperror, samples=groupsamples, valu=pfval %}
-                                                {%- include 'generator/fieldbubble.scrapereditor.snippet.html' %}
-                                            {%- endwith %}
                                         </li>
                                     {% endfor %}
                                 </ul>
