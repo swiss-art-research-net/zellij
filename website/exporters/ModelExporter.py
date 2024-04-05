@@ -110,6 +110,20 @@ class ModelExporter(Exporter):
                         pattern_uri = ET.SubElement(pattern, "pattern_URI")
                         pattern_uri.text = "uri"
 
+                if self._prefill_group.get(key, {}).get('name') == "Total_SparQL":
+                    serialization = ET.SubElement(root, "serialization")
+                    encodings_el = ET.SubElement(serialization, "encodings")
+                    encoding = ET.SubElement(encodings_el, "encoding")
+
+                    encoding_content = ET.SubElement(encoding, "encoding_content")
+                    encoding_content.text = val
+
+                    encoding_type = ET.SubElement(encoding, "encoding_type")
+                    encoding_type.text = "rdf"
+
+                    encoding_format = ET.SubElement(encoding, "encoding_format")
+                    encoding_format.text = "sparql"
+
         rough_string = ET.tostring(root, "utf-8")
         reparsed = minidom.parseString(rough_string)
 
