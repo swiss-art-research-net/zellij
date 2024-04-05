@@ -24,6 +24,11 @@ class ModelExporter(Exporter):
         type_el = ET.SubElement(definition, "type")
         type_el.text = "Model"
 
+        provenance = ET.SubElement(root, "provenance")
+        version_data = ET.SubElement(provenance, "version_data")
+        creation_data = ET.SubElement(provenance, "creation_data")
+        funding = ET.SubElement(provenance, "funding")
+
         names = ET.SubElement(definition, "names")
         for result in self._results:
             if result.get("KeyField") != self._item:
@@ -123,6 +128,31 @@ class ModelExporter(Exporter):
 
                     encoding_format = ET.SubElement(encoding, "encoding_format")
                     encoding_format.text = "sparql"
+
+                if self._prefill_group.get(key, {}).get('name') == "Version":
+                    version_number = ET.SubElement(version_data, "version_number")
+                    version_number.text = val
+                if self._prefill_group.get(key, {}).get('name') == "Version_Date":
+                    version_publication_date = ET.SubElement(version_data, "version_publication_date")
+                    version_publication_date.text = val
+                if self._prefill_group.get(key, {}).get('name') == "Last_Modified":
+                    post_version_modification_date = ET.SubElement(version_data, "post_version_modification_date")
+                    post_version_modification_date.text = val
+
+                if self._prefill_group.get(key, {}).get('name') == "Authors":
+                    creators = ET.SubElement(creation_data, "creators")
+                    for record_id in val:
+                        author = self._airtable.get_record_by_id('Actors', record_id)
+                        creator = ET.SubElement(creators, "creator")
+
+                        creator_name = ET.SubElement(creator, "creator_name")
+                        creator_name.text = author.get("fields", {}).get("Name")
+
+                        creator_URI = ET.SubElement(creator, "creator_URI")
+                        creator_URI.text = author.get("fields", {}).get("URI", '')
+
+                if self._prefill_group.get(key, {}).get('name') == "Funders":
+                    funder = ET.SubElement(funding, "funder")
 
         rough_string = ET.tostring(root, "utf-8")
         reparsed = minidom.parseString(rough_string)
