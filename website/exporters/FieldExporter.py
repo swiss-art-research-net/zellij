@@ -1,15 +1,25 @@
-from ZellijData.AirTableConnection import AirTableConnection
+from xml.dom import minidom
+
 from exporters.Exporter import Exporter
 
+import xml.etree.ElementTree as ET
 
-class ModelExporter(Exporter):
-    _results: list
-    _prefill_group: dict
-    _item: str
-    _airtable: AirTableConnection
 
+class FieldExporter(Exporter):
     def __init__(self):
         super().__init__()
 
     def _generate_xml(self) -> str:
-        pass
+        root = ET.Element("atomic_semantic_pattern")
+        definition = ET.SubElement(root, "definition")
+
+        for result in self._results:
+            if result.get("KeyField") != self._item:
+                continue
+
+            field = self._airtable.get_record_by_id("Field", result.get("Field"))
+
+        rough_string = ET.tostring(root, "utf-8")
+        reparsed = minidom.parseString(rough_string)
+
+        return reparsed.toprettyxml(indent=4 * " ")

@@ -12,6 +12,7 @@ from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
 from website.datasources import get_prefill
 from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt
 from website.exporters.ModelExporter import ModelExporter
+from website.exporters.FieldExporter import FieldExporter
 from website.functions import functions
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
@@ -213,7 +214,8 @@ def patternlistall(apikey):
 def patternlistexport(apikey, exportType, model):
     exporters = {
         'model': ModelExporter,
-        'collection': ModelExporter
+        'collection': ModelExporter,
+        'field': FieldExporter,
     }
 
     item = request.args.get("item")
@@ -222,8 +224,9 @@ def patternlistexport(apikey, exportType, model):
 
     file = exporter.export()
 
-    return send_file(file, as_attachment=True, download_name="test.xml", mimetype="text/xml")
+    filename = "".join(c if c.isalpha() or c.isdigit() or c==' ' else '_' for c in item).rstrip()
 
+    return send_file(file, as_attachment=True, download_name=f"{filename}.xml", mimetype="text/xml")
 
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])

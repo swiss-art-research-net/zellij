@@ -171,6 +171,7 @@
             <table class="toc" id="table-{{ prefix }}">
                 {% if prefill == "default" %}
                     <tr>
+                        <th></th>
                         {% for field in fields %}
                             {% if loop.index > 1 %}
                                 <th>
@@ -196,6 +197,7 @@
                     {% endfor %}
 
                     <tr>
+                        <th></th>
                         {% for field in fields %}
                             {% if loop.index > 1 %}
                                 {% if field == sortable_keys[0] and field not in hideable_keys %}
@@ -265,6 +267,11 @@
                             {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                             {% set segments = base_url.rsplit('/', 1) %}
                             <tr>
+                                <td>
+                                    <button data-id="{{ fld['KeyField'] }}" class="export-field">
+                                        <div><i class="fas fa-file-export"></i></div>
+                                    </button>
+                                </td>
                                 {% for f in fields %}
                                     {% if loop.index > 1 and f not in hideable_keys %}
                                         {% if fld[f] is string %}
@@ -297,6 +304,11 @@
                             {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                             {% set segments = base_url.rsplit('/', 1) %}
                             <tr>
+                                <td>
+                                    <button data-id="{{ fld['KeyField'] }}" class="export-field">
+                                        <div><i class="fas fa-file-export"></i></div>
+                                    </button>
+                                </td>
                                 {% for f in fields %}
                                     {% if loop.index > 1 and f not in hideable_keys %}
                                         {% if fld[f] is string %}
@@ -493,6 +505,16 @@
 
 <script defer type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+    function exportField(id) {
+        window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='field', model=pattern, item='') }}" + id;
+    }
+
+    $('.export-field').on('click', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        exportField(id);
+    })
 
     async function renderMermaid(id, text, parent) {
         const {svg} = await mermaid.render(id, text);
