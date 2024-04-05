@@ -9,12 +9,6 @@ from website.exporters.Exporter import Exporter
 
 
 class ModelExporter(Exporter):
-    _results: list
-    _prefill_group: dict
-    _item: str
-    _selected_scheme: str
-    _airtable: AirTableConnection
-
     def __init__(self):
         super().__init__()
 
@@ -174,25 +168,3 @@ class ModelExporter(Exporter):
         reparsed = minidom.parseString(rough_string)
 
         return reparsed.toprettyxml(indent=4 * " ")
-
-    def initialize(self, selected_scheme: str, api_key: str, item: str):
-        schemas, secretkey = generate_airtable_schema(api_key)
-        self._airtable = AirTableConnection(decrypt(secretkey), api_key)
-
-        schema = schemas[selected_scheme]
-        _, prefill_group, _ = get_prefill(api_key, schema.get("id"))
-
-        self._selected_scheme = selected_scheme
-        self._results = self._airtable.getListOfGroups(schema)
-        self._prefill_group = prefill_group
-        self._item = item
-
-    def export(self) -> io.BytesIO:
-        file = io.BytesIO()
-
-        content = self._generate_xml()
-
-        file.write(content.encode('utf-8'))
-        file.seek(0)
-
-        return file
