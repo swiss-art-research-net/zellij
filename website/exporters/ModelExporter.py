@@ -12,6 +12,7 @@ class ModelExporter(Exporter):
     _results: list
     _prefill_group: dict
     _item: str
+    _selected_scheme: str
     _airtable: AirTableConnection
 
     def __init__(self):
@@ -22,7 +23,7 @@ class ModelExporter(Exporter):
         definition = ET.SubElement(root, "definition")
 
         type_el = ET.SubElement(definition, "type")
-        type_el.text = "Model"
+        type_el.text = self._selected_scheme
 
         provenance = ET.SubElement(root, "provenance")
         version_data = ET.SubElement(provenance, "version_data")
@@ -82,7 +83,7 @@ class ModelExporter(Exporter):
                 if self._prefill_group.get(key, {}).get('name') == "Model_NameSpaces":
                     semantic_context = ET.SubElement(root, "semantic_context")
 
-                if self._prefill_group.get(key, {}).get('name') == "Fields_Expected_Resource_Model":
+                if self._prefill_group.get(key, {}).get('name') == "Fields_Expected_Resource_Model" or self._prefill_group.get(key, {}).get('name') == "Fields_Expected_Collection_Model":
                     pattern_context = ET.SubElement(root, "pattern_context")
 
                     semantic_patterns_deployed_in = ET.SubElement(pattern_context, "semantic_patterns_deployed_in")
@@ -99,13 +100,14 @@ class ModelExporter(Exporter):
                         atomic_semantic_pattern_uri.text = field.get("fields", {}).get("URI").strip()
 
                         composite_semantic_pattern_type = ET.SubElement(atomic_semantic_pattern, "composite_semantic_pattern_type")
-                        composite_semantic_pattern_type.text = "Model"
+                        composite_semantic_pattern_type.text = self._selected_scheme
 
-                if self._prefill_group.get(key, {}).get('name') == "Model_Fields":
+                if self._prefill_group.get(key, {}).get('name') == "Model_Fields" or self._prefill_group.get(key, {}).get('name') == "Collection_Fields":
+                    referenced_table = self._prefill_group.get(key, {}).get('name')
                     composition = ET.SubElement(root, "composition")
 
                     for record_id in val:
-                        model_field = self._airtable.get_record_by_id('Model_Fields', record_id)
+                        model_field = self._airtable.get_record_by_id(referenced_table, record_id)
                         pattern = ET.SubElement(composition, "pattern")
 
                         pattern_name = ET.SubElement(pattern, "pattern_name")
@@ -128,6 +130,20 @@ class ModelExporter(Exporter):
 
                     encoding_format = ET.SubElement(encoding, "encoding_format")
                     encoding_format.text = "sparql"
+
+                if self._prefill_group.get(key, {}).get('name') == "x3ml":
+                    serialization = ET.SubElement(root, "serialization")
+                    encodings_el = ET.SubElement(serialization, "encodings")
+                    encoding = ET.SubElement(encodings_el, "encoding")
+
+                    encoding_content = ET.SubElement(encoding, "encoding_content")
+                    encoding_content.text = val
+
+                    encoding_type = ET.SubElement(encoding, "encoding_type")
+                    encoding_type.text = "x3ml"
+
+                    encoding_format = ET.SubElement(encoding, "encoding_format")
+                    encoding_format.text = "xml"
 
                 if self._prefill_group.get(key, {}).get('name') == "Version":
                     version_number = ET.SubElement(version_data, "version_number")
@@ -166,6 +182,7 @@ class ModelExporter(Exporter):
         schema = schemas[selected_scheme]
         _, prefill_group, _ = get_prefill(api_key, schema.get("id"))
 
+        self._selected_scheme = selected_scheme
         self._results = self._airtable.getListOfGroups(schema)
         self._prefill_group = prefill_group
         self._item = item

@@ -213,6 +213,7 @@ def patternlistall(apikey):
 def patternlistexport(apikey, exportType, model):
     exporters = {
         'model': ModelExporter,
+        'collection': ModelExporter
     }
 
     item = request.args.get("item")
