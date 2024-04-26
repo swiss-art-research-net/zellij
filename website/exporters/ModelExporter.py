@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
+from pyairtable.formulas import match, OR, EQUAL, FIELD, STR_VALUE
+
 from website.exporters.Exporter import Exporter
 
 
@@ -79,15 +81,15 @@ class ModelExporter(Exporter):
                     semantic_patterns_deployed_in = ET.SubElement(pattern_context, "semantic_patterns_deployed_in")
                     target_of = ET.SubElement(semantic_patterns_deployed_in, "target_of")
 
-                    for record_id in val:
-                        field = self._airtable.get_record_by_id('Field', record_id)
+                    for field in self._airtable.get_multiple_records_by_formula('Field', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), val)))):
+                        fields = field.get('fields')
 
                         atomic_semantic_pattern = ET.SubElement(target_of, "atomic_semantic_pattern")
                         atomic_semantic_pattern_name = ET.SubElement(atomic_semantic_pattern, "atomic_semantic_pattern_name")
-                        atomic_semantic_pattern_name.text = field.get("fields", {}).get("UI_Name")
+                        atomic_semantic_pattern_name.text = fields.get("UI_Name")
 
                         atomic_semantic_pattern_uri = ET.SubElement(atomic_semantic_pattern, "atomic_semantic_pattern_URI")
-                        atomic_semantic_pattern_uri.text = field.get("fields", {}).get("URI").strip()
+                        atomic_semantic_pattern_uri.text = fields.get("URI").strip()
 
                         composite_semantic_pattern_type = ET.SubElement(atomic_semantic_pattern, "composite_semantic_pattern_type")
                         composite_semantic_pattern_type.text = self._selected_scheme
@@ -96,8 +98,7 @@ class ModelExporter(Exporter):
                     referenced_table = self._prefill_group.get(key, {}).get('name')
                     composition = ET.SubElement(root, "composition")
 
-                    for record_id in val:
-                        model_field = self._airtable.get_record_by_id(referenced_table, record_id)
+                    for model_field in self._airtable.get_multiple_records_by_formula(referenced_table, OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), val)))):
                         pattern = ET.SubElement(composition, "pattern")
 
                         pattern_name = ET.SubElement(pattern, "pattern_name")

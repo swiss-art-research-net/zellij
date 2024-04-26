@@ -286,6 +286,13 @@ class AirTableConnection(object):
         table = self.airtable.table(self.airTableBaseAPI, table)
         return table.first(formula=formula)
 
+    def get_multiple_records_by_formula(self, table, formula):
+        """
+        A single call to the AirTable, returning the unprocessed JSON result from AirTable.
+        """
+        table = self.airtable.table(self.airTableBaseAPI, table)
+        return table.all(formula=formula)
+
     def get_all_records_from_table(self, table):
         """
         A single call to the AirTable, returning the unprocessed JSON result from AirTable.
