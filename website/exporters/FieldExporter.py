@@ -1,5 +1,7 @@
 from xml.dom import minidom
 
+from pyairtable.formulas import OR, EQUAL, STR_VALUE
+
 from exporters.Exporter import Exporter
 
 import xml.etree.ElementTree as ET
@@ -94,9 +96,8 @@ class FieldExporter(Exporter):
 
             pattern_context = ET.SubElement(root, "pattern_context")
             composite_semantic_patterns_deployed_in = ET.SubElement(pattern_context, "composite_semantic_patterns_deployed_in")
-            for model in fields.get("Model_Deployed", []):
-                model_field = self._airtable.get_record_by_id('Model', model)
 
+            for model_field in self._airtable.get_multiple_records_by_formula('Model', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Model_Deployed", []))))):
                 composite_semantic_pattern = ET.SubElement(composite_semantic_patterns_deployed_in, "composite_semantic_pattern")
                 composite_semantic_pattern_name = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_name")
                 composite_semantic_pattern_name.text = model_field.get("fields", {}).get("UI_Name")
@@ -106,9 +107,8 @@ class FieldExporter(Exporter):
 
                 composite_semantic_pattern_type = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_type")
                 composite_semantic_pattern_type.text = "Model"
-            for collection in fields.get("Collection_Deployed", []):
-                collection_field = self._airtable.get_record_by_id('Collection', collection)
 
+            for collection_field in self._airtable.get_multiple_records_by_formula('Collection', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Collection_Deployed", []))))):
                 composite_semantic_pattern = ET.SubElement(composite_semantic_patterns_deployed_in, "composite_semantic_pattern")
                 composite_semantic_pattern_name = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_name")
                 composite_semantic_pattern_name.text = collection_field.get("fields", {}).get("UI_Name")
