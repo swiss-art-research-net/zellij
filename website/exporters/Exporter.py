@@ -9,6 +9,7 @@ from db import generate_airtable_schema, decrypt
 class Exporter(ABC):
     _results: list
     _prefill_group: dict
+    _prefill_data: dict
     _item: str
     _selected_scheme: str
     _airtable: AirTableConnection
@@ -22,11 +23,12 @@ class Exporter(ABC):
         self._airtable = AirTableConnection(decrypt(secretkey), api_key)
 
         schema = schemas[selected_scheme]
-        _, prefill_group, _ = get_prefill(api_key, schema.get("id"))
+        prefill_data, prefill_group, _ = get_prefill(api_key, schema.get("id"))
 
         self._selected_scheme = selected_scheme
         self._results = self._airtable.getListOfGroups(schema)
         self._prefill_group = prefill_group
+        self._prefill_data = prefill_data
         self._item = item
 
     def export(self) -> io.BytesIO:

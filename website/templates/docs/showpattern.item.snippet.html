@@ -267,11 +267,13 @@
                             {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                             {% set segments = base_url.rsplit('/', 1) %}
                             <tr>
+                                {% if 'Field' in fld %}
                                 <td>
                                     <button data-id="{{ fld['KeyField'] }}" class="export-field">
                                         <div><i class="fas fa-file-export"></i></div>
                                     </button>
                                 </td>
+                                {% endif %}
                                 {% for f in fields %}
                                     {% if loop.index > 1 and f not in hideable_keys %}
                                         {% if fld[f] is string %}
@@ -304,11 +306,13 @@
                             {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                             {% set segments = base_url.rsplit('/', 1) %}
                             <tr>
+                            {% if 'Field' in fld %}
                                 <td>
-                                    <button data-id="{{ fld['KeyField'] }}" class="export-field">
+                                    <button data-id="{{ fld['Field'][0] }}" class="export-field">
                                         <div><i class="fas fa-file-export"></i></div>
                                     </button>
                                 </td>
+                            {% endif %}
                                 {% for f in fields %}
                                     {% if loop.index > 1 and f not in hideable_keys %}
                                         {% if fld[f] is string %}
