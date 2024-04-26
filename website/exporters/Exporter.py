@@ -22,6 +22,9 @@ class Exporter(ABC):
         schemas, secretkey = generate_airtable_schema(api_key)
         self._airtable = AirTableConnection(decrypt(secretkey), api_key)
 
+        if item is None:
+            return
+
         schema = schemas[selected_scheme]
         prefill_data, prefill_group, _ = get_prefill(api_key, schema.get("id"))
 

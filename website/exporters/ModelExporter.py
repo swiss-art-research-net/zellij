@@ -1,10 +1,6 @@
-import io
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from ZellijData.AirTableConnection import AirTableConnection
-from website.datasources import get_prefill
-from website.db import generate_airtable_schema, decrypt
 from website.exporters.Exporter import Exporter
 
 

@@ -13,6 +13,7 @@ from website.datasources import get_prefill
 from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt
 from website.exporters.ModelExporter import ModelExporter
 from website.exporters.FieldExporter import FieldExporter
+from exporters.ProjectExporter import ProjectExporter
 from website.functions import functions
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
@@ -216,6 +217,7 @@ def patternlistexport(apikey, exportType, model):
         'model': ModelExporter,
         'collection': ModelExporter,
         'field': FieldExporter,
+        'project': ProjectExporter,
     }
 
     item = request.args.get("item")
@@ -224,7 +226,10 @@ def patternlistexport(apikey, exportType, model):
 
     file = exporter.export()
 
-    filename = "".join(c if c.isalpha() or c.isdigit() or c==' ' else '_' for c in item).rstrip()
+    if item is None:
+        filename = model
+    else:
+        filename = "".join(c if c.isalpha() or c.isdigit() or c == ' ' else '_' for c in item).rstrip()
 
     return send_file(file, as_attachment=True, download_name=f"{filename}.xml", mimetype="text/xml")
 
@@ -282,9 +287,9 @@ def patternitemdisplay(apikey, pattern):
     )
 
     if (
-        isinstance(item, EnhancedResponse)
-        or item is None
-        or isinstance(prefill_data, str)
+            isinstance(item, EnhancedResponse)
+            or item is None
+            or isinstance(prefill_data, str)
     ):
         return render_template("error/airtableerror_simple.html", error=item)
 
@@ -301,10 +306,10 @@ def patternitemdisplay(apikey, pattern):
             if value.get("sortable", False):
                 items = item._GroupedData
                 if all(
-                    [
-                        isinstance(x.get(key, False), str) and x.get(key, "").isdigit()
-                        for x in items.values()
-                    ]
+                        [
+                            isinstance(x.get(key, False), str) and x.get(key, "").isdigit()
+                            for x in items.values()
+                        ]
                 ):
                     for x in items.values():
                         x[key] = int(x[key])
