@@ -118,7 +118,15 @@ class DataScraper(object):
             )
 
     def addDataItem(
-        self, key, val, sortable=False, groupable=False, hideable=False, function=None, link=None
+        self,
+        key,
+        val,
+        sortable=False,
+        groupable=False,
+        hideable=False,
+        function=None,
+        link=None,
+        exportable=None,
     ):
         self.Data[key] = {
             "name": val,
@@ -127,10 +135,19 @@ class DataScraper(object):
             "hideable": hideable,
             "function": function,
             "link": link,
+            "exportable": exportable,
         }
 
     def addGroupItem(
-        self, key, val, sortable=False, groupable=False, hideable=False, function=None, link=None
+        self,
+        key,
+        val,
+        sortable=False,
+        groupable=False,
+        hideable=False,
+        function=None,
+        link=None,
+        exportable=None,
     ):
         self.Group[key] = {
             "name": val,
@@ -138,7 +155,8 @@ class DataScraper(object):
             "groupable": groupable,
             "hideable": hideable,
             "function": function,
-            "link": link
+            "link": link,
+            "exportable": exportable,
         }
 
     def dict(self):

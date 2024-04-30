@@ -65,9 +65,10 @@ div.keyvalpair {
     display: inline-block;
     background-color: black;
     color: white;
-    padding: 2px;
+    padding: 3px 1px;
     font-family: Arial, sans-serif;
     text-align: center;
+    font-size: 10px;
 }
 
 .columnheaders > span:first-child {
@@ -87,7 +88,22 @@ div.keyvalpair {
 
 .columnheaders > span:nth-child(5) {
     width: 15px;
-    margin-left: 4px;
+    margin-left: 2px;
+}
+
+.columnheaders > span:nth-child(6) {
+    width: 15px;
+    margin-left: 1px;
+}
+
+.columnheaders > span:nth-child(7) {
+    width: 180px;
+    margin-left: 2px;
+}
+
+.columnheaders > span:nth-child(8) {
+    width: 110px;
+    margin-left: 2px;
 }
 
 .columnheaders {

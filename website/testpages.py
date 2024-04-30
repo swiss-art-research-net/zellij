@@ -1,13 +1,13 @@
-'''
+"""
 Created on Apr. 22, 2021
 
 @author: Pete Harris
-'''
+"""
 from flask import Blueprint, flash, render_template
 
 
-
 bp = Blueprint("testpages", __name__, url_prefix="/testpages")
+
 
 @bp.route("/flash", methods=["GET", "POST"])
 def flashtest():
@@ -18,4 +18,3 @@ def flashtest():
     flash("Info, just <i>one</i>.", "info")
     flash("Uncategorized message.")
     return render_template("development/testflash.html")
-

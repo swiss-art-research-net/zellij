@@ -1,438 +1,469 @@
 {% extends 'menubase.html' %}
 
 {% block head %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='zellijscraper.css') }}" />
-<script src="{{ url_for('static', filename='zellijscraper.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='zellijscraper.css') }}"/>
+    <script src="{{ url_for('static', filename='zellijscraper.js') }}"></script>
 {% endblock %}
 
 {% block header %}
-<h1>{% block title %}{{"" if not edit else "Update " if prefill else "Create "}}AirTable “Scraper”{% endblock %}</h1>
+    <h1>{% block title %}{{ "" if not edit else ("Update " if prefill else "Create ") }}AirTable “Scraper”{% endblock %}</h1>
 {% endblock %}
 
 
 {% block content %}
-<div class="scraper">
-	{# verify that this scraper exists inside one of our AirTables #}
-	{% if not base %}
-	<p>This AirTable API link isn't one of yours.</p>
-	{#
+    <div class="scraper">
+        {# verify that this scraper exists inside one of our AirTables #}
+        {% if not base %}
+            <p>This AirTable API link isn't one of yours.</p>
+            {#
 	{% elif not scraperid %}
 	<p>No scraper specified.</p>
 	#}
-	{% elif not prefill and not edit %}
-	<p>Not a valid scraper.</p>
-	{% else %}
-	<h3>[{{ base["accountname"] }}] {{ base["dbasename"] }} ({{ base["dbaseapikey"] }})</h3>
-	<div>
-		<form method="post" id="scrapereditor2">
-			<h3>
-				<label for="scrapername">“Scraper” Name</label>
-				<input name="scrapername" id="scrapername" type="text" value="{{ prefill.name }}" required>
-			</h3>
-			{% if delete == "confirm" %}
-			<div class="confirm">
-				<p>Are you sure you want to delete this data scraper?</p>
-				<div class="buttonrow">
-					<button type="submit" name="deleter" id="canceldelete" value="cancel">Cancel</button>
-					<button type="submit" class="delete" name="deleter" id="confirmdelete"
-						value="confirm">Delete</button>
-				</div>
-			</div>
-			{% endif %}
-
-			<div id="tablebox" class="fieldbox">
-				<div class="leftshow">
-					<div class="scraperlistcontainer">
-						<div class="airtablename">
-							<label for="data_table">Data Table</label>
-							<input name="data_table" id="data_table" type="text" value="{{ prefill['data_table'] }}"
-								required>
-							{%- if dataerror and dataerror.type == "TABLE_NOT_FOUND" %}
-							<i class="status bad fas fa-exclamation-circle"></i>
-							{% else %}
-							<i class="status far fa-circle"></i>
-							{% endif %}
-						</div>
-						<div class="columnheaders">
-							<span>Label</span><span>Data Column Name</span><span><i class="fas fa-sort-alpha-down"
-									title="Sort"></i></span><span><i class="fas fa-indent"
-									title="Group"></i></span><span><i class="fas fa-eye-slash" title="Hide"></i></span>
-						</div>
-						<div class="keyvalpair">
-							<input type="text" class="nom" name="data_keyfieldname" id="data_keyfieldname"
-								value="KeyField" readonly>─<input type="text" class="val" name="data_keyfield"
-								id="data_keyfield" list="datalist" value="{{prefill['data_keyfield']}}">
-						</div>
-						<ul id="dataScraperList" class="list-group scraperlist">
-							<input type="hidden" name="dataScraperListCount" id="dataScraperListCount"
-								value="{{prefill['Data']|length}}" />
-							{%- for pfkey, pfval in prefill["Data"].items() %}
-							<li class="list-group-item keyvalpair" style="
-								display: flex; 
-								justify-content: center; 
-								align-items: center;
-							">
-								<i class="drag-handle fas fa-bars"></i><sub>{{loop.index + 1}}</sub>
-								<input type="hidden" name="datasort_{{loop.index + 1}}" id="datasort_{{loop.index + 1}}"
-									value="{{loop.index + 1}}" />
-								<datalist id="datalist_{{loop.index + 1}}">
-									<option value="Turtle RDF">
-									<option value="CRM Path">
-								</datalist>
-								<input type="text" class="nom" name="datanom_{{loop.index + 1}}"
-									id="datanom_{{loop.index + 1}}" value="{{pfkey}}"
-									list="datalist_{{loop.index + 1}}">─<input type="text" class="val"
-									name="dataval_{{loop.index + 1}}" id="dataval_{{loop.index + 1}}" list="datalist"
-									value="{{pfval['name']}}">
-								<input type="checkbox" name="datasorter_{{loop.index + 1}}"
-									id="datasorter_{{loop.index + 1}}" {{"checked" if pfval['sortable']}}>
-								<input type="checkbox" name="datagrouper_{{loop.index + 1}}"
-									id="datagrouper_{{loop.index + 1}}" {{"checked" if pfval['groupable']}}>
-								<input type="checkbox" name="datahider_{{loop.index + 1}}" id="datahider_{{loop.index + 1}}"
-									{{"checked" if pfval['hideable']}}>
-                                <input type="text" class="val"
-                                       name="datalink_{{loop.index + 1}}" id="datalink_{{loop.index + 1}}" list="datalist"
-                                       value="{{pfval['link']}}">
-                                <select name="datafunction_{{ loop.index + 1 }}" id="datafunction_{{ loop.index + 1 }}">
-                                    <option value="">-</option>
-                                    {% for key, function in functions.items() %}
-                                        {% if key == pfval['function'] %}
-                                            <option value="{{ key }}" selected>{{ function['label'] }}</option>
-                                        {% else %}
-                                            <option value="{{ key }}">{{ function['label'] }}</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
-								<!-- delete each field  -->
-								<button onclick="removeSingleScraperItem(this)">
-									<div id="groupScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
-								</button>
-								{%- with error=dataerror, samples=datasamples, valu=pfval %}
-								{%- include 'generator/fieldbubble.scrapereditor.snippet.html' %}
-								{%- endwith %}
-							</li>
-							{%- endfor %}
-						</ul>
-						<div class="iconbar">
-							<!-- <button type="submit" class="delete" name="deleter" id="delete" value="delete">Delete</button> -->
-							<!-- <button type="sumbit" class="trash" name="trasher" id="trash" value="reset"><div id="dataScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div></button> -->
-
-							<button onclick="removeScraperItem(document.getElementById('dataScraperList'))">
-								<div id="dataScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
-							</button>
-
-							<a onclick="addSortable(dataScraperList)"><i class="fas fa-plus-square"></i></a>
-							<button
-								onclick="sortByAlphabeticallIndex(document.getElementById('groupScraperList'))">A->Z</button>
-
-						</div>
-					</div>
-					<div id="groupbydivider">
-						<p>&nbsp;</p>
-						<div class="groupbyname">
-							<label for="data_groupby">Group By</label>
-							<input name="data_groupby" id="data_groupby" list="datalist" type="text"
-								value="{{ prefill['data_groupby'] }}">
-							<i class="status far fa-circle"></i>
-						</div>
-						<p>&nbsp;</p>
-					</div>
-				</div>
-
-				<div class="rightshow">
-					{%- with samples=datasamples, error=dataerror, tablename=prefill['data_table'],
-					dbasekey=base["dbaseapikey"] %}
-					{%- include 'generator/samplepane.scrapereditor.snippet.html' %}
-					{%- endwith %}
-				</div>
-			</div>
-
-			<div id="groupbox" class="fieldbox">
-				<div class="leftshow">
-					<div class="scraperlistcontainer">
-						<div class="airtablename">
-							<label for="group_table">Group Table</label>
-							<input name="group_table" id="group_table" type="text" value="{{ prefill['group_table'] }}">
-							{%- if grouperror and grouperror.type == "TABLE_NOT_FOUND" %}
-							<i class="status bad fas fa-exclamation-circle"></i>
-							{% else %}
-							<i class="status far fa-circle"></i>
-							{% endif %}
-						</div>
-						<div class="columnheaders">
-							<span>Label</span><span>Data Column Name</span>
-                            <span><i class="fas fa-sort-alpha-down"title="Sort"></i></span>
-                            <span><i class="fas fa-eye-slash" title="Hide"></i></span>
-						</div>
-						<ul id="groupScraperList" class="list-group scraperlist">
-							<input type="hidden" name="groupScraperListCount" id="groupScraperListCount"
-								value="{{prefill['Group']|length}}" />
-							<div class="keyvalpair">
-								<input type="text" class="nom" name="group_keyfieldname" id="group_keyfieldname"
-									value="KeyField" readonly>─<input type="text" class="val" name="group_keyfield"
-									id="group_keyfield" list="grouplist" value="{{prefill['group_keyfield']}}">
-							</div>
-							{%- for pfkey, pfval in prefill["Group"].items() %}
-							<li class="list-group-item keyvalpair" style="
-								display: flex; 
-								justify-content: center; 
-								align-items: center;
-							">
-								<i class="drag-handle fas fa-bars"></i><sub>{{loop.index + 1}}</sub>
-								<input type="hidden" name="groupsort_{{loop.index + 1}}" id="groupsort_{{loop.index + 1}}"
-									value="{{loop.index + 1}}" />
-								<datalist id="datalist_{{loop.index + 1}}">
-									<option value="Turtle RDF">
-									<option value="CRM Path">
-								</datalist>
-								<input type="text" class="nom" name="groupnom_{{loop.index + 1}}"
-									id="groupnom_{{loop.index + 1}}" value="{{pfkey}}"
-									list="datalist_{{loop.index + 1}}">─<input type="text" class="val"
-									name="groupval_{{loop.index + 1}}" id="groupval_{{loop.index + 1}}" list="grouplist"
-									value="{{pfval['name']}}">
-                                <input type="checkbox" name="groupsorter_{{loop.index + 1}}" id="groupsorter_{{loop.index + 1}}"
-                                        {{"checked" if pfval['sortable']}}>
-                                <input type="checkbox" name="grouphider_{{loop.index + 1}}" id="grouphider_{{loop.index + 1}}"
-                                        {{"checked" if pfval['hideable']}}>
-								<button onclick="removeSingleScraperItem(this)">
-									<div id="groupScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
-								</button>
-
-								{%- with error=grouperror, samples=groupsamples, valu=pfval %}
-								{%- include 'generator/fieldbubble.scrapereditor.snippet.html' %}
-								{%- endwith %}
-							</li>
-							{% endfor %}
-						</ul>
-						<div class="iconbar">
-
-							<button onclick="removeScraperItem(document.getElementById('groupScraperList'))">
-								<div id="groupScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
-							</button>
-							<a onclick="addSortable(groupScraperList)"><i class="fas fa-plus-square"></i></a>
-							<button
-								onclick="sortByAlphabeticallIndex(document.getElementById('groupScraperList'))">A->Z</button>
-						</div>
-					</div>
-                    <div id="groupbydivider">
-                        <p>&nbsp;</p>
-                        <div class="groupbyname">
-                            <div>Sort Groups By</div>
-                            <label for="group_sorttable">Table</label>
-                            <input name="group_sorttable" id="group_sorttable" list="datalist" type="text" value="{{ prefill['group_sorttable'] }}">
-                            <label for="group_sortcolumn">Order Column</label>
-                            <input name="group_sortcolumn" id="group_sortcolumn" list="datalist" type="text" value="{{ prefill['group_sortcolumn'] }}">
-                            <label for="group_sortname">Name Column</label>
-                            <input name="group_sortname" id="group_sortname" list="datalist" type="text" value="{{ prefill['group_sortname'] }}">
+        {% elif not prefill and not edit %}
+            <p>Not a valid scraper.</p>
+        {% else %}
+            <h3>[{{ base["accountname"] }}] {{ base["dbasename"] }} ({{ base["dbaseapikey"] }})</h3>
+            <div>
+                <form method="post" id="scrapereditor2">
+                    <h3>
+                        <label for="scrapername">“Scraper” Name</label>
+                        <input name="scrapername" id="scrapername" type="text" value="{{ prefill.name }}" required>
+                    </h3>
+                    {% if delete == "confirm" %}
+                        <div class="confirm">
+                            <p>Are you sure you want to delete this data scraper?</p>
+                            <div class="buttonrow">
+                                <button type="submit" name="deleter" id="canceldelete" value="cancel">Cancel</button>
+                                <button type="submit" class="delete" name="deleter" id="confirmdelete"
+                                        value="confirm">Delete
+                                </button>
+                            </div>
                         </div>
-                        <p>&nbsp;</p>
-                    </div>
-				</div>
+                    {% endif %}
 
+                    <div id="tablebox" class="fieldbox">
+                        <div class="leftshow">
+                            <div class="scraperlistcontainer">
+                                <div class="airtablename">
+                                    <label for="data_table">Data Table</label>
+                                    <input
+                                            name="data_table"
+                                            id="data_table"
+                                            type="text"
+                                            value="{{ prefill['data_table'] }}"
+                                            required
+                                    >
+                                </div>
+                                <div class="columnheaders">
+                                    <span>Label</span>
+                                    <span>Data Column Name</span>
+                                    <span><i class="fas fa-sort-alpha-down" title="Sort"></i></span>
+                                    <span><i class="fas fa-indent" title="Group"></i></span>
+                                    <span><i class="fas fa-eye-slash" title="Hide"></i></span>
+                                    <span><i class="fas fa-file-export" title="Export"></i></span>
+                                    <span>Linked Table</span>
+                                    <span>Function</span>
+                                </div>
+                                <div class="keyvalpair">
+                                    <input type="text" class="nom" name="data_keyfieldname" id="data_keyfieldname"
+                                           value="KeyField" readonly>─<input type="text" class="val"
+                                                                             name="data_keyfield"
+                                                                             id="data_keyfield" list="datalist"
+                                                                             value="{{ prefill['data_keyfield'] }}">
+                                </div>
+                                <ul id="dataScraperList" class="list-group scraperlist">
+                                    <input type="hidden" name="dataScraperListCount" id="dataScraperListCount"
+                                           value="{{ prefill['Data']|length }}"/>
+                                    {%- for pfkey, pfval in prefill["Data"].items() %}
+                                        <li class="list-group-item keyvalpair" style="
+								display: flex;
+								justify-content: center;
+								align-items: center;
+							">
+                                            <i class="drag-handle fas fa-bars"></i><sub style="margin-right: 6px;"></sub>
+                                            <input type="hidden" name="datasort_{{ loop.index + 1 }}"
+                                                   id="datasort_{{ loop.index + 1 }}"
+                                                   value="{{ loop.index + 1 }}"/>
+                                            <datalist id="datalist_{{ loop.index + 1 }}">
+                                                <option value="Turtle RDF">
+                                                <option value="CRM Path">
+                                            </datalist>
+                                            <input type="text" class="nom" name="datanom_{{ loop.index + 1 }}"
+                                                   id="datanom_{{ loop.index + 1 }}" value="{{ pfkey }}"
+                                                   list="datalist_{{ loop.index + 1 }}">─<input type="text" class="val"
+                                                                                                name="dataval_{{ loop.index + 1 }}"
+                                                                                                id="dataval_{{ loop.index + 1 }}"
+                                                                                                list="datalist"
+                                                                                                value="{{ pfval['name'] }}">
+                                            <input type="checkbox" name="datasorter_{{ loop.index + 1 }}"
+                                                   id="datasorter_{{ loop.index + 1 }}" {{ "checked" if pfval['sortable'] }}>
+                                            <input type="checkbox" name="datagrouper_{{ loop.index + 1 }}"
+                                                   id="datagrouper_{{ loop.index + 1 }}" {{ "checked" if pfval['groupable'] }}>
+                                            <input type="checkbox" name="datahider_{{ loop.index + 1 }}"
+                                                   id="datahider_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['hideable'] }}>
+                                            <input type="checkbox" name="dataexporter_{{ loop.index + 1 }}"
+                                                   id="dataexporter_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['exportable'] }}>
+                                            <input type="text" class="val"
+                                                   name="datalink_{{ loop.index + 1 }}"
+                                                   id="datalink_{{ loop.index + 1 }}" list="datalist"
+                                                   value="{{ pfval['link'] }}">
+                                            <select name="datafunction_{{ loop.index + 1 }}"
+                                                    id="datafunction_{{ loop.index + 1 }}" style="margin-left: 1px; background: white; border: 1px solid darkgrey;">
+                                                <option value=""></option>
+                                                {% for key, function in functions.items() %}
+                                                    {% if key == pfval['function'] %}
+                                                        <option value="{{ key }}"
+                                                                selected>{{ function['label'] }}</option>
+                                                    {% else %}
+                                                        <option value="{{ key }}">{{ function['label'] }}</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            <button onclick="removeSingleScraperItem(this)">
+                                                <div id="groupScraperTrash" class="trash"><i
+                                                        class="fas fa-trash-alt"></i></div>
+                                            </button>
+                                        </li>
+                                    {%- endfor %}
+                                </ul>
+                                <div class="iconbar">
+                                    <!-- <button type="submit" class="delete" name="deleter" id="delete" value="delete">Delete</button> -->
+                                    <!-- <button type="sumbit" class="trash" name="trasher" id="trash" value="reset"><div id="dataScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div></button> -->
 
-				<div class="rightshow">
-					{%- with samples=groupsamples, error=grouperror, tablename=prefill['group_table'],
+                                    <button onclick="removeScraperItem(document.getElementById('dataScraperList'))">
+                                        <div id="dataScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
+                                    </button>
+
+                                    <a onclick="addSortable(dataScraperList)"><i class="fas fa-plus-square"></i></a>
+                                    <button
+                                            onclick="sortByAlphabeticallIndex(document.getElementById('groupScraperList'))">
+                                        A->Z
+                                    </button>
+
+                                </div>
+                            </div>
+                            <div id="groupbydivider">
+                                <p>&nbsp;</p>
+                                <div class="groupbyname">
+                                    <label for="data_groupby">Group By</label>
+                                    <input name="data_groupby" id="data_groupby" list="datalist" type="text"
+                                           value="{{ prefill['data_groupby'] }}">
+                                    <i class="status far fa-circle"></i>
+                                </div>
+                                <p>&nbsp;</p>
+                            </div>
+                        </div>
+
+                        <div class="rightshow">
+                            {%- with samples=datasamples, error=dataerror, tablename=prefill['data_table'],
 					dbasekey=base["dbaseapikey"] %}
-					{%- include 'generator/samplepane.scrapereditor.snippet.html' %}
-					{%- endwith %}
-				</div>
-			</div>
+                                {%- include 'generator/samplepane.scrapereditor.snippet.html' %}
+                            {%- endwith %}
+                        </div>
+                    </div>
 
-			{%- if datasamples %}
-			<datalist id="datalist">
-				{%- for k in datasamples.keys() %}
-				<option>{{k}}</option>
-				{%- endfor %}
-			</datalist>
-			{% endif %}
-			{%- if groupsamples %}
-			<datalist id="grouplist">
-				{%- for k in groupsamples.keys() %}
-				<option>{{k}}</option>
-				{%- endfor %}
-			</datalist>
-			{% endif %}
-			<div class="buttonrow">
-				<button type="submit" name="submitter" id="validate" value="validate">Validate</button>
-				<button type="submit" name="submitter" id="save" value="{{'save' if scraperid else 'create'}}">{{'Save'
-					if scraperid else 'Create'}}</button>
-				<!-- scrapper duplicator/generator button -->
-				<!-- generates empty duplicator form  -->
-				<button type="button" name="submitter" id="duplicator"
-					value="{{'Copy' if scraperid else 'Paste'}}">{{'Copy' if scraperid else 'Paste'}}</button>
+                    <div id="groupbox" class="fieldbox">
+                        <div class="leftshow">
+                            <div class="scraperlistcontainer">
+                                <div class="airtablename">
+                                    <label for="group_table">Group Table</label>
+                                    <input name="group_table" id="group_table" type="text"
+                                           value="{{ prefill['group_table'] }}">
+                                </div>
+                                <div class="columnheaders">
+                                    <span>Label</span>
+                                    <span>Data Column Name</span>
+                                    <span><i class="fas fa-sort-alpha-down" title="Sort"></i></span>
+                                    <span><i class="fas fa-eye-slash" title="Hide"></i></span>
+                                    <span><i class="fas fa-file-export" title="Export"></i></span>
+                                </div>
+                                <ul id="groupScraperList" class="list-group scraperlist">
+                                    <input type="hidden" name="groupScraperListCount" id="groupScraperListCount"
+                                           value="{{ prefill['Group']|length }}"/>
+                                    <div class="keyvalpair">
+                                        <input
+                                            type="text"
+                                            class="nom"
+                                            name="group_keyfieldname"
+                                            id="group_keyfieldname"
+                                            value="KeyField"
+                                            readonly
+                                        >
+                                        ─
+                                        <input
+                                            type="text"
+                                            class="val"
+                                            name="group_keyfield"
+                                            id="group_keyfield" list="grouplist"
+                                            value="{{ prefill['group_keyfield'] }}"
+                                        >
+                                    </div>
+                                    {%- for pfkey, pfval in prefill["Group"].items() %}
+                                        <li class="list-group-item keyvalpair" style="
+								display: flex;
+								justify-content: center;
+								align-items: center;
+							">
+                                            <i class="drag-handle fas fa-bars"></i><sub>{{ loop.index + 1 }}</sub>
+                                            <input type="hidden" name="groupsort_{{ loop.index + 1 }}"
+                                                   id="groupsort_{{ loop.index + 1 }}"
+                                                   value="{{ loop.index + 1 }}"/>
+                                            <datalist id="datalist_{{ loop.index + 1 }}">
+                                                <option value="Turtle RDF">
+                                                <option value="CRM Path">
+                                            </datalist>
+                                            <input type="text" class="nom" name="groupnom_{{ loop.index + 1 }}"
+                                                   id="groupnom_{{ loop.index + 1 }}" value="{{ pfkey }}"
+                                                   list="datalist_{{ loop.index + 1 }}">─<input type="text" class="val"
+                                                                                                name="groupval_{{ loop.index + 1 }}"
+                                                                                                id="groupval_{{ loop.index + 1 }}"
+                                                                                                list="grouplist"
+                                                                                                value="{{ pfval['name'] }}">
+                                            <input type="checkbox" name="groupsorter_{{ loop.index + 1 }}"
+                                                   id="groupsorter_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['sortable'] }}>
+                                            <input type="checkbox" name="grouphider_{{ loop.index + 1 }}"
+                                                   id="grouphider_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['hideable'] }}>
+                                            <input type="checkbox" name="groupexporter_{{ loop.index + 1 }}"
+                                                   id="groupexporter_{{ loop.index + 1 }}"
+                                                    {{ "checked" if pfval['exportable'] }}>
+                                            <button onclick="removeSingleScraperItem(this)">
+                                                <div id="groupScraperTrash" class="trash"><i
+                                                        class="fas fa-trash-alt"></i></div>
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="iconbar">
 
-				{% if scraperid and delete != "confirm" %}
-				<button type="submit" class="delete" name="deleter" id="delete" value="delete">Delete</button>
-				{% endif %}
-			</div>
-		</form>
-	</div>
+                                    <button onclick="removeScraperItem(document.getElementById('groupScraperList'))">
+                                        <div id="groupScraperTrash" class="trash"><i class="fas fa-trash-alt"></i></div>
+                                    </button>
+                                    <a onclick="addSortable(groupScraperList)"><i class="fas fa-plus-square"></i></a>
+                                    <button
+                                            onclick="sortByAlphabeticallIndex(document.getElementById('groupScraperList'))">
+                                        A->Z
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="groupbydivider">
+                                <p>&nbsp;</p>
+                                <div class="groupbyname">
+                                    <div>Sort Groups By</div>
+                                    <label for="group_sorttable">Table</label>
+                                    <input name="group_sorttable" id="group_sorttable" list="datalist" type="text"
+                                           value="{{ prefill['group_sorttable'] }}">
+                                    <label for="group_sortcolumn">Order Column</label>
+                                    <input name="group_sortcolumn" id="group_sortcolumn" list="datalist" type="text"
+                                           value="{{ prefill['group_sortcolumn'] }}">
+                                    <label for="group_sortname">Name Column</label>
+                                    <input name="group_sortname" id="group_sortname" list="datalist" type="text"
+                                           value="{{ prefill['group_sortname'] }}">
+                                </div>
+                                <p>&nbsp;</p>
+                            </div>
+                        </div>
 
-	<form id="myForm">
-		<br>
-		<label for="description_label">Extra Field Label:</label>
-		<br>
-		<input type="text" id="description_label" name="Extra Field Label">
-		<br>
-		<label for="description">Field Content:</label>
-		<br>
-		<textarea id="description" name="Field Content"></textarea>
-		<br>
-		<button type="submit">Submit</button>
-	</form>
 
-	<div id="storedDataContainer"></div>
+                        <div class="rightshow">
+                            {%- with samples=groupsamples, error=grouperror, tablename=prefill['group_table'],
+					dbasekey=base["dbaseapikey"] %}
+                                {%- include 'generator/samplepane.scrapereditor.snippet.html' %}
+                            {%- endwith %}
+                        </div>
+                    </div>
 
-	<script>
-		var currentUrl = window.location.href;
-		console.log(currentUrl);
+                    {%- if datasamples %}
+                        <datalist id="datalist">
+                            {%- for k in datasamples.keys() %}
+                                <option>{{ k }}</option>
+                            {%- endfor %}
+                        </datalist>
+                    {% endif %}
+                    {%- if groupsamples %}
+                        <datalist id="grouplist">
+                            {%- for k in groupsamples.keys() %}
+                                <option>{{ k }}</option>
+                            {%- endfor %}
+                        </datalist>
+                    {% endif %}
+                    <div class="buttonrow">
+                        <button type="submit" name="submitter" id="validate" value="validate">Validate</button>
+                        <button type="submit" name="submitter" id="save"
+                                value="{{ 'save' if scraperid else 'create' }}">{{ 'Save'
+					if scraperid else 'Create' }}</button>
+                        <!-- scrapper duplicator/generator button -->
+                        <!-- generates empty duplicator form  -->
+                        <button type="button" name="submitter" id="duplicator"
+                                value="{{ 'Copy' if scraperid else 'Paste' }}">{{ 'Copy' if scraperid else 'Paste' }}</button>
 
-		const match = currentUrl.match(/\/([a-zA-Z0-9]+)\?/);
-		const baseid = match ? match[1] : null;
-		console.log(baseid);
+                        {% if scraperid and delete != "confirm" %}
+                            <button type="submit" class="delete" name="deleter" id="delete" value="delete">Delete
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
 
-		const form = document.getElementById('myForm');
-		const storedDataContainer = document.getElementById('storedDataContainer');
+            <form id="myForm">
+                <br>
+                <label for="description_label">Extra Field Label:</label>
+                <br>
+                <input type="text" id="description_label" name="Extra Field Label">
+                <br>
+                <label for="description">Field Content:</label>
+                <br>
+                <textarea id="description" name="Field Content"></textarea>
+                <br>
+                <button type="submit">Submit</button>
+            </form>
 
-		// Retrieve stored data
-		let storedData = JSON.parse(localStorage.getItem('formData')) || [];
+            <div id="storedDataContainer"></div>
 
-		// Display stored data
-		if (storedData.length > 0) {
-			const storedDataList = document.createElement('ul');
-			storedData.forEach(item => {
-				if (item.additionalVariable === baseid) {
-					const listItem = document.createElement('li');
-					const label = document.createElement('strong');
-					label.textContent = item.data['Extra Field Label'] + ': ';
-					listItem.appendChild(label);
-					listItem.appendChild(document.createTextNode(item.data['Field Content']));
+            <script>
+                var currentUrl = window.location.href;
+                console.log(currentUrl);
 
-					// Add delete button
-					const deleteButton = document.createElement('button');
-					deleteButton.textContent = 'Delete';
-					deleteButton.style.marginLeft = '1em';
-					deleteButton.style.marginBottom = '0.5em';
-					deleteButton.addEventListener('click', () => {
-						const itemIndex = storedData.indexOf(item);
-						storedData.splice(itemIndex, 1);
-						localStorage.setItem('formData', JSON.stringify(storedData));
-						storedDataList.removeChild(listItem);
-					});
-					listItem.appendChild(deleteButton);
+                const match = currentUrl.match(/\/([a-zA-Z0-9]+)\?/);
+                const baseid = match ? match[1] : null;
+                console.log(baseid);
 
-					storedDataList.appendChild(listItem);
-				}
-			});
-			storedDataContainer.appendChild(storedDataList);
-		}
+                const form = document.getElementById('myForm');
+                const storedDataContainer = document.getElementById('storedDataContainer');
 
-		// Handle form submission
-		form.addEventListener('submit', (event) => {
-			event.preventDefault(); // prevent form submission
-			const formData = new FormData(form);
-			const data = {};
-			for (const [name, value] of formData.entries()) {
-				data[name] = value;
-			}
-			const additionalVariable = baseid;
-			storedData.push({ data, additionalVariable }); // append new form data and additional variable to existing data
-			localStorage.setItem('formData', JSON.stringify(storedData)); // store updated form data in localStorage
-			form.reset(); // reset the form
-			alert('Form submitted successfully!');
+                // Retrieve stored data
+                let storedData = JSON.parse(localStorage.getItem('formData')) || [];
 
-			// Add new item to stored data container
-			const storedDataList = storedDataContainer.querySelector('ul') || document.createElement('ul');
-			const listItem = document.createElement('li');
-			const label = document.createElement('strong');
-			label.textContent = data['Extra Field Label'] + ': ';
-			listItem.appendChild(label);
-			listItem.appendChild(document.createTextNode(data['Field Content']));
+                // Display stored data
+                if (storedData.length > 0) {
+                    const storedDataList = document.createElement('ul');
+                    storedData.forEach(item => {
+                        if (item.additionalVariable === baseid) {
+                            const listItem = document.createElement('li');
+                            const label = document.createElement('strong');
+                            label.textContent = item.data['Extra Field Label'] + ': ';
+                            listItem.appendChild(label);
+                            listItem.appendChild(document.createTextNode(item.data['Field Content']));
 
-			// Add delete button
-			const deleteButton = document.createElement('button');
-			deleteButton.textContent = 'Delete';
-			deleteButton.style.marginLeft = '1em';
-			deleteButton.style.marginBottom = '0.5em';
-			deleteButton.addEventListener('click', () => {
-				const itemIndex = storedData.indexOf({ data, additionalVariable });
-				storedData.splice(itemIndex, 1);
-				localStorage.setItem('formData', JSON.stringify(storedData));
-				storedDataList.removeChild(listItem);
-			});
-			listItem.appendChild(deleteButton);
+                            // Add delete button
+                            const deleteButton = document.createElement('button');
+                            deleteButton.textContent = 'Delete';
+                            deleteButton.style.marginLeft = '1em';
+                            deleteButton.style.marginBottom = '0.5em';
+                            deleteButton.addEventListener('click', () => {
+                                const itemIndex = storedData.indexOf(item);
+                                storedData.splice(itemIndex, 1);
+                                localStorage.setItem('formData', JSON.stringify(storedData));
+                                storedDataList.removeChild(listItem);
+                            });
+                            listItem.appendChild(deleteButton);
 
-			storedDataList.appendChild(listItem);
-			storedDataContainer.appendChild(storedDataList);
-		});
-
-        const duplicatorBtn = document.getElementById('duplicator');
-        if (duplicatorBtn.value === "Copy") {
-            duplicatorBtn.addEventListener("click", function() {
-                localStorage.setItem("scraperId", {{ scraperid }})
-                alert("Successfully copied scraper!")
-            });
-        } else if (duplicatorBtn.value === "Paste") {
-            const copiedScraperId = localStorage.getItem("scraperId");
-
-            if (!copiedScraperId) {
-                duplicatorBtn.setAttribute("hidden", "true");
-            } else {
-                duplicatorBtn.addEventListener("click", function () {
-                    $.ajax({
-                        url: "{{ url_for('datasources.pasteInManageDataSources' , dbId=base['dbaseid'], scraperId='') }}" + copiedScraperId,
-                        type: "POST",
-                        success: function () {
-                            window.location.href = "{{ url_for('datasources.connections') }}";
+                            storedDataList.appendChild(listItem);
                         }
                     });
+                    storedDataContainer.appendChild(storedDataList);
+                }
+
+                // Handle form submission
+                form.addEventListener('submit', (event) => {
+                    event.preventDefault(); // prevent form submission
+                    const formData = new FormData(form);
+                    const data = {};
+                    for (const [name, value] of formData.entries()) {
+                        data[name] = value;
+                    }
+                    const additionalVariable = baseid;
+                    storedData.push({data, additionalVariable}); // append new form data and additional variable to existing data
+                    localStorage.setItem('formData', JSON.stringify(storedData)); // store updated form data in localStorage
+                    form.reset(); // reset the form
+                    alert('Form submitted successfully!');
+
+                    // Add new item to stored data container
+                    const storedDataList = storedDataContainer.querySelector('ul') || document.createElement('ul');
+                    const listItem = document.createElement('li');
+                    const label = document.createElement('strong');
+                    label.textContent = data['Extra Field Label'] + ': ';
+                    listItem.appendChild(label);
+                    listItem.appendChild(document.createTextNode(data['Field Content']));
+
+                    // Add delete button
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.style.marginLeft = '1em';
+                    deleteButton.style.marginBottom = '0.5em';
+                    deleteButton.addEventListener('click', () => {
+                        const itemIndex = storedData.indexOf({data, additionalVariable});
+                        storedData.splice(itemIndex, 1);
+                        localStorage.setItem('formData', JSON.stringify(storedData));
+                        storedDataList.removeChild(listItem);
+                    });
+                    listItem.appendChild(deleteButton);
+
+                    storedDataList.appendChild(listItem);
+                    storedDataContainer.appendChild(storedDataList);
                 });
-            }
-        }
+
+                const duplicatorBtn = document.getElementById('duplicator');
+                if (duplicatorBtn.value === "Copy") {
+                    duplicatorBtn.addEventListener("click", function () {
+                        localStorage.setItem("scraperId", {{ scraperid }})
+                        alert("Successfully copied scraper!")
+                    });
+                } else if (duplicatorBtn.value === "Paste") {
+                    const copiedScraperId = localStorage.getItem("scraperId");
+
+                    if (!copiedScraperId) {
+                        duplicatorBtn.setAttribute("hidden", "true");
+                    } else {
+                        duplicatorBtn.addEventListener("click", function () {
+                            $.ajax({
+                                url: "{{ url_for('datasources.pasteInManageDataSources' , dbId=base['dbaseid'], scraperId='') }}" + copiedScraperId,
+                                type: "POST",
+                                success: function () {
+                                    window.location.href = "{{ url_for('datasources.connections') }}";
+                                }
+                            });
+                        });
+                    }
+                }
 
 
-		Sortable.create(dataScraperList, {
-			handle: ".drag-handle",
-			group: "datascraper",
-			onEnd: function (evt) {
-				renumber(evt.from);
-			}
-		});
-		Sortable.create(dataScraperTrash, {
-			group: "datascraper",
-			onAdd: function (evt) {
-				var el = evt.item;
-				renumber(evt.from);
-				el.parentNode.removeChild(el);
-			}
-		});
-		Sortable.create(groupScraperList, {
-			handle: ".drag-handle",
-			group: "groupscraper",
-			onEnd: function (evt) {
-				renumber(evt.from);
-			}
-		});
-		Sortable.create(groupScraperTrash, {
-			group: "groupscraper",
-			onAdd: function (evt) {
-				var el = evt.item;
-				renumber(evt.from);
-				el.parentNode.removeChild(el);
-			}
-		});
+                Sortable.create(dataScraperList, {
+                    handle: ".drag-handle",
+                    group: "datascraper",
+                    onEnd: function (evt) {
+                        renumber(evt.from);
+                    }
+                });
+                Sortable.create(dataScraperTrash, {
+                    group: "datascraper",
+                    onAdd: function (evt) {
+                        var el = evt.item;
+                        renumber(evt.from);
+                        el.parentNode.removeChild(el);
+                    }
+                });
+                Sortable.create(groupScraperList, {
+                    handle: ".drag-handle",
+                    group: "groupscraper",
+                    onEnd: function (evt) {
+                        renumber(evt.from);
+                    }
+                });
+                Sortable.create(groupScraperTrash, {
+                    group: "groupscraper",
+                    onAdd: function (evt) {
+                        var el = evt.item;
+                        renumber(evt.from);
+                        el.parentNode.removeChild(el);
+                    }
+                });
 
-
-	</script>
-	<!-- <script>
-	function cleardataScrapper(itemToRemove){
-		var cleardataScrapperButton = document.getElementById("dataScraperTrash");
-			while(itemToRemove.firstChild){
-				itemToRemove.removeChild(itemToRemove.childNodes);
-			}
-	}
-</script> -->
-	{% endif %}
-</div>
+            </script>
+        {% endif %}
+    </div>
 {% endblock %}

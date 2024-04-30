@@ -437,7 +437,7 @@ def _update_DataScraper_with_post_fields(ds, request):
     sortstuff = {"data": {}, "group": {}}
     for itemkey, itemval in request.form.items():
         m = re.match(
-            r"(data|group)(sort|nom|val|sorter|grouper|hider|link|function)_(\d+)",
+            r"(data|group)(sort|nom|val|sorter|grouper|hider|link|function|exporter)_(\d+)",
             itemkey,
         )
         if m:
@@ -466,6 +466,8 @@ def _update_DataScraper_with_post_fields(ds, request):
                 sortstuff[m.group(1)][m.group(3)][2]["groupable"] = itemval == "on"
             if m.group(2) == "function":
                 sortstuff[m.group(1)][m.group(3)][2]["function"] = itemval
+            if m.group(2) == "exporter":
+                sortstuff[m.group(1)][m.group(3)][2]["exporter"] = itemval == "on"
             if m.group(2) == "link":
                 sortstuff[m.group(1)][m.group(3)][2]["link"] = (
                     itemval if itemval else ""
@@ -485,6 +487,7 @@ def _update_DataScraper_with_post_fields(ds, request):
             hideable=item[1][2]["hideable"] if "hideable" in item[1][2] else False,
             function=item[1][2]["function"] if "function" in item[1][2] else None,
             link=item[1][2]["link"] if "link" in item[1][2] else "",
+            exportable=item[1][2]["exporter"] if "exporter" in item[1][2] else False,
         )
     ds.Group = OrderedDict()
     for item in sorted(sortstuff["group"].items(), key=lambda x: x[1][0]):
@@ -496,6 +499,7 @@ def _update_DataScraper_with_post_fields(ds, request):
             hideable=item[1][2]["hideable"] if "hideable" in item[1][2] else False,
             function=item[1][2]["function"] if "function" in item[1][2] else None,
             link=item[1][2]["link"] if "link" in item[1][2] else "",
+            exportable=item[1][2]["exporter"] if "exporter" in item[1][2] else False,
         )
 
 
