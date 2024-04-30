@@ -4,43 +4,53 @@ import os.path
 
 import MySQLdb  # from pip install mysqlclient
 
-from website.db import get_airtable_pattern, new_airtable_pattern, set_airtable_pattern, get_airtable_pattern_by_name
+from website.db import (
+    get_airtable_pattern,
+    new_airtable_pattern,
+    set_airtable_pattern,
+    get_airtable_pattern_by_name,
+)
 from website.db import generate_airtable_schema, decrypt, encrypt
 from website.DataScraper import DataScraper
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
 class TestNaClSymmetricEncryption(unittest.TestCase):
-    
     def setUp(self):
-        self.SYMMETRIC_KEYFILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "ZellijSecrets", "secretkeyfile.bytes")
-    
+        self.SYMMETRIC_KEYFILE = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "..",
+            "..",
+            "..",
+            "ZellijSecrets",
+            "secretkeyfile.bytes",
+        )
+
     def test_findSecretKeyFile(self):
         with open(self.SYMMETRIC_KEYFILE, "rb") as f:
             secretkey = f.read()
-        
-        self.assertEqual( len(secretkey), nacl.secret.SecretBox.KEY_SIZE )
-    
+
+        self.assertEqual(len(secretkey), nacl.secret.SecretBox.KEY_SIZE)
+
     def test_randomNonces(self):
         text = "No one expects the Spanish Inquisition!"
-        xxx = encrypt(text, keyfile = self.SYMMETRIC_KEYFILE)
-        yyy = encrypt(text, keyfile = self.SYMMETRIC_KEYFILE)
-        
+        xxx = encrypt(text, keyfile=self.SYMMETRIC_KEYFILE)
+        yyy = encrypt(text, keyfile=self.SYMMETRIC_KEYFILE)
+
         self.assertNotEqual(xxx, yyy)
-    
+
     def test_roundtrip(self):
         text = "No one expects the Spanish Inquisition!"
-        xxx = encrypt(text, keyfile = self.SYMMETRIC_KEYFILE)
-        cleartext = decrypt(xxx, keyfile = self.SYMMETRIC_KEYFILE)
-        
-        self.assertEqual(text, cleartext)
+        xxx = encrypt(text, keyfile=self.SYMMETRIC_KEYFILE)
+        cleartext = decrypt(xxx, keyfile=self.SYMMETRIC_KEYFILE)
 
+        self.assertEqual(text, cleartext)
 
 
 class TestScraperFieldDataManagement(unittest.TestCase):
     TEST_DATABASE = "__test_Scrapers"
-    FAKE_SECRET_KEY = b'12345678901234567890123456789012'
-    
+    FAKE_SECRET_KEY = b"12345678901234567890123456789012"
+
     def setUp(self):
         dbnom = TestScraperFieldDataManagement.TEST_DATABASE
         exe = f"""
@@ -100,19 +110,20 @@ class TestScraperFieldDataManagement(unittest.TestCase):
                 fieldname TEXT
             );
             """
-        self.tables = ["Users", "AirTableAccounts", "Scrapers", "ScraperFields" ]
-        print("[DB:Create", end='', flush=True)
-        self.testdb = MySQLdb.connect(
-            user="root",
-            passwd="zellij"
-        )
+        self.tables = ["Users", "AirTableAccounts", "Scrapers", "ScraperFields"]
+        print("[DB:Create", end="", flush=True)
+        self.testdb = MySQLdb.connect(user="root", passwd="zellij")
         c = self.testdb.cursor()
         c.execute(exe)
-        print(". Insert", end='', flush=True)
+        print(". Insert", end="", flush=True)
         self.passhash1 = generate_password_hash("test password 1")
         self.passhash2 = generate_password_hash("test password 2")
-        self.secret1 = encrypt("not a secret key 1", key=TestScraperFieldDataManagement.FAKE_SECRET_KEY)
-        self.secret2 = encrypt("not a secret key 2", key=TestScraperFieldDataManagement.FAKE_SECRET_KEY)
+        self.secret1 = encrypt(
+            "not a secret key 1", key=TestScraperFieldDataManagement.FAKE_SECRET_KEY
+        )
+        self.secret2 = encrypt(
+            "not a secret key 2", key=TestScraperFieldDataManagement.FAKE_SECRET_KEY
+        )
         self.sampleairtableapikey1 = "appXap4TfbrRkcRSH"
         exe = f"""
         INSERT INTO Users (username, password) VALUES ("testuser1", "{self.passhash1}");
@@ -150,44 +161,45 @@ class TestScraperFieldDataManagement(unittest.TestCase):
         INSERT INTO ScraperFields (scraperkey, sortorder, tablename, fieldlabel, fieldname) VALUES(3, 8, "Model", "Description", "Description");
         INSERT INTO ScraperFields (scraperkey, sortorder, tablename, fieldlabel, fieldname) VALUES(3, 9, "Model", "Turtle RDF", "Model_Turtle_Prefix");
         """
-        c.execute(exe, (self.secret1, self.secret2,))
-        print( ".]", end='', flush=True )
-        c.close()
-        #print( "[Live:", end='', flush=True )
-        self.livedb = MySQLdb.connect(
-            user="root",
-            passwd="zellij",
-            db="zellij$website"
+        c.execute(
+            exe,
+            (
+                self.secret1,
+                self.secret2,
+            ),
         )
-        #print("done]", end='', flush=True )
+        print(".]", end="", flush=True)
+        c.close()
+        # print( "[Live:", end='', flush=True )
+        self.livedb = MySQLdb.connect(user="root", passwd="zellij", db="zellij$website")
+        # print("done]", end='', flush=True )
 
-    
     def tearDown(self):
         dbnom = TestScraperFieldDataManagement.TEST_DATABASE
         exe = f"DROP DATABASE {dbnom};"
-        #print("\n[Test DB: Drop...", end='', flush=True)
+        # print("\n[Test DB: Drop...", end='', flush=True)
         c = self.testdb.cursor()
         c.execute(exe)
         c.close()
-        #print( "done]" )
-    
+        # print( "done]" )
+
     @unittest.skip("preserving database")
     def test_compareSchemas(self):
         clive = self.livedb.cursor()
         ctest = self.testdb.cursor()
-        clive.execute('SHOW TABLES')
+        clive.execute("SHOW TABLES")
         livelist = [x[0] for x in clive.fetchall()]
-        ctest.execute('SHOW TABLES')
+        ctest.execute("SHOW TABLES")
         testlist = [x[0] for x in ctest.fetchall()]
         self.assertEqual(livelist, testlist)
-        
+
         for tbl in livelist:
             clive.execute(f"SHOW COLUMNS FROM {tbl}")
             livecols = clive.fetchall()
             ctest.execute(f"SHOW COLUMNS FROM {tbl}")
             testcols = ctest.fetchall()
             self.assertEqual(livecols, testcols)
-    
+
     def test_ScraperHandling(self):
         self.maxDiff = None
         # test read
@@ -197,7 +209,7 @@ class TestScraperFieldDataManagement(unittest.TestCase):
                     "Identifier": "Identifier",
                     "Name": "Name",
                     "Description": "Description",
-                    "Turtle RDF": "Collection_Turtle"
+                    "Turtle RDF": "Collection_Turtle",
                 },
                 "Collection_fields": {
                     "Identifier": "ID (from Field)",
@@ -205,14 +217,14 @@ class TestScraperFieldDataManagement(unittest.TestCase):
                     "Description": "Description",
                     "CRM Path": "CRM Path",
                     "Turtle RDF": "Total_Turtle",
-                    "GroupBy": "Collection"
-                }
+                    "GroupBy": "Collection",
+                },
             },
             "Fields": {
                 "CRM Class": {
                     "Identifier": "Class_Nim",
                     "Name": "ID",
-                    "Turtle RDF": "Class_Ur_Instance_Turtle"
+                    "Turtle RDF": "Class_Ur_Instance_Turtle",
                 },
                 "Field": {
                     "Identifier": "Weight",
@@ -220,15 +232,15 @@ class TestScraperFieldDataManagement(unittest.TestCase):
                     "Description": "Description",
                     "CRM Path": "CRM Path",
                     "Turtle RDF": "Total Turtle",
-                    "GroupBy": "CRM Class"
-                }
+                    "GroupBy": "CRM Class",
+                },
             },
             "Model": {
                 "Model": {
                     "Identifier": "Identifier",
                     "Name": "Name",
                     "Description": "Description",
-                    "Turtle RDF": "Model_Turtle_Prefix"
+                    "Turtle RDF": "Model_Turtle_Prefix",
                 },
                 "Model_fields": {
                     "Identifier": "Name",
@@ -236,40 +248,87 @@ class TestScraperFieldDataManagement(unittest.TestCase):
                     "Description": "Description",
                     "CRM Path": "CRM Path",
                     "Turtle RDF": "Model_Fields_Total_Turtle",
-                    "GroupBy": "Model"
-                }
-            }
+                    "GroupBy": "Model",
+                },
+            },
         }
-        tmpschema2, tmpsecret = generate_airtable_schema(self.sampleairtableapikey1, db=self.testdb)
+        tmpschema2, tmpsecret = generate_airtable_schema(
+            self.sampleairtableapikey1, db=self.testdb
+        )
         self.assertDictEqual(tmpschema1, tmpschema2)
-        self.assertTrue( isinstance(tmpsecret,bytes) )
-        
-        pattern1 = DataScraper(self.sampleairtableapikey1, "Model", "Model_fields", "Model", "Model",
-                               tabledata = {"Identifier": "Name", "Name": "Field Name", "Description": "Description",
-                                            "CRM Path": "CRM Path", "Turtle RDF": "Model_Fields_Total_Turtle" }, 
-                               groupdata = {"Identifier": "Identifier", "Name": "Name", "Description": "Description",
-                                            "Turtle RDF": "Model_Turtle_Prefix"}
-                               )
+        self.assertTrue(isinstance(tmpsecret, bytes))
+
+        pattern1 = DataScraper(
+            self.sampleairtableapikey1,
+            "Model",
+            "Model_fields",
+            "Model",
+            "Model",
+            tabledata={
+                "Identifier": "Name",
+                "Name": "Field Name",
+                "Description": "Description",
+                "CRM Path": "CRM Path",
+                "Turtle RDF": "Model_Fields_Total_Turtle",
+            },
+            groupdata={
+                "Identifier": "Identifier",
+                "Name": "Name",
+                "Description": "Description",
+                "Turtle RDF": "Model_Turtle_Prefix",
+            },
+        )
         pattern2 = get_airtable_pattern(self.sampleairtableapikey1, 3, db=self.testdb)
         self.assertDictEqual(pattern1.dict(), pattern2.dict())
-        
-        data1 = DataScraper(self.sampleairtableapikey1, "Model Changed", "Model_fields4", "Model3", "Model3", dbid=3,
-                           tabledata = {"Identifier": "ID", "Name": "Name1", "Description": "Description",
-                                        "CRM Path": "CRM Path", "Turtle RDF": "Model_Fields_Total_Turtle", "New Field 1": "Anything goes" }, 
-                           groupdata = {"Identifier": "Ident", "Name": "Name2", "Description": "Description"}
-                           )
+
+        data1 = DataScraper(
+            self.sampleairtableapikey1,
+            "Model Changed",
+            "Model_fields4",
+            "Model3",
+            "Model3",
+            dbid=3,
+            tabledata={
+                "Identifier": "ID",
+                "Name": "Name1",
+                "Description": "Description",
+                "CRM Path": "CRM Path",
+                "Turtle RDF": "Model_Fields_Total_Turtle",
+                "New Field 1": "Anything goes",
+            },
+            groupdata={
+                "Identifier": "Ident",
+                "Name": "Name2",
+                "Description": "Description",
+            },
+        )
         o = set_airtable_pattern(data1, db=self.testdb, forcepermission=True)
         self.assertTrue(o)
-        
-        # pattern3 is a duplicate of data1; making sure there's no issue between creation and use 
-        pattern3 = DataScraper(self.sampleairtableapikey1, "Model Changed", "Model_fields4", "Model3", "Model3",
-                           tabledata = {"Identifier": "ID", "Name": "Name1", "Description": "Description",
-                                        "CRM Path": "CRM Path", "Turtle RDF": "Model_Fields_Total_Turtle", "New Field 1": "Anything goes" }, 
-                           groupdata = {"Identifier": "Ident", "Name": "Name2", "Description": "Description"}
-                           )
+
+        # pattern3 is a duplicate of data1; making sure there's no issue between creation and use
+        pattern3 = DataScraper(
+            self.sampleairtableapikey1,
+            "Model Changed",
+            "Model_fields4",
+            "Model3",
+            "Model3",
+            tabledata={
+                "Identifier": "ID",
+                "Name": "Name1",
+                "Description": "Description",
+                "CRM Path": "CRM Path",
+                "Turtle RDF": "Model_Fields_Total_Turtle",
+                "New Field 1": "Anything goes",
+            },
+            groupdata={
+                "Identifier": "Ident",
+                "Name": "Name2",
+                "Description": "Description",
+            },
+        )
         pattern4 = get_airtable_pattern(self.sampleairtableapikey1, 3, db=self.testdb)
         self.assertDictEqual(pattern3.dict(), pattern4.dict())
-        
+
         """
         data = {
             "scrapername": "New Scraper",
@@ -288,24 +347,27 @@ class TestScraperFieldDataManagement(unittest.TestCase):
         pattern5 = get_airtable_pattern(self.sampleairtableapikey1, None, db=self.testdb)
         #print(pattern5)
         """
-    
+
     def test_NewScraperHandling(self):
         self.maxDiff = None
         obj = new_airtable_pattern(self.sampleairtableapikey1, 1, db=self.testdb)
-        self.assertEqual(decrypt(obj.encryptedtoken, key=TestScraperFieldDataManagement.FAKE_SECRET_KEY), "not a secret key 1")
+        self.assertEqual(
+            decrypt(
+                obj.encryptedtoken, key=TestScraperFieldDataManagement.FAKE_SECRET_KEY
+            ),
+            "not a secret key 1",
+        )
         self.assertEqual(obj.name, "")
         self.assertEqual(obj.apikey, self.sampleairtableapikey1)
         self.assertIsNone(obj.dbid)
-    
+
     def test_ScraperByName(self):
-        obj = get_airtable_pattern_by_name(self.sampleairtableapikey1, "Model", db=self.testdb)
+        obj = get_airtable_pattern_by_name(
+            self.sampleairtableapikey1, "Model", db=self.testdb
+        )
         print(obj)
         self.assertTrue(isinstance(obj, DataScraper))
-        
-    
-    
-    
-    
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     unittest.main()

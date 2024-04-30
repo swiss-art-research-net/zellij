@@ -10,6 +10,7 @@ from flask import Flask
 
 dotenv.load_dotenv()
 
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
@@ -68,6 +69,7 @@ def create_app(test_config=None):
     app.register_blueprint(error.bp)
 
     from website import functions
+
     app.register_blueprint(functions.bp)
 
     return app

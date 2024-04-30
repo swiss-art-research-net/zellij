@@ -30,7 +30,7 @@
             </div>
         </div>
         <div class="contents" id="grouping">
-            <h1 class="h1">{{ scraper }}</h1>
+            <h1>{{ scraper }}</h1>
             <table class="toc">
                 {% set list = lists[scraper] %}
                 {% set fields = list[0].keys() %}
@@ -184,12 +184,6 @@
             console.log("defaultMenuItemUrl3", defaultMenuItemUrl);
         }
 
-        if (defaultMenuItemUrl !== '') {
-            loadModel(defaultMenuItemUrl);
-        } else {
-            document.querySelector("#grouping").removeAttribute("hidden");
-        }
-
         function onItemClick(url) {
             event.preventDefault();
 
@@ -205,6 +199,13 @@
         menuItems.forEach((menuItem) => {
             menuItem.addEventListener('click', () => onItemClick(menuItem.getAttribute("href")));
         });
+
+        if (defaultMenuItemUrl !== '') {
+            onItemClick(defaultMenuItemUrl);
+        } else {
+            document.querySelector("#grouping").removeAttribute("hidden");
+        }
+
 
         function makeTableSortable(table) {
             const headers = table.querySelectorAll('th');

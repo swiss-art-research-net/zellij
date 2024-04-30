@@ -1,19 +1,36 @@
-'''
+"""
 Created on Mar. 23, 2021
 
 @author: Pete Harris
-'''
+"""
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, Markup, current_app
+    Blueprint,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+    Markup,
+    current_app,
 )
 import traceback
 import nacl.secret
 
 from werkzeug.security import check_password_hash, generate_password_hash
-from website.db import get_db, dict_gen_one, dict_gen_many, generate_airtable_schema, decrypt, encrypt
-from website.auth import login_required 
+from website.db import (
+    get_db,
+    dict_gen_one,
+    dict_gen_many,
+    generate_airtable_schema,
+    decrypt,
+    encrypt,
+)
+from website.auth import login_required
 
 bp = Blueprint("errordecode", __name__)
+
 
 @bp.route("/errordecoder", methods=["GET", "POST"])
 def errordecoder():
@@ -25,7 +42,7 @@ def errordecoder():
             "codefile": details[1],
             "codefunction": details[2],
             "codeline": details[3],
-            "code": details[4]
+            "code": details[4],
         }
         print("DEBUG DETAILS=", details)
         return render_template("error/errordecoder.html", traceback=traceback)
@@ -34,13 +51,7 @@ def errordecoder():
 
 
 def htmlFormatTraceback(trace):
-    out = {
-        "error": "",
-        "codefile": "",
-        "codefunction": "",
-        "codeline": "",
-        "code": ""
-    }
+    out = {"error": "", "codefile": "", "codefunction": "", "codeline": "", "code": ""}
     err = ""
     code = ""
     file = ""
@@ -58,30 +69,46 @@ def htmlFormatTraceback(trace):
                 codefile, codeline, codefunc = file.split(",")
                 codefunc = codefunc[4:]
                 codeline = codeline[6:]
-                codefile = codefile.split(current_app.config["APP_PROJECT_FOLDER"])[1][1:-1]
+                codefile = codefile.split(current_app.config["APP_PROJECT_FOLDER"])[1][
+                    1:-1
+                ]
                 out["codefunction"] = codefunc
                 out["codeline"] = codeline
                 out["codefile"] = codefile
-                out["errorstring"] = err + "\n" + codefile + "\n" + codefunc + "\n" + codeline + "\n" + code
+                out["errorstring"] = (
+                    err
+                    + "\n"
+                    + codefile
+                    + "\n"
+                    + codefunc
+                    + "\n"
+                    + codeline
+                    + "\n"
+                    + code
+                )
                 out["obfuscated"] = obfuscate(out["errorstring"])
                 out["reconstituted"] = deobfuscate(out["obfuscated"])
                 return out
-    out["errorstring"] = err + "\n" + codefile + "\n" + codefunc + "\n" + codeline + "\n" + code
+    out["errorstring"] = (
+        err + "\n" + codefile + "\n" + codefunc + "\n" + codeline + "\n" + code
+    )
     out["obfuscated"] = obfuscate(out["errorstring"])
     out["reconstituted"] = deobfuscate(out["obfuscated"])
     return out
 
+
 def obfuscate(txt):
-    """ Symmetric encryption using NaCl library."""
-    #import nacl.utils
-    #key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
+    """Symmetric encryption using NaCl library."""
+    # import nacl.utils
+    # key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
     key = current_app.config["ERROR_OBFUSCATOR_SYMMETRIC_KEY"]
     box = nacl.secret.SecretBox(key)
     encryptedbytes = box.encrypt(txt.encode("utf-8"))
-    return " ".join('{:02X}'.format(x) for x in encryptedbytes)
+    return " ".join("{:02X}".format(x) for x in encryptedbytes)
+
 
 def deobfuscate(txt):
-    """ Symmetric decryption using NaCl library."""
+    """Symmetric decryption using NaCl library."""
     key = current_app.config["ERROR_OBFUSCATOR_SYMMETRIC_KEY"]
     box = nacl.secret.SecretBox(key)
     hx = txt.split(" ")
@@ -91,6 +118,7 @@ def deobfuscate(txt):
         return plaintext.decode("utf-8")
     except Exception:
         return ""
+
 
 """
 @bp.route("/", methods=["GET"])
