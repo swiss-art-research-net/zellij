@@ -2,7 +2,7 @@ from xml.dom import minidom
 
 from pyairtable.formulas import OR, EQUAL, STR_VALUE
 
-from exporters.Exporter import Exporter
+from website.exporters.Exporter import Exporter
 
 import xml.etree.ElementTree as ET
 

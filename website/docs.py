@@ -13,7 +13,7 @@ from website.datasources import get_prefill
 from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt
 from website.exporters.ModelExporter import ModelExporter
 from website.exporters.FieldExporter import FieldExporter
-from exporters.ProjectExporter import ProjectExporter
+from website.exporters.ProjectExporter import ProjectExporter
 from website.functions import functions
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
