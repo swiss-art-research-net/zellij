@@ -3,10 +3,9 @@ Created on Mar. 18, 2021
 @author: Pete Harris
 """
 import asyncio
-import io
 import logging
 
-from flask import Blueprint, render_template, request, abort, send_file
+from flask import Blueprint, render_template, request, abort, Response
 
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
 from website.datasources import get_prefill
@@ -15,6 +14,7 @@ from website.exporters.ModelExporter import ModelExporter
 from website.exporters.FieldExporter import FieldExporter
 from website.exporters.ProjectExporter import ProjectExporter
 from website.functions import functions
+from werkzeug.wsgi import FileWrapper
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
@@ -231,7 +231,12 @@ def patternlistexport(apikey, exportType, model):
     else:
         filename = "".join(c if c.isalpha() or c.isdigit() or c == ' ' else '_' for c in item).rstrip()
 
-    return send_file(file, as_attachment=True, download_name=f"{filename}.xml", mimetype="text/xml")
+    w = FileWrapper(file)
+
+    response = Response(w, mimetype="text/xml", direct_passthrough=True)
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}.xml'
+    response.headers['Content-Type'] = 'application/xml'
+    return response
 
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
