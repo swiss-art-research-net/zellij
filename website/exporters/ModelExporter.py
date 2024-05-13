@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from pyairtable.formulas import match, OR, EQUAL, FIELD, STR_VALUE
+from pyairtable.formulas import OR, EQUAL, STR_VALUE
 
 from website.exporters.Exporter import Exporter
 

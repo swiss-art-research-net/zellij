@@ -2,8 +2,8 @@ import io
 from abc import ABC, abstractmethod
 
 from ZellijData.AirTableConnection import AirTableConnection
-from datasources import get_prefill
-from db import generate_airtable_schema, decrypt
+from website.datasources import get_prefill
+from website.db import generate_airtable_schema, decrypt
 
 
 class Exporter(ABC):
