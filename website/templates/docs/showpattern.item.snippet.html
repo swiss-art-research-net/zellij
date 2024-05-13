@@ -171,7 +171,9 @@
             <table class="toc" id="table-{{ prefix }}">
                 {% if prefill == "default" %}
                     <tr>
+                        {% if 'Field' in fld %}
                         <th></th>
+                        {% endif %}
                         {% for field in fields %}
                             {% if loop.index > 1 %}
                                 <th>
@@ -197,7 +199,9 @@
                     {% endfor %}
 
                     <tr>
-                        <th></th>
+                        {% if 'Field' in fld %}
+                            <th></th>
+                        {% endif %}
                         {% for field in fields %}
                             {% if loop.index > 1 %}
                                 {% if field == sortable_keys[0] and field not in hideable_keys %}
