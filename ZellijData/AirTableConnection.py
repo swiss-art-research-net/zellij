@@ -247,6 +247,9 @@ class AirTableConnection(object):
             high_fields.append(low_table)
             high_remapper["Contains"] = low_table
 
+        if low_table in high_fields and "Contains" not in high_fields:
+            high_remapper["Contains"] = low_table
+
         if high_table is None:
             return out
 

@@ -171,7 +171,7 @@
             <table class="toc" id="table-{{ prefix }}">
                 {% if prefill == "default" %}
                     <tr>
-                        {% if 'Field' in fld %}
+                        {% if 'Field' in values[0] %}
                         <th></th>
                         {% endif %}
                         {% for field in fields %}
@@ -199,7 +199,7 @@
                     {% endfor %}
 
                     <tr>
-                        {% if 'Field' in fld %}
+                        {% if 'Field' in values[0] %}
                             <th></th>
                         {% endif %}
                         {% for field in fields %}

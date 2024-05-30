@@ -176,12 +176,10 @@
 
         if (localStorage.getItem('selectedMenuItem') !== null) {
             defaultMenuItemUrl = menuItems[0].getAttribute('href');
-            console.log("defaultMenuItemUrl2", defaultMenuItemUrl);
         }
 
         if (searchParams.has('selectedMenuItem')) {
             defaultMenuItemUrl = searchParams.get('selectedMenuItem');
-            console.log("defaultMenuItemUrl3", defaultMenuItemUrl);
         }
 
         function onItemClick(url) {
@@ -201,7 +199,12 @@
         });
 
         if (defaultMenuItemUrl !== '') {
-            onItemClick(defaultMenuItemUrl);
+            for (let i = 0; i < menuItems.length; i++) {
+                if (menuItems[i].getAttribute('href') === defaultMenuItemUrl) {
+                    menuItems[i].click();
+                    break;
+                }
+            }
         } else {
             document.querySelector("#grouping").removeAttribute("hidden");
         }
