@@ -32,16 +32,35 @@
     <!-- search end ------------------------ -->
 
 
-    <ul>
-        {% for db in databases %}
-            <li>
-                <button data-id="{{ db['dbaseapikey'] }}" class="export-field">
-                    <span><i class="fas fa-file-export"></i></span>
-                </button>
-                <a href="{{ url_for('docs.patternlistall', apikey=db['dbaseapikey']) }}?flag=0">{{ db["accountname"] }}/{{ db["dbasename"] }}</a>
-            </li>
+    <div>
+        {% for account, dbs in databases.items()|sort(attribute='0') %}
+            <div style="margin: 2rem 0;">
+                <div style="font-size: 18px; font-weight: bold;"> {{ account }}</div>
+                <table class="toc" style="width: 50%;">
+                    <thead>
+                    <tr>
+                        <th style="width: 90%">Project Name</th>
+                        <th>Derivative Generators</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for db in dbs %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('docs.patternlistall', apikey=db['dbaseapikey']) }}?flag=0">{{ db["dbasename"] }}</a>
+                            </td>
+                            <td>
+                                <button data-id="{{ db['dbaseapikey'] }}" class="export-field">
+                                    <span><i class="fas fa-file-export"></i></span>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% endfor %}
-    </ul>
+    </div>
     {% for field_name, field_list in fields.items() %}
         {% if field_list|length > 0 %}
             <h2>{{ field_name }}</h2>

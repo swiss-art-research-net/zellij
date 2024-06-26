@@ -35,7 +35,14 @@ def main():
     )
     dblist = [d for d in dict_gen_many(c)]
     c.close()
-    return render_template("docs/databaselist.html", databases=dblist, fields={})
+    grouped_dbs = {}
+
+    for db in dblist:
+        if db["accountname"] not in grouped_dbs:
+            grouped_dbs[db["accountname"]] = []
+        grouped_dbs[db["accountname"]].append(db)
+
+    return render_template("docs/databaselist.html", databases=grouped_dbs, fields={})
 
 
 @bp.route("/searchBaseList", methods=["GET", "POST"])
