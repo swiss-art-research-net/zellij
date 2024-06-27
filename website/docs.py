@@ -235,6 +235,8 @@ def patternlistexport(apikey, exportType, model):
 
     if item is None:
         filename = model
+    elif exportType == "field":
+        filename = exporter.get_name()
     else:
         filename = "".join(c if c.isalpha() or c.isdigit() or c == ' ' else '_' for c in item).rstrip()
 

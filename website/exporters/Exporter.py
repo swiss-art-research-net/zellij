@@ -13,6 +13,7 @@ class Exporter(ABC):
     _item: str
     _selected_scheme: str
     _airtable: AirTableConnection
+    _name: str
 
     @abstractmethod
     def _generate_xml(self) -> str:
@@ -43,3 +44,6 @@ class Exporter(ABC):
         file.seek(0)
 
         return file
+
+    def get_name(self):
+        return self._name
