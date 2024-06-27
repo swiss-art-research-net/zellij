@@ -16,10 +16,10 @@
         {% endif %}
     {% endfor %}
 
-        {% for field in fields %}
-            <tr>
-            {% if loop.index > 1 %}
-                {% if field not in hideable_keys %}
+    {% for field in fields %}
+        {% if loop.index > 1 %}
+            {% if field not in hideable_keys %}
+                <tr>
                     {% if data[field] is string %}
                         {% set fld_f_list = [data[field]] %}
                     {% elif data[field] is integer %}
@@ -40,8 +40,8 @@
                             {{ data[field] }}
                         </div>
                     </td>
-                {% endif %}
+                </tr>
             {% endif %}
-            </tr>
-        {% endfor %}
+        {% endif %}
+    {% endfor %}
 </table>
