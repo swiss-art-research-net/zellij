@@ -50,9 +50,13 @@
                                 <a href="{{ url_for('docs.patternlistall', apikey=db['dbaseapikey']) }}?flag=0">{{ db["dbasename"] }}</a>
                             </td>
                             <td>
-                                <button data-id="{{ db['dbaseapikey'] }}" class="export-field">
-                                    <span><i class="fas fa-file-export"></i></span>
-                                </button>
+                                <select style="background: transparent; border: 1px solid lightgray; outline: unset;">
+                                    <option value="" hidden aria-hidden="true">Generators</option>
+                                    <optgroup label="Pattern Export">
+                                        <option value="space" data-id="{{ db['dbaseapikey'] }}" class="export-field">This Space XML</option>
+                                        <option value="total-space">Total Space XML</option>
+                                    </optgroup>
+                                </select>
                             </td>
                         </tr>
                     {% endfor %}

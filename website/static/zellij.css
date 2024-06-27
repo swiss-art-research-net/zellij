@@ -34,7 +34,6 @@ table.toc {
 
 .attributes-table > tbody > tr > td > div {
     max-height: 10vh;
-    height: 10vh;
     overflow: scroll;
 }
 

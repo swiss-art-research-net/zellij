@@ -140,10 +140,23 @@
 
 <h1 id="{{ patternitem['Name'] }}">
     {{ patternitem["Name"] }}
-    <button id="export-model-btn">
-        <div><i class="fas fa-file-export"></i></div>
-    </button>
 </h1>
+
+<table class="toc">
+    <tr>
+        <th style="width: 90%;">Derivative Generators</th>
+        <td>
+            <select style="background: transparent; border: 1px solid lightgray; outline: unset;">
+                <option value="" hidden aria-hidden="true">Generators</option>
+                <optgroup label="Pattern Export">
+                    <option value="composite" class="export-field" id="export-model-btn">Composite Semantic Pattern XML</option>
+                    <option value="total-composite">Total Composite Semantic Pattern XML</option>
+                </optgroup>
+            </select>
+        </td>
+    </tr>
+</table>
+
 <h2>Attributes</h2>
 {% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
     {% include 'docs/showattributes.html' %}
@@ -155,7 +168,7 @@
     {% for entry in values %}
         {% for field in entry.keys() %}
             {% if field not in ns.fields %}
-                {% set _ = ns.fields.append(field)  %}
+                {% set _ = ns.fields.append(field) %}
             {% endif %}
         {% endfor %}
     {% endfor %}
@@ -171,9 +184,6 @@
             <table class="toc" id="table-{{ prefix }}">
                 {% if prefill == "default" %}
                     <tr>
-                        {% if 'Field' in values[0] %}
-                        <th></th>
-                        {% endif %}
                         {% for field in fields %}
                             {% if loop.index > 1 %}
                                 <th>
@@ -181,6 +191,9 @@
                                 </th>
                             {% endif %}
                         {% endfor %}
+                        {% if 'Field' in values[0] %}
+                            <th>Derivatives</th>
+                        {% endif %}
                     </tr>
                 {% else %}
                     {% set sortable_keys = [] %}
@@ -199,9 +212,6 @@
                     {% endfor %}
 
                     <tr>
-                        {% if 'Field' in values[0] %}
-                            <th></th>
-                        {% endif %}
                         {% for field in fields %}
                             {% if loop.index > 1 %}
                                 {% if field == sortable_keys[0] and field not in hideable_keys %}
@@ -216,6 +226,9 @@
                                 {% endif %}
                             {% endif %}
                         {% endfor %}
+                        {% if 'Field' in values[0] %}
+                            <th>Derivatives</th>
+                        {% endif %}
                     </tr>
                 {% endif %}
 
@@ -271,13 +284,6 @@
                             {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                             {% set segments = base_url.rsplit('/', 1) %}
                             <tr>
-                                {% if 'Field' in fld %}
-                                <td>
-                                    <button data-id="{{ fld['KeyField'] }}" class="export-field">
-                                        <div><i class="fas fa-file-export"></i></div>
-                                    </button>
-                                </td>
-                                {% endif %}
                                 {% for f in fields %}
                                     {% if loop.index > 1 and f not in hideable_keys %}
                                         {% if fld[f] is string %}
@@ -303,6 +309,17 @@
                                         </td>
                                     {% endif %}
                                 {% endfor %}
+                                {% if 'Field' in fld %}
+                                    <td>
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset;">
+                                            <option value="" hidden aria-hidden="true">Generators</option>
+                                            <optgroup label="Pattern Export">
+                                                <option value="composite" class="export-field" data-id="{{ fld['Field'][0] }}">Composite Semantic Pattern XML</option>
+                                                <option value="total-composite">Total Composite Semantic Pattern XML</option>
+                                            </optgroup>
+                                        </select>
+                                    </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     {% else %}
@@ -310,13 +327,6 @@
                             {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                             {% set segments = base_url.rsplit('/', 1) %}
                             <tr>
-                            {% if 'Field' in fld %}
-                                <td>
-                                    <button data-id="{{ fld['Field'][0] }}" class="export-field">
-                                        <div><i class="fas fa-file-export"></i></div>
-                                    </button>
-                                </td>
-                            {% endif %}
                                 {% for f in fields %}
                                     {% if loop.index > 1 and f not in hideable_keys %}
                                         {% if fld[f] is string %}
@@ -342,6 +352,16 @@
                                         </td>
                                     {% endif %}
                                 {% endfor %}
+                                {% if 'Field' in fld %}
+                                    <td>
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;">
+                                            <option value="" hidden aria-hidden="true">Generators</option>
+                                            <optgroup label="Pattern Export">
+                                                <option value="composite" class="export-field" data-id="{{ fld['Field'][0] }}">Basic Atomic Pattern XML</option>
+                                            </optgroup>
+                                        </select>
+                                    </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     {% endif %}
@@ -379,13 +399,15 @@
         <ul hidden aira-hidden="true">
             <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
             </li>
-            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label
+                    for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
             <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
             {% if patternitem.rdf_warnings() %}
                 <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
                     warnings</label></li>
             {% endif %}
-            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
+                    class="fas fa-stream"></i> JSON-LD</label></li>
         </ul>
         <div>
             <section id="ontologyGraph">
@@ -589,7 +611,9 @@
 
     let observer = new IntersectionObserver(callback, observerOptions);
     document.querySelectorAll(".tabset").forEach(i => {
-        if (i) {observer.observe(i)}
+        if (i) {
+            observer.observe(i)
+        }
     });
 
     $('#export-model-btn').on("click", function (e) {
