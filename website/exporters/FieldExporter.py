@@ -54,12 +54,10 @@ class FieldExporter(Exporter):
             for ontology_id in fields.get('Ontology_Scope'):
                 record = self._airtable.get_record_by_id('CRM Class', ontology_id)
                 ontology_class = ET.SubElement(ontology_scope, "ontology_class")
+                ontology_class.attrib["uri"] = record.get("fields", {}).get("Subject", "")
 
                 class_name = ET.SubElement(ontology_class, "class_name")
                 class_name.text = record.get("fields", {}).get("ID")
-
-                class_uri = ET.SubElement(ontology_class, "class_URI")
-                class_uri.text = record.get("fields", {}).get("Subject")
 
             semantic_path = ET.SubElement(definition, "semantic_path")
             semantic_path.text = fields.get('Ontological_Path')
@@ -85,13 +83,10 @@ class FieldExporter(Exporter):
                 reference_pattern = ET.SubElement(reference_patterns, "reference_pattern")
                 reference_pattern.text = "Expected Collection Model"
 
-
                 collection = fields.get('Expected_Collection_Model')[0] if fields.get('Expected_Collection_Model') else None
                 if collection:
                     collection_field = self._airtable.get_record_by_id('Collection', collection)
-
-                    reference_pattern_uri = ET.SubElement(reference_patterns, "reference_pattern_URI")
-                    reference_pattern_uri.text = collection_field.get("fields", {}).get("URI")
+                    reference_patterns.attrib["uri"] = collection_field.get("fields", {}).get("URI", "")
 
                     reference_pattern_name = ET.SubElement(reference_patterns, "reference_pattern_name")
                     reference_pattern_name.text = collection_field.get("fields", {}).get("UI_Name")
@@ -108,8 +103,7 @@ class FieldExporter(Exporter):
                 if model:
                     model_field = self._airtable.get_record_by_id('Model', model)
 
-                    reference_pattern_uri = ET.SubElement(reference_patterns, "reference_pattern_URI")
-                    reference_pattern_uri.text = model_field.get("fields", {}).get("URI")
+                    reference_patterns.attrib["uri"] = model_field.get("fields", {}).get("URI", "")
 
                     reference_pattern_name = ET.SubElement(reference_patterns, "reference_pattern_name")
                     reference_pattern_name.text = model_field.get("fields", {}).get("UI_Name")
@@ -126,18 +120,15 @@ class FieldExporter(Exporter):
                 semantic_pattern_space_name = ET.SubElement(semantic_pattern_space, "semantic_pattern_space_name")
                 semantic_pattern_space_name.text = project_field.get("fields", {}).get("UI_Name")
 
-                semantic_pattern_space_uri = ET.SubElement(semantic_pattern_space, "semantic_pattern_space_URI")
-                semantic_pattern_space_uri.text = project_field.get("fields", {}).get("Namespace")
+                semantic_pattern_space.attrib["uri"] = project_field.get("fields", {}).get("Namespace", "")
 
             composite_semantic_patterns_deployed_in = ET.SubElement(pattern_context, "composite_semantic_patterns_deployed_in")
-
             for model_field in self._airtable.get_multiple_records_by_formula('Model', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Model_Deployed", []))))):
                 composite_semantic_pattern = ET.SubElement(composite_semantic_patterns_deployed_in, "composite_semantic_pattern")
                 composite_semantic_pattern_name = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_name")
                 composite_semantic_pattern_name.text = model_field.get("fields", {}).get("UI_Name")
 
-                composite_semantic_pattern_uri = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_URI")
-                composite_semantic_pattern_uri.text = model_field.get("fields", {}).get("URI")
+                composite_semantic_pattern.attrib["uri"] = model_field.get("fields", {}).get("URI", "")
 
                 composite_semantic_pattern_type = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_type")
                 composite_semantic_pattern_type.text = "Model"
@@ -147,8 +138,7 @@ class FieldExporter(Exporter):
                 composite_semantic_pattern_name = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_name")
                 composite_semantic_pattern_name.text = collection_field.get("fields", {}).get("UI_Name")
 
-                composite_semantic_pattern_uri = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_URI")
-                composite_semantic_pattern_uri.text = collection_field.get("fields", {}).get("URI")
+                composite_semantic_pattern.attrib["uri"] = collection_field.get("fields", {}).get("URI", "")
 
                 composite_semantic_pattern_type = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_type")
                 composite_semantic_pattern_type.text = "Collection"
@@ -211,8 +201,7 @@ class FieldExporter(Exporter):
 
                 creator = ET.SubElement(creators, "creator")
 
-                creator_uri = ET.SubElement(creator, "creator_URI")
-                creator_uri.text = author_field.get("fields", {}).get("URI")
+                creator.attrib["uri"] = author_field.get("fields", {}).get("URI", "")
 
                 creator_name = ET.SubElement(creator, "creator_name")
                 creator_name.text = author_field.get("fields", {}).get("Name")
@@ -222,8 +211,7 @@ class FieldExporter(Exporter):
                 actor = self._airtable.get_record_by_id("Actors", funder_id)
                 funder = ET.SubElement(funding, "funder")
 
-                funder_uri = ET.SubElement(funder, "funder_URI")
-                funder_uri.text = actor.get("fields", {}).get("URI")
+                funder.attrib["uri"] = actor.get("fields", {}).get("URI", "")
 
                 funder_name = ET.SubElement(funder, "funder_name")
                 funder_name.text = actor.get("fields", {}).get("Name")
@@ -233,8 +221,7 @@ class FieldExporter(Exporter):
                 project = self._airtable.get_record_by_id("Project", project_id)
                 project_field = ET.SubElement(funding_project, "project")
 
-                project_uri = ET.SubElement(project_field, "project_URI")
-                project_uri.text = project.get("fields", {}).get("Namespace")
+                project_field.attrib["uri"] = project.get("fields", {}).get("Namespace", "")
 
                 project_name = ET.SubElement(project_field, "project_name")
                 project_name.text = project.get("fields", {}).get("UI_Name")
@@ -249,15 +236,13 @@ class FieldExporter(Exporter):
                 ontology_prefix = ET.SubElement(ontology, "ontology_prefix")
                 ontology_prefix.text = ontology_field.get("fields", {}).get("Prefix")
 
-                ontology_uri = ET.SubElement(ontology, "ontology_URI")
-                ontology_uri.text = ontology_field.get("fields", {}).get("Namespace")
+                ontology.attrib["uri"] = ontology_field.get("fields", {}).get("Namespace", "")
 
                 ontology_name = ET.SubElement(ontology, "ontology_name")
                 ontology_name.text = ontology_field.get("fields", {}).get("UI_Name")
 
                 ontology_version = ET.SubElement(ontology, "ontology_version")
                 ontology_version.text = ontology_field.get("fields", {}).get("Version")
-
 
         rough_string = ET.tostring(root, "utf-8")
         reparsed = minidom.parseString(rough_string)
