@@ -34,8 +34,11 @@ class ModelExporter(Exporter):
 
                 if self._prefill_group.get(key, {}).get('name') == "UI_Name":
                     name = ET.SubElement(names, "name")
+                    name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
                     name_content = ET.SubElement(name, "name_content")
-                    name_content.text = val
+                    name_content.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
+                    name_content_label = ET.SubElement(name_content, "name_content_label")
+                    name_content_label.text = val
 
                     name_type = ET.SubElement(name, "name_type")
                     name_type.text = "UI_Name"
@@ -45,7 +48,9 @@ class ModelExporter(Exporter):
 
                 if self._prefill_group.get(key, {}).get('name') == "System_Name":
                     system_name = ET.SubElement(definition, "system_name")
-                    system_name.text = val
+                    system_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456630"
+                    system_name_label = ET.SubElement(system_name, "system_name_label")
+                    system_name_label.text = val
 
                 if self._prefill_group.get(key, {}).get('name') == "Identifier":
                     system_identifier = ET.SubElement(definition, "system_identifier")
@@ -62,10 +67,14 @@ class ModelExporter(Exporter):
                         ontology_prefix.text = record.get("fields", {}).get("Prefix")
 
                         ontology_name = ET.SubElement(ontology, "ontology_name")
-                        ontology_name.text = record.get("fields", {}).get("UI_Name")
+                        ontology_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
+                        ontology_name_label = ET.SubElement(ontology_name, "ontology_name_label")
+                        ontology_name_label.text = record.get("fields", {}).get("UI_Name")
 
                         ontology_version = ET.SubElement(ontology, "ontology_version")
-                        ontology_version.text = record.get("fields", {}).get("Version")
+                        ontology_version.attrib["uri"] = "http://vocab.getty.edu/aat/300456598"
+                        ontology_version_label = ET.SubElement(ontology_version, "ontology_version_label")
+                        ontology_version_label.text = record.get("fields", {}).get("Version")
 
                 if key == "KeyField":
                     identifiers = ET.SubElement(definition, "identifiers")
@@ -81,7 +90,9 @@ class ModelExporter(Exporter):
                     descriptions = ET.SubElement(definition, "descriptions")
                     description = ET.SubElement(descriptions, "description")
                     description_content = ET.SubElement(description, "description_content")
-                    description_content.text = val
+                    description_content.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
+                    description_content_label = ET.SubElement(description_content, "description_content_label")
+                    description_content_label.text = val
 
                     description_type = ET.SubElement(description, "description_type")
                     description_type.text = "Scope Note"
@@ -101,7 +112,9 @@ class ModelExporter(Exporter):
                         ontology_class.attrib["uri"] = record.get("fields", {}).get("Subject")
 
                         class_name = ET.SubElement(ontology_class, "class_name")
-                        class_name.text = record.get("fields", {}).get("ID")
+                        class_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
+                        class_name_label = ET.SubElement(class_name, "class_name_label")
+                        class_name_label.text = record.get("fields", {}).get("ID")
 
                 if self._prefill_group.get(key, {}).get('name') == "Model_NameSpaces":
                     semantic_context = ET.SubElement(root, "semantic_context")
@@ -114,7 +127,9 @@ class ModelExporter(Exporter):
                         semantic_pattern_space.attrib["uri"] = record.get("fields", {}).get("Namespace")
 
                         semantic_pattern_space_name = ET.SubElement(semantic_pattern_space, "semantic_pattern_space_name")
-                        semantic_pattern_space_name.text = record.get("fields", {}).get("UI_Name")
+                        semantic_pattern_space_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
+                        semantic_pattern_space_name_label = ET.SubElement(semantic_pattern_space_name, "semantic_pattern_space_name_label")
+                        semantic_pattern_space_name_label.text = record.get("fields", {}).get("UI_Name")
 
                 if (self._prefill_group.get(key, {}).get('name') == "Fields_Expected_Resource_Model" or
                     self._prefill_group.get(key, {}).get('name') == "Fields_Expected_Collection_Model"
@@ -129,7 +144,9 @@ class ModelExporter(Exporter):
                         atomic_semantic_pattern.attrib["uri"] = fields.get("URI").strip()
 
                         atomic_semantic_pattern_name = ET.SubElement(atomic_semantic_pattern, "atomic_semantic_pattern_name")
-                        atomic_semantic_pattern_name.text = fields.get("UI_Name")
+                        atomic_semantic_pattern_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
+                        atomic_semantic_pattern_name_label = ET.SubElement(atomic_semantic_pattern_name, "atomic_semantic_pattern_name_label")
+                        atomic_semantic_pattern_name_label.text = fields.get("UI_Name")
 
                         composite_semantic_pattern_type = ET.SubElement(atomic_semantic_pattern, "composite_semantic_pattern_type")
                         composite_semantic_pattern_type.text = self._selected_scheme
@@ -145,8 +162,10 @@ class ModelExporter(Exporter):
                         pattern = ET.SubElement(composition, "pattern")
 
                         atomic_semantic_pattern_name = ET.SubElement(pattern, "atomic_semantic_pattern_name")
+                        atomic_semantic_pattern_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
+                        atomic_semantic_pattern_name_label = ET.SubElement(atomic_semantic_pattern_name, "atomic_semantic_pattern_name_label")
                         field_ui_names = model_field.get("fields", {}).get("Field_UI_Name")
-                        atomic_semantic_pattern_name.text = field_ui_names[0] if len(field_ui_names) > 0 else ''
+                        atomic_semantic_pattern_name_label.text = field_ui_names[0] if len(field_ui_names) > 0 else ''
 
                         if len(model_field.get("fields", {}).get("Field")) > 0:
                             fields_to_populate[model_field.get("fields", {}).get("Field")[0]] = pattern
@@ -164,10 +183,14 @@ class ModelExporter(Exporter):
                     encoding_content.text = val
 
                     encoding_type = ET.SubElement(encoding, "encoding_type")
-                    encoding_type.text = "rdf"
+                    encoding_type.attrib["uri"] = "http://vocab.getty.edu/aat/300456634"
+                    encoding_type_label = ET.SubElement(encoding_type, "encoding_type_label")
+                    encoding_type_label.text = "rdf"
 
                     encoding_format = ET.SubElement(encoding, "encoding_format")
-                    encoding_format.text = "sparql"
+                    encoding_format.attrib["uri"] = "http://vocab.getty.edu/aat/300456635"
+                    encoding_format_label = ET.SubElement(encoding_format, "encoding_format_label")
+                    encoding_format_label.text = "sparql"
 
                 if self._prefill_group.get(key, {}).get('name') == "x3ml":
                     serialization = ET.SubElement(root, "serialization")
@@ -178,20 +201,30 @@ class ModelExporter(Exporter):
                     encoding_content.text = val
 
                     encoding_type = ET.SubElement(encoding, "encoding_type")
-                    encoding_type.text = "x3ml"
+                    encoding_type.attrib["uri"] = "http://vocab.getty.edu/aat/300266654"
+                    encoding_type_label = ET.SubElement(encoding_type, "encoding_type_label")
+                    encoding_type_label.text = "x3ml"
 
                     encoding_format = ET.SubElement(encoding, "encoding_format")
-                    encoding_format.text = "xml"
+                    encoding_format.attrib["uri"] = "http://vocab.getty.edu/aat/300266654"
+                    encoding_type_label = ET.SubElement(encoding_format, "encoding_format_label")
+                    encoding_type_label.text = "xml"
 
                 if self._prefill_group.get(key, {}).get('name') == "Version":
                     version_number = ET.SubElement(version_data, "version_number")
-                    version_number.text = val
+                    version_number.attrib["uri"] = "http://vocab.getty.edu/aat/300456598"
+                    version_number_label = ET.SubElement(version_number, "version_number_label")
+                    version_number_label.text = val
                 if self._prefill_group.get(key, {}).get('name') == "Version_Date":
                     version_publication_date = ET.SubElement(version_data, "version_publication_date")
-                    version_publication_date.text = val
+                    version_publication_date.attrib["uri"] = "http://vocab.getty.edu/aat/300456620"
+                    version_publication_date_label = ET.SubElement(version_publication_date, "version_publication_date_label")
+                    version_publication_date_label.text = val
                 if self._prefill_group.get(key, {}).get('name') == "Last_Modified":
                     post_version_modification_date = ET.SubElement(version_data, "post_version_modification_date")
-                    post_version_modification_date.text = val
+                    post_version_modification_date.attrib["uri"] = "http://vocab.getty.edu/aat/300456620"
+                    post_version_modification_date_label = ET.SubElement(post_version_modification_date, "post_version_modification_date_label")
+                    post_version_modification_date_label.text = val
 
                 if self._prefill_group.get(key, {}).get('name') == "Authors":
                     creators = ET.SubElement(creation_data, "creators")
@@ -201,7 +234,9 @@ class ModelExporter(Exporter):
                         creator.attrib['uri'] = author.get("fields", {}).get("URI", '')
 
                         creator_name = ET.SubElement(creator, "creator_name")
-                        creator_name.text = author.get("fields", {}).get("Name")
+                        creator_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
+                        creator_name_label = ET.SubElement(creator_name, "creator_name_label")
+                        creator_name_label.text = author.get("fields", {}).get("Name")
 
                 if self._prefill_group.get(key, {}).get('name') == "Funders":
                     funder = ET.SubElement(funding, "funder")
@@ -210,7 +245,9 @@ class ModelExporter(Exporter):
                         funder_record = self._airtable.get_record_by_id('Institution', record_id)
 
                         funder_name = ET.SubElement(funder, "funder_name")
-                        funder_name.text = funder_record.get("fields", {}).get("Name")
+                        funder_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
+                        funder_name_label = ET.SubElement(funder_name, "funder_name_label")
+                        funder_name_label.text = funder_record.get("fields", {}).get("Name")
 
         rough_string = ET.tostring(root, "utf-8")
         reparsed = minidom.parseString(rough_string)
