@@ -24,7 +24,7 @@ class Exporter(ABC):
         self._airtable = AirTableConnection(decrypt(secretkey), api_key)
 
         if item is None:
-            return
+            return self
 
         schema = schemas[selected_scheme]
         prefill_data, prefill_group, _ = get_prefill(api_key, schema.get("id"))
@@ -34,6 +34,9 @@ class Exporter(ABC):
         self._prefill_group = prefill_group
         self._prefill_data = prefill_data
         self._item = item
+        self._name = item
+
+        return self
 
     def export(self) -> io.BytesIO:
         file = io.BytesIO()

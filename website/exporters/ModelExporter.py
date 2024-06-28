@@ -51,6 +51,7 @@ class ModelExporter(Exporter):
                     system_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456630"
                     system_name_label = ET.SubElement(system_name, "system_name_label")
                     system_name_label.text = val
+                    self._name = val
 
                 if self._prefill_group.get(key, {}).get('name') == "Identifier":
                     system_identifier = ET.SubElement(definition, "system_identifier")
@@ -85,6 +86,9 @@ class ModelExporter(Exporter):
 
                     identifier_type = ET.SubElement(identifier, "identifier_type")
                     identifier_type.text = "unique identifier"
+
+                    if not self._name:
+                        self._name = val
 
                 if self._prefill_group.get(key, {}).get('name') == "Description":
                     descriptions = ET.SubElement(definition, "descriptions")

@@ -19,6 +19,7 @@ class ProjectExporter(Exporter):
         system_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456630"
         system_name_label = ET.SubElement(system_name, "system_name_label")
         system_name_label.text = fields.get('UI_Name')
+        self._name = fields.get('UI_Name')
 
         system_identifier = ET.SubElement(definition, "system_identifier")
         system_identifier.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
