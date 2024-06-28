@@ -56,12 +56,10 @@ class ModelExporter(Exporter):
                     for record_id in val:
                         record = self._airtable.get_record_by_id('Ontology', record_id)
                         ontology = ET.SubElement(ontologies, "ontology")
+                        ontology.attrib["uri"] = record.get("fields", {}).get("Namespace")
 
                         ontology_prefix = ET.SubElement(ontology, "ontology_prefix")
                         ontology_prefix.text = record.get("fields", {}).get("Prefix")
-
-                        ontology_uri = ET.SubElement(ontology, "ontology_URI")
-                        ontology_uri.text = record.get("fields", {}).get("Namespace")
 
                         ontology_name = ET.SubElement(ontology, "ontology_name")
                         ontology_name.text = record.get("fields", {}).get("UI_Name")
@@ -100,11 +98,10 @@ class ModelExporter(Exporter):
                         record = self._airtable.get_record_by_id('CRM Class', record_id)
 
                         ontology_class = ET.SubElement(ontological_scopes, "ontology_class")
+                        ontology_class.attrib["uri"] = record.get("fields", {}).get("Subject")
+
                         class_name = ET.SubElement(ontology_class, "class_name")
                         class_name.text = record.get("fields", {}).get("ID")
-
-                        class_uri = ET.SubElement(ontology_class, "class_URI")
-                        class_uri.text = record.get("fields", {}).get("Subject")
 
                 if self._prefill_group.get(key, {}).get('name') == "Model_NameSpaces":
                     semantic_context = ET.SubElement(root, "semantic_context")
@@ -114,12 +111,10 @@ class ModelExporter(Exporter):
                         record = self._airtable.get_record_by_id('Project', record_id)
 
                         semantic_pattern_space = ET.SubElement(pattern_context, "semantic_pattern_space")
+                        semantic_pattern_space.attrib["uri"] = record.get("fields", {}).get("Namespace")
 
                         semantic_pattern_space_name = ET.SubElement(semantic_pattern_space, "semantic_pattern_space_name")
                         semantic_pattern_space_name.text = record.get("fields", {}).get("UI_Name")
-
-                        semantic_pattern_space_uri = ET.SubElement(semantic_pattern_space, "semantic_pattern_space_URI")
-                        semantic_pattern_space_uri.text = record.get("fields", {}).get("Namespace")
 
                 if (self._prefill_group.get(key, {}).get('name') == "Fields_Expected_Resource_Model" or
                     self._prefill_group.get(key, {}).get('name') == "Fields_Expected_Collection_Model"
@@ -131,11 +126,10 @@ class ModelExporter(Exporter):
                         fields = field.get('fields')
 
                         atomic_semantic_pattern = ET.SubElement(target_of, "atomic_semantic_pattern")
+                        atomic_semantic_pattern.attrib["uri"] = fields.get("URI").strip()
+
                         atomic_semantic_pattern_name = ET.SubElement(atomic_semantic_pattern, "atomic_semantic_pattern_name")
                         atomic_semantic_pattern_name.text = fields.get("UI_Name")
-
-                        atomic_semantic_pattern_uri = ET.SubElement(atomic_semantic_pattern, "atomic_semantic_pattern_URI")
-                        atomic_semantic_pattern_uri.text = fields.get("URI").strip()
 
                         composite_semantic_pattern_type = ET.SubElement(atomic_semantic_pattern, "composite_semantic_pattern_type")
                         composite_semantic_pattern_type.text = self._selected_scheme
@@ -154,13 +148,12 @@ class ModelExporter(Exporter):
                         field_ui_names = model_field.get("fields", {}).get("Field_UI_Name")
                         atomic_semantic_pattern_name.text = field_ui_names[0] if len(field_ui_names) > 0 else ''
 
-                        atomic_semantic_pattern_uri = ET.SubElement(pattern, "atomic_semantic_pattern_URI")
                         if len(model_field.get("fields", {}).get("Field")) > 0:
-                            fields_to_populate[model_field.get("fields", {}).get("Field")[0]] = atomic_semantic_pattern_uri
+                            fields_to_populate[model_field.get("fields", {}).get("Field")[0]] = pattern
                             fields_uris.append(model_field.get("fields", {}).get("Field")[0])
 
                     for field in self._airtable.get_multiple_records_by_formula('Field', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields_uris)))):
-                        fields_to_populate[field['id']].text = field.get("fields", {}).get("URI")
+                        fields_to_populate[field['id']].attrib["uri"] = field.get("fields", {}).get("URI")
 
                 if self._prefill_group.get(key, {}).get('name') == "Total_SparQL":
                     serialization = ET.SubElement(root, "serialization")
@@ -209,9 +202,6 @@ class ModelExporter(Exporter):
 
                         creator_name = ET.SubElement(creator, "creator_name")
                         creator_name.text = author.get("fields", {}).get("Name")
-
-                        creator_uri = ET.SubElement(creator, "creator_URI")
-                        creator_uri.text = author.get("fields", {}).get("URI", '')
 
                 if self._prefill_group.get(key, {}).get('name') == "Funders":
                     funder = ET.SubElement(funding, "funder")
