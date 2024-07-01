@@ -4,6 +4,8 @@ Created on Mar. 18, 2021
 """
 import asyncio
 import logging
+import zipfile
+from io import BytesIO
 
 from flask import Blueprint, render_template, request, abort, Response
 
@@ -35,7 +37,14 @@ def main():
     )
     dblist = [d for d in dict_gen_many(c)]
     c.close()
-    return render_template("docs/databaselist.html", databases=dblist, fields={})
+    grouped_dbs = {}
+
+    for db in dblist:
+        if db["accountname"] not in grouped_dbs:
+            grouped_dbs[db["accountname"]] = []
+        grouped_dbs[db["accountname"]].append(db)
+
+    return render_template("docs/databaselist.html", databases=grouped_dbs, fields={})
 
 
 @bp.route("/searchBaseList", methods=["GET", "POST"])
@@ -228,6 +237,8 @@ def patternlistexport(apikey, exportType, model):
 
     if item is None:
         filename = model
+    elif exportType == "field":
+        filename = exporter.get_name()
     else:
         filename = "".join(c if c.isalpha() or c.isdigit() or c == ' ' else '_' for c in item).rstrip()
 
@@ -238,6 +249,51 @@ def patternlistexport(apikey, exportType, model):
     response.headers['Content-Type'] = 'application/xml'
     return response
 
+
+@bp.route("/list/<apikey>/export/<exportType>/<model>/all", methods=["GET"])
+def patternlistexporttree(apikey, exportType, model):
+    exporters = {
+        'model': ModelExporter,
+        'collection': ModelExporter,
+        'field': FieldExporter,
+        'project': ProjectExporter,
+    }
+
+    item = request.args.get("item")
+
+    files = []
+    if exportType == "project":
+        exporter = exporters[exportType]().initialize(model, apikey, item)
+        file = exporter.export()
+        files.append({"name": exporter.get_name(), "file": file})
+
+        schemas, secretkey = generate_airtable_schema(apikey)
+        airtable = AirTableConnection(decrypt(secretkey), apikey)
+        lists = {}
+        for key, val in schemas.items():
+            result = airtable.getListOfGroups(val)
+            if isinstance(result, EnhancedResponse):
+                return render_template("error/airtableerror.html", error=result)
+            lists[key] = result
+
+        for key, val in lists.items():
+            for item in val:
+                exporter = exporters["model"]().initialize(key, apikey, item["KeyField"])
+                file = exporter.export()
+                files.append({"name": f"{key}_{exporter.get_name()}", "file": file})
+
+    zipStream = BytesIO()
+    with zipfile.ZipFile(zipStream, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for file in files:
+            zf.writestr(f"{file['name']}.xml", file['file'].read())
+
+    zipStream.seek(0)
+    w = FileWrapper(zipStream)
+
+    response = Response(w, mimetype="application/zip", direct_passthrough=True)
+    response.headers['Content-Disposition'] = f'attachment; filename=export.zip'
+    response.headers['Content-Type'] = 'application/zip'
+    return response
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
 def patternlist(apikey, pattern):
