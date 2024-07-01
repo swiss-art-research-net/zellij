@@ -238,9 +238,7 @@ class FieldExporter(Exporter):
 
             creation_data = ET.SubElement(provenance, "creation_data")
             creators = ET.SubElement(creation_data, "creators")
-            for author in fields.get("Author", []):
-                author_field = self._airtable.get_record_by_id("Actors", author)
-
+            for author_field in self._airtable.get_multiple_records_by_formula('Actors', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Author", []))))):
                 creator = ET.SubElement(creators, "creator")
 
                 creator.attrib["uri"] = author_field.get("fields", {}).get("URI", "")
@@ -276,9 +274,7 @@ class FieldExporter(Exporter):
 
             semantic_context = ET.SubElement(definition, "semantic_context")
             ontologies = ET.SubElement(semantic_context, "ontologies")
-            for ontology_id in fields.get("Ontology_Context"):
-                ontology_field = self._airtable.get_record_by_id("Ontology", ontology_id)
-
+            for ontology_field in self._airtable.get_multiple_records_by_formula('Ontology', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Ontology_Context", []))))):
                 ontology = ET.SubElement(ontologies, "ontology")
 
                 ontology_prefix = ET.SubElement(ontology, "ontology_prefix")
