@@ -281,6 +281,24 @@ def patternlistexporttree(apikey, exportType, model):
                 exporter = exporters["model"]().initialize(key, apikey, item["KeyField"])
                 file = exporter.export()
                 files.append({"name": f"{key}_{exporter.get_name()}", "file": file})
+    if exportType == "model" or exportType == "collection":
+        schemas, secretkey = generate_airtable_schema(apikey)
+        airtable = AirTableConnection(decrypt(secretkey), apikey)
+        exporter = exporters["model"]().initialize(model, apikey, item)
+        file = exporter.export()
+        files.append({"name": f"{exporter.get_name()}", "file": file})
+
+        prefill_data, prefill_group, group_sort = get_prefill(apikey, exporter.get_schema().get("id"))
+        fields = airtable.getSingleGroupedItem(
+            item, exporter.get_schema(), prefill_data=prefill_data, group_sort=group_sort
+        )
+
+        for idx, field in enumerate(fields._GroupedData.values()):
+            print(f"Processing {idx} of {len(fields._GroupedData)}")
+            field_exporter = exporters["field"]().initialize(model, apikey, field['Field'][0])
+            file = field_exporter.export()
+            files.append({"name": f"{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
+
 
     zipStream = BytesIO()
     with zipfile.ZipFile(zipStream, "w", compression=zipfile.ZIP_DEFLATED) as zf:

@@ -7,89 +7,6 @@
 {% block content %}
 
     <div class="container-sidebar">
-        <!-- <div class="menu-btn">
-              <i class="fas fa-bars"></i>
-          </div> -->
-
-        <div class="contents" id="iframe-contents">
-            <div style="display: flex; justify-content: center; align-items: center; height: 100%">
-                <div class="lds-spinner">
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                </div>
-            </div>
-        </div>
-        <div class="contents" id="grouping">
-            <h1>{{ scraper }}</h1>
-            <table class="toc">
-                {% set list = lists[scraper] %}
-                {% set fields = list[0].keys() %}
-
-                {% set sortable_keys = [] %}
-                {% set hideable_keys= ['Contains'] %}
-                {% for key, value in prefill_group.items() %}
-                    {% if value.sortable == True %}
-                        {% set _ = sortable_keys.append(key) %}
-                    {% endif %}
-                    {% if value.hideable == True %}
-                        {% set _ = hideable_keys.append(key) %}
-                    {% endif %}
-                {% endfor %}
-
-                <tr>
-                    {% for field in fields %}
-                        {% if field == sortable_keys[0] and field not in hideable_keys %}
-                            <th>
-                                {{ field }}
-                                <i class="fa fa-sort-amount-asc sort-asc"></i>
-                            </th>
-                        {% elif field not in hideable_keys %}
-                            <th>
-                                {{ field }}
-                            </th>
-                        {% endif %}
-                    {% endfor %}
-                </tr>
-
-                {% if sortable_keys|length > 0 %}
-                    {% set sorted_list = list|sort(attribute=sortable_keys[0]) %}
-                {% else %}
-                    {% set sorted_list = list %}
-                {% endif %}
-
-                {% for item in sorted_list %}
-                    {% if item["Contains"]|length > 0 %}
-                        <tr>
-                            {% for field in fields if field not in hideable_keys %}
-                                {% if field == 'Name' %}
-                                    <td>
-                                        <a href="#"
-                                           onclick="onItemClick('{{ url_for('docs.patternitemdisplay', apikey=apikey, pattern=scraper, search=item['KeyField']) }}')">
-                                            {{ item["Name"] }}
-                                        </a>
-                                    </td>
-                                {% else %}
-                                    <td>
-                                        <div style="height: 25vh; overflow-y: scroll">{{ item[field] }}</div>
-                                    </td>
-                                {% endif %}
-                            {% endfor %}
-                        </tr>
-                    {% endif %}
-                {% endfor %}
-            </table>
-        </div>
-
         <div class="side-bar">
             <!-- <div class="close-btn">
                     <i class="fas fa-times"></i>
@@ -117,6 +34,94 @@
                 </div>
             </div>
         </div>
+
+        <!-- <div class="menu-btn">
+              <i class="fas fa-bars"></i>
+          </div> -->
+
+        <div class="contents" id="iframe-contents" hidden="hidden" style="height: 100vh;">
+            <div style="display: flex; justify-content: center; align-items: center; height: 100%">
+                <div class="lds-spinner">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+        <div class="contents" id="grouping" hidden="hidden">
+            <h1>{{ scraper }}</h1>
+            <table class="toc">
+                {% set list = lists[scraper] %}
+                {% set fields = list[0].keys() %}
+
+                {% set sortable_keys = [] %}
+                {% set hideable_keys= ['Contains'] %}
+                {% for key, value in prefill_group.items() %}
+                    {% if value.sortable == True %}
+                        {% set _ = sortable_keys.append(key) %}
+                    {% endif %}
+                    {% if value.hideable == True %}
+                        {% set _ = hideable_keys.append(key) %}
+                    {% endif %}
+                {% endfor %}
+
+                <thead>
+                <tr>
+                    {% for field in fields %}
+                        {% if field == sortable_keys[0] and field not in hideable_keys %}
+                            <th>
+                                {{ field }}
+                                <i class="fa fa-sort-amount-asc sort-asc"></i>
+                            </th>
+                        {% elif field not in hideable_keys %}
+                            <th>
+                                {{ field }}
+                            </th>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                </thead>
+
+                {% if sortable_keys|length > 0 %}
+                    {% set sorted_list = list|sort(attribute=sortable_keys[0]) %}
+                {% else %}
+                    {% set sorted_list = list %}
+                {% endif %}
+
+                <tbody>
+                {% for item in sorted_list %}
+                    {% if item["Contains"]|length > 0 %}
+                        <tr>
+                            {% for field in fields if field not in hideable_keys %}
+                                {% if field == 'Name' %}
+                                    <td>
+                                        <a href="#"
+                                           onclick="onItemClick('{{ url_for('docs.patternitemdisplay', apikey=apikey, pattern=scraper, search=item['KeyField']) }}')">
+                                            {{ item["Name"] }}
+                                        </a>
+                                    </td>
+                                {% else %}
+                                    <td>
+                                        <div style="height: 25vh; text-wrap: wrap; max-width: 10vw; width: 10vw; word-wrap: break-word; overflow-y: clip;">{{ item[field] }}</div>
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
     </div>
 
 
@@ -156,6 +161,7 @@
 
         function loadModel(url) {
             document.querySelector("#grouping").setAttribute("hidden", "true");
+            $('#iframe-contents').removeAttr("hidden");
             $.ajax({
                 url: url,
                 type: 'GET',

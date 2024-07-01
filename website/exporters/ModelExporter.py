@@ -59,8 +59,8 @@ class ModelExporter(Exporter):
 
                 if self._prefill_group.get(key, {}).get('name') == "Ontology_Context":
                     ontologies = ET.SubElement(semantic_context, "ontologies")
-                    for record_id in val:
-                        record = self._airtable.get_record_by_id('Ontology', record_id)
+
+                    for record in self._airtable.get_multiple_records_by_formula('Ontology', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), val)))):
                         ontology = ET.SubElement(ontologies, "ontology")
                         ontology.attrib["uri"] = record.get("fields", {}).get("Namespace")
 

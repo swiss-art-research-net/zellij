@@ -136,6 +136,10 @@
             }
         }
     });
+
+    function getSelectedOption(select) {
+        return select.options[select.selectedIndex];
+    }
 </script>
 
 <h1 id="{{ patternitem['Name'] }}">
@@ -146,11 +150,15 @@
     <tr>
         <th style="width: 90%;">Derivative Generators</th>
         <td>
-            <select style="background: transparent; border: 1px solid lightgray; outline: unset;">
+            <select style="background: transparent; border: 1px solid lightgray; outline: unset;" onclick='getSelectedOption(this).click()'>
                 <option value="" hidden aria-hidden="true">Generators</option>
                 <optgroup label="Pattern Export">
-                    <option value="composite" class="export-field" id="export-model-btn">Composite Semantic Pattern XML</option>
-                    <option value="total-composite">Total Composite Semantic Pattern XML</option>
+                    <option value="composite" class="export-field" id="export-model-btn">
+                        Composite Semantic Pattern XML
+                    </option>
+                    <option value="total-composite" id="total-export-model-btn">
+                        Total Composite Semantic Pattern XML
+                    </option>
                 </optgroup>
             </select>
         </td>
@@ -182,6 +190,7 @@
     <div class="table-wrapper">
         <div>
             <table class="toc" id="table-{{ prefix }}">
+                <thead>
                 {% if prefill == "default" %}
                     <tr>
                         {% for field in fields %}
@@ -231,6 +240,7 @@
                         {% endif %}
                     </tr>
                 {% endif %}
+                </thead>
 
                 {% if prefill == "default" %}
                     {% for fld in values|sort(attribute='Identifier') %}
@@ -311,11 +321,12 @@
                                 {% endfor %}
                                 {% if 'Field' in fld %}
                                     <td>
-                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset;">
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" onclick='getSelectedOption(this).click()'>
                                             <option value="" hidden aria-hidden="true">Generators</option>
                                             <optgroup label="Pattern Export">
-                                                <option value="composite" class="export-field" data-id="{{ fld['Field'][0] }}">Composite Semantic Pattern XML</option>
-                                                <option value="total-composite">Total Composite Semantic Pattern XML</option>
+                                                <option value="composite" class="export-field"
+                                                        data-id="{{ fld['Field'][0] }}">Basic Atomic Pattern XML
+                                                </option>
                                             </optgroup>
                                         </select>
                                     </td>
@@ -354,10 +365,12 @@
                                 {% endfor %}
                                 {% if 'Field' in fld %}
                                     <td>
-                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;">
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" onclick='getSelectedOption(this).click()'>
                                             <option value="" hidden aria-hidden="true">Generators</option>
                                             <optgroup label="Pattern Export">
-                                                <option value="composite" class="export-field" data-id="{{ fld['Field'][0] }}">Basic Atomic Pattern XML</option>
+                                                <option value="composite" class="export-field"
+                                                        data-id="{{ fld['Field'][0] }}">Basic Atomic Pattern XML
+                                                </option>
                                             </optgroup>
                                         </select>
                                     </td>
@@ -619,5 +632,10 @@
     $('#export-model-btn').on("click", function (e) {
         e.preventDefault();
         window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
+    })
+
+    $('#total-export-model-btn').on("click", function (e) {
+        e.preventDefault();
+        window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
     })
 </script>
