@@ -13,6 +13,7 @@ class Exporter(ABC):
     _item: str
     _selected_scheme: str
     _airtable: AirTableConnection
+    _name: str
 
     @abstractmethod
     def _generate_xml(self) -> str:
@@ -23,7 +24,7 @@ class Exporter(ABC):
         self._airtable = AirTableConnection(decrypt(secretkey), api_key)
 
         if item is None:
-            return
+            return self
 
         schema = schemas[selected_scheme]
         prefill_data, prefill_group, _ = get_prefill(api_key, schema.get("id"))
@@ -33,6 +34,9 @@ class Exporter(ABC):
         self._prefill_group = prefill_group
         self._prefill_data = prefill_data
         self._item = item
+        self._name = item
+
+        return self
 
     def export(self) -> io.BytesIO:
         file = io.BytesIO()
@@ -43,3 +47,6 @@ class Exporter(ABC):
         file.seek(0)
 
         return file
+
+    def get_name(self):
+        return self._name
