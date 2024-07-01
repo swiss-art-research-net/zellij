@@ -474,6 +474,18 @@ button:focus {
     max-width: 100vw;
 }
 
+@media screen and (width >= 2000px) {
+    .attributes-table {
+        max-width: 1600px;
+    }
+    .table-wrapper {
+        max-width: 1600px;
+    }
+    .model-generator {
+        max-width: 1600px;
+    }
+}
+
 .lds-spinner {
     display: inline-block;
     position: relative;

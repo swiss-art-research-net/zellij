@@ -146,7 +146,7 @@
     {{ patternitem["Name"] }}
 </h1>
 
-<table class="toc">
+<table class="toc model-generator">
     <tr>
         <th style="width: 90%;">Derivative Generators</th>
         <td>
@@ -165,11 +165,11 @@
     </tr>
 </table>
 
-<h2>Attributes</h2>
+<h2 style="max-width: 1440px;">Attributes</h2>
 {% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
     {% include 'docs/showattributes.html' %}
 {% endwith %}
-<h2>Fields</h2>
+<h2 style="max-width: 1440px;">Fields</h2>
 
 {% set ns = namespace(fields=[]) %}
 {% for prefix, values in patternitem.GroupedFields() %}
@@ -185,7 +185,7 @@
 
 {% for prefix, values in patternitem.GroupedFields() %}
     {% if patternitem.GroupedFields()|length > 1 %}
-        <h3>{{ prefix }}</h3>
+        <h3 style="max-width: 1440px">{{ prefix }}</h3>
     {% endif %}
     <div class="table-wrapper">
         <div>
