@@ -2,6 +2,11 @@
 
 {% block header %}
     <h1>{% block title %}Pick an ontological database{% endblock %}</h1>
+    <script>
+        function getSelectedOption(select) {
+            return select.options[select.selectedIndex];
+        }
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -39,7 +44,7 @@
                 <table class="toc" style="width: 50%;">
                     <thead>
                     <tr>
-                        <th style="width: 90%">Project Name</th>
+                        <th style="width: 90%; text-align: left;">Project Name</th>
                         <th>Derivative Generators</th>
                     </tr>
                     </thead>
@@ -50,7 +55,7 @@
                                 <a href="{{ url_for('docs.patternlistall', apikey=db['dbaseapikey']) }}?flag=0">{{ db["dbasename"] }}</a>
                             </td>
                             <td>
-                                <select style="background: transparent; border: 1px solid lightgray; outline: unset;">
+                                <select style="background: transparent; border: 1px solid lightgray; outline: unset;" onclick='getSelectedOption(this).click()'>
                                     <option value="" hidden aria-hidden="true">Generators</option>
                                     <optgroup label="Pattern Export">
                                         <option value="space" data-id="{{ db['dbaseapikey'] }}" class="export-field">This Space XML</option>

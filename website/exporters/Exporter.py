@@ -14,6 +14,7 @@ class Exporter(ABC):
     _selected_scheme: str
     _airtable: AirTableConnection
     _name: str
+    _schema: dict
 
     @abstractmethod
     def _generate_xml(self) -> str:
@@ -26,11 +27,11 @@ class Exporter(ABC):
         if item is None:
             return self
 
-        schema = schemas[selected_scheme]
-        prefill_data, prefill_group, _ = get_prefill(api_key, schema.get("id"))
+        self._schema = schemas[selected_scheme]
+        prefill_data, prefill_group, _ = get_prefill(api_key, self._schema.get("id"))
 
         self._selected_scheme = selected_scheme
-        self._results = self._airtable.getListOfGroups(schema)
+        self._results = self._airtable.getListOfGroups(self._schema)
         self._prefill_group = prefill_group
         self._prefill_data = prefill_data
         self._item = item
@@ -50,3 +51,6 @@ class Exporter(ABC):
 
     def get_name(self):
         return self._name
+
+    def get_schema(self):
+        return self._schema
