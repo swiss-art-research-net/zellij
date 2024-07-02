@@ -158,7 +158,7 @@ def pasteInManageDataSources(dbId, scraperId):
     c.execute(
         """
         INSERT INTO Scrapers (dbasekey, scrapername, data_table, data_keyfield, data_groupby, group_table, group_keyfield, group_sorttable, group_sortcolumn, group_sortname)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """,
         (
             dbId,
@@ -190,8 +190,8 @@ def pasteInManageDataSources(dbId, scraperId):
     for field in existing_fields:
         cursor2.execute(
             f"""
-            INSERT INTO ScraperFields (scraperkey, sortorder, tablename, fieldlabel, fieldname, sortable, groupable, hideable)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+            INSERT INTO ScraperFields (scraperkey, sortorder, tablename, fieldlabel, fieldname, sortable, groupable, hideable, function, link, exportable)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """,
             (
                 inserted_id,
@@ -202,6 +202,9 @@ def pasteInManageDataSources(dbId, scraperId):
                 field["sortable"],
                 field["groupable"],
                 field["hideable"],
+                field["function"],
+                field["link"] if field["link"] else None,
+                field["exportable"],
             ),
         )
         db2.commit()
@@ -282,18 +285,24 @@ def displayScraper2(apikey):
         secret = decrypt(encryptedtoken)
         connection = AirTableConnection(secret, apikey)
         if prefill.data_table:
-            validatedata = connection.getsinglerecord(prefill.data_table, {})
+            try:
+                validatedata = connection.getsinglerecord(prefill.data_table, {})
 
-            datasamples = dict()
-            for k, v in validatedata["fields"].items():
-                datasamples[k] = _cleanseSampleData(v)
+                datasamples = dict()
+                for k, v in validatedata["fields"].items():
+                    datasamples[k] = _cleanseSampleData(v)
+            except:
+                print("Error loading data samples from data table")
 
         if prefill.group_table:
-            validategroup = connection.getsinglerecord(prefill.group_table, {})
+            try:
+                validategroup = connection.getsinglerecord(prefill.group_table, {})
 
-            groupsamples = dict()
-            for k, v in validategroup["fields"].items():
-                groupsamples[k] = _cleanseSampleData(v)
+                groupsamples = dict()
+                for k, v in validategroup["fields"].items():
+                    groupsamples[k] = _cleanseSampleData(v)
+            except:
+                print("Error loading data samples from group table")
 
     # now let's finish up processing the POST
     if request.method == "POST":
