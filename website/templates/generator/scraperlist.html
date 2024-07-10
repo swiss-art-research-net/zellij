@@ -98,7 +98,7 @@
         function setCopiedScraper(id) {
             event.preventDefault();
             localStorage.setItem("scraperId", id)
-            alert("Successfully copied scraper!")
+            window.location.reload();
         }
     </script>
 {% endblock %}

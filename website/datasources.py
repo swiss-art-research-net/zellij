@@ -291,8 +291,8 @@ def displayScraper2(apikey):
                 datasamples = dict()
                 for k, v in validatedata["fields"].items():
                     datasamples[k] = _cleanseSampleData(v)
-            except:
-                print("Error loading data samples from data table")
+            except Exception as e:
+                print(f"Error loading data samples from group table {e}")
 
         if prefill.group_table:
             try:
@@ -301,8 +301,8 @@ def displayScraper2(apikey):
                 groupsamples = dict()
                 for k, v in validategroup["fields"].items():
                     groupsamples[k] = _cleanseSampleData(v)
-            except:
-                print("Error loading data samples from group table")
+            except Exception as e:
+                print(f"Error loading data samples from group table {e}")
 
     # now let's finish up processing the POST
     if request.method == "POST":
