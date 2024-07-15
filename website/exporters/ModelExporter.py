@@ -24,6 +24,9 @@ class ModelExporter(Exporter):
         creation_data = ET.SubElement(provenance, "creation_data")
         funding = ET.SubElement(provenance, "funding")
 
+        serialization = ET.SubElement(root, "serialization")
+        encodings_el = ET.SubElement(serialization, "encodings")
+
         names = ET.SubElement(definition, "names")
         for result in self._results:
             if result.get("KeyField") != self._item:
@@ -31,6 +34,9 @@ class ModelExporter(Exporter):
             for key, val in result.items():
                 if not self._prefill_group.get(key, {}).get("exportable", False) and key != "KeyField":
                     continue
+
+                if self._prefill_group.get(key, {}).get('name') == "URI":
+                    root.attrib["uri"] = val
 
                 if self._prefill_group.get(key, {}).get('name') == "UI_Name":
                     name = ET.SubElement(names, "name")
@@ -178,9 +184,12 @@ class ModelExporter(Exporter):
                     for field in self._airtable.get_multiple_records_by_formula('Field', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields_uris)))):
                         fields_to_populate[field['id']].attrib["uri"] = field.get("fields", {}).get("URI")
 
-                if self._prefill_group.get(key, {}).get('name') == "Total_SparQL":
-                    serialization = ET.SubElement(root, "serialization")
-                    encodings_el = ET.SubElement(serialization, "encodings")
+                if (
+                        self._prefill_group.get(key, {}).get('name') == "Total_SparQL" or
+                        self._prefill_group.get(key, {}).get('name') == "SparQL" or
+                        self._prefill_group.get(key, {}).get('name') == "SparQL_Count" or
+                        self._prefill_group.get(key, {}).get('name') == "SparQL_Count_Total"
+                ):
                     encoding = ET.SubElement(encodings_el, "encoding")
 
                     encoding_content = ET.SubElement(encoding, "encoding_content")
@@ -197,8 +206,6 @@ class ModelExporter(Exporter):
                     encoding_format_label.text = "sparql"
 
                 if self._prefill_group.get(key, {}).get('name') == "x3ml":
-                    serialization = ET.SubElement(root, "serialization")
-                    encodings_el = ET.SubElement(serialization, "encodings")
                     encoding = ET.SubElement(encodings_el, "encoding")
 
                     encoding_content = ET.SubElement(encoding, "encoding_content")
@@ -252,6 +259,17 @@ class ModelExporter(Exporter):
                         funder_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
                         funder_name_label = ET.SubElement(funder_name, "funder_name_label")
                         funder_name_label.text = funder_record.get("fields", {}).get("Name")
+
+                if self._prefill_group.get(key, {}).get('name') == "Funding_Project":
+                    funding_project = ET.SubElement(provenance, "funding_project")
+                    for record_id in val:
+                        project = self._airtable.get_record_by_id('Project', record_id)
+
+                        project_name = ET.SubElement(funding_project, "label")
+                        project_name.text = project.get("fields", {}).get("UI_Name")
+
+                        project_uri  = ET.SubElement(funding_project, "uri")
+                        project_uri.text = project.get("fields", {}).get("Namespace")
 
         rough_string = ET.tostring(root, "utf-8")
         reparsed = minidom.parseString(rough_string)
