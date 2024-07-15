@@ -50,6 +50,8 @@ class Exporter(ABC):
         return file
 
     def get_name(self):
+        if self._name is None:
+            return None
         return self._name
 
     def get_schema(self):
