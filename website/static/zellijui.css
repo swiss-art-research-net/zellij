@@ -265,7 +265,6 @@ nav ul {
 .fields {
     width: 24em;
     margin: auto;
-    content: "";
     display: table;
     clear: both; /* "clearfix */
     border: 1px solid black;
