@@ -15,7 +15,8 @@ class ProjectExporter(Exporter):
         project = self._airtable.get_record_by_formula('Project', '{ID}')
         fields = project.get('fields')
 
-        root.attrib["uri"] = fields.get("Namespace")
+        uri = ET.SubElement(root, "uri")
+        uri.text = fields.get("Namespace")
 
         system_name = ET.SubElement(definition, "system_name")
         name_content = ET.SubElement(system_name, "name_content")
