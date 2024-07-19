@@ -191,18 +191,17 @@ class ModelExporter(Exporter):
                     for model_field in self._airtable.get_multiple_records_by_formula(referenced_table, OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), val)))):
                         pattern = ET.SubElement(composition, "pattern")
 
-                        atomic_semantic_pattern_name = ET.SubElement(pattern, "atomic_semantic_pattern_name")
-                        atomic_semantic_pattern_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
-                        atomic_semantic_pattern_name_label = ET.SubElement(atomic_semantic_pattern_name, "atomic_semantic_pattern_name_label")
                         field_ui_names = model_field.get("fields", {}).get("Field_UI_Name")
-                        atomic_semantic_pattern_name_label.text = field_ui_names[0] if len(field_ui_names) > 0 else ''
+                        pattern_name = ET.SubElement(pattern, "pattern_name")
+                        pattern_name.text = field_ui_names[0] if len(field_ui_names) > 0 else ''
 
                         if len(model_field.get("fields", {}).get("Field")) > 0:
                             fields_to_populate[model_field.get("fields", {}).get("Field")[0]] = pattern
                             fields_uris.append(model_field.get("fields", {}).get("Field")[0])
 
                     for field in self._airtable.get_multiple_records_by_formula('Field', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields_uris)))):
-                        fields_to_populate[field['id']].attrib["uri"] = field.get("fields", {}).get("URI")
+                        pattern_uri = ET.SubElement(fields_to_populate[field['id']], "pattern_URI")
+                        pattern_uri.text = field.get("fields", {}).get("URI")
 
                 if (
                         self._prefill_group.get(key, {}).get('name') == "Total_SparQL" or
@@ -216,14 +215,10 @@ class ModelExporter(Exporter):
                     encoding_content.text = val
 
                     encoding_type = ET.SubElement(encoding, "encoding_type")
-                    encoding_type.attrib["uri"] = "http://vocab.getty.edu/aat/300456634"
-                    encoding_type_label = ET.SubElement(encoding_type, "encoding_type_label")
-                    encoding_type_label.text = "rdf"
+                    encoding_type.text = "rdf"
 
                     encoding_format = ET.SubElement(encoding, "encoding_format")
-                    encoding_format.attrib["uri"] = "http://vocab.getty.edu/aat/300456635"
-                    encoding_format_label = ET.SubElement(encoding_format, "encoding_format_label")
-                    encoding_format_label.text = "sparql"
+                    encoding_format.text = "sparql"
 
                 if self._prefill_group.get(key, {}).get('name') == "x3ml":
                     encoding = ET.SubElement(encodings_el, "encoding")
