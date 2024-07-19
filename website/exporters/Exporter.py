@@ -15,6 +15,18 @@ class Exporter(ABC):
     _airtable: AirTableConnection
     _name: str
     _schema: dict
+    value_types_terms = {
+        "string": "http://vocab.getty.edu/aat/300456619",
+        "date": "http://vocab.getty.edu/aat/300456620",
+        "integer": "http://vocab.getty.edu/aat/300456621",
+        "controlled terms": "http://vocab.getty.edu/aat/300456622",
+        "geojson": "http://vocab.getty.edu/aat/300456623",
+        "file/bitstream": "http://vocab.getty.edu/aat/300456624",
+        "reference model": "http://vocab.getty.edu/aat/300456625",
+        "collection": "http://vocab.getty.edu/aat/300456626",
+        "annotation data type": "http://vocab.getty.edu/aat/300456627",
+        "concept": "http://vocab.getty.edu/aat/300435691",
+    }
 
     @abstractmethod
     def _generate_xml(self) -> str:
