@@ -16,10 +16,14 @@
 {% block content %}
 	<form method="post">
 	<div class="fields">
-		<label for="username">Username</label>
-		<input name="username" id="username" required>
-		<label for="password">Password</label>
-		<input type="password" name="password" id="password" required>
+        <div style="display: flex; flex-direction: row; align-items: center">
+            <label for="username">Username</label>
+            <input name="username" id="username" required>
+        </div>
+        <div style="display: flex; flex-direction: row; align-items: center">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" required>
+        </div>
 		<button type="submit">Sign In</button>
 	</div>
   </form>
