@@ -15,75 +15,89 @@ class ProjectExporter(Exporter):
         project = self._airtable.get_record_by_formula('Project', '{ID}')
         fields = project.get('fields')
 
-        root.attrib["uri"] = fields.get("Namespace")
+        uri = ET.SubElement(root, "uri")
+        uri.text = fields.get("Namespace")
 
         system_name = ET.SubElement(definition, "system_name")
-        system_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456630"
-        system_name_label = ET.SubElement(system_name, "system_name_label")
-        system_name_label.text = fields.get('System_Name')
+        name_content = ET.SubElement(system_name, "name_content")
+        name_content.text = fields.get('System_Name')
+        name_type = ET.SubElement(system_name, "name_type")
+        name_type_uri = ET.SubElement(name_type, "name_name_uri")
+        name_type_uri.text = "http://vocab.getty.edu/aat/300456630"
+        name_type_label = ET.SubElement(name_type, "name_type_label")
+        name_type_label.text = 'System Name'
 
         names = ET.SubElement(definition, "names")
         name = ET.SubElement(names, "name")
-        name.attrib["uri"] = "http://vocab.getty.edu/aat/300456630"
-        name_content = ET.SubElement(name, "name_label")
+        name_content = ET.SubElement(name, "name_content")
         name_content.text = fields.get('UI_Name')
-        self._name = fields.get('UI_Name')
 
         name_type = ET.SubElement(name, "name_type")
-        name_type.text = 'UI Name'
-
+        name_type_uri = ET.SubElement(name_type, "name_name_uri")
+        name_type_uri.text = "http://vocab.getty.edu/aat/300456628"
+        name_type_label = ET.SubElement(name_type, "name_type_label")
+        name_type_label.text = 'UI Name'
         name_language = ET.SubElement(name, "name_language")
-        name_language.text = 'English'
+        name_language_uri = ET.SubElement(name_language, "name_language_uri")
+        name_language_uri.text = "http://vocab.getty.edu/aat/300388277"
+        name_language_label = ET.SubElement(name_language, "name_language_label")
+        name_language_label.text = 'English'
+        self._name = fields.get('UI_Name')
 
-        system_identifier = ET.SubElement(definition, "system_identifier")
-        system_identifier.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
-        system_identifier_label = ET.SubElement(system_identifier, "system_identifier_label")
-        system_identifier_label.text = fields.get('ID')
+        identifiers = ET.SubElement(definition, "identifiers")
+        system_identifier = ET.SubElement(identifiers, "system_identifier")
+        identifier_content = ET.SubElement(system_identifier, "identifier_content")
+        identifier_content.text = fields.get('ID')
+        identifier_type = ET.SubElement(system_identifier, "identifier_type")
+        identifier_type_uri = ET.SubElement(identifier_type, "identifier_type_uri")
+        identifier_type_uri.text = "http://vocab.getty.edu/aat/300404012"
+        identifier_type_label = ET.SubElement(identifier_type, "identifier_type_label")
+        identifier_type_label.text = 'Unique Identifiers'
 
         descriptions = ET.SubElement(definition, "descriptions")
         description = ET.SubElement(descriptions, "description")
 
         description_content = ET.SubElement(description, "description_content")
-        description_content.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
-        description_content_label = ET.SubElement(description_content, "description_content_label")
-        description_content_label.text = fields.get('Description')
+        description_content.text = fields.get('Description')
 
         description_type = ET.SubElement(description, "description_type")
-        description_type.text = 'Scope Note'
+        description_type_uri = ET.SubElement(description_type, "uri")
+        description_type_uri.text = "https://vocab.getty.edu/aat/300456631"
+        description_type_label = ET.SubElement(description_type, "label")
+        description_type_label.text = "Scope Note"
 
         description_language = ET.SubElement(description, "description_language")
-        description_language.text = 'English'
+        description_language_uri = ET.SubElement(description_language, "uri")
+        description_language_uri.text = "http://vocab.getty.edu/aat/300388277"
+        description_language_label = ET.SubElement(description_language, "label")
+        description_language_label.text = 'English'
 
         namespace = ET.SubElement(definition, "namespace")
-        namespace.attrib["uri"] = "http://vocab.getty.edu/aat/300456599"
-        namespace_label = ET.SubElement(namespace, "namespace_label")
-        namespace_label.text = fields.get('Namespace')
+        namespace_content = ET.SubElement(namespace, "namespace_content")
+        namespace_content.text = fields.get('Namespace')
+        namespace_type = ET.SubElement(namespace, "namespace_type")
+        namespace_type_uri = ET.SubElement(namespace_type, "uri")
+        namespace_type_uri.text = "http://vocab.getty.edu/aat/300456599"
+        namespace_type_label = ET.SubElement(namespace_type, "namespace_type_label")
+        namespace_type_label.text = 'Namespace'
 
         semantic_context = ET.SubElement(root, "semantic_context")
         ontologies = ET.SubElement(semantic_context, "ontologies")
         for ontology in self._airtable.get_all_records_from_table('Ontology'):
             record = ontology.get("fields")
             ontology_el = ET.SubElement(ontologies, "ontology")
-            ontology_el.attrib["uri"] = record.get("Namespace")
+
+            ontology_prefix = ET.SubElement(ontology_el, "ontology_prefix")
+            ontology_prefix.text = record.get("Prefix")
 
             ontology_name = ET.SubElement(ontology_el, "ontology_name")
             ontology_name.text = record.get("UI_Name")
 
             ontology_version = ET.SubElement(ontology_el, "ontology_version")
-            ontology_version.attrib["uri"] = "http://vocab.getty.edu/aat/300456598"
+            ontology_version.text = record.get("Version")
 
-            ontology_version_label = ET.SubElement(ontology_version, "ontology_version_label")
-            ontology_version_label.text = record.get("Version")
-
-        namespaces = ET.SubElement(semantic_context, "namespaces")
-        for namespace in self._airtable.get_all_records_from_table('NameSpaces'):
-            record = namespace.get("fields")
-
-            namespace_el = ET.SubElement(namespaces, "namespace")
-            namespace_el.attrib["uri"] = record.get("Namespace")
-
-            namespace_prefix = ET.SubElement(namespace_el, "namespace_prefix")
-            namespace_prefix.text = record.get("Abbreviation")
+            ontology_uri = ET.SubElement(ontology_el, "ontology_URI")
+            ontology_uri.text = record.get("Namespace")
 
         dataspace_context = ET.SubElement(semantic_context, "dataspace_context")
         services = ET.SubElement(dataspace_context, "services")
@@ -111,58 +125,69 @@ class ProjectExporter(Exporter):
         for field in self._airtable.get_all_records_from_table("Field"):
             record = field.get("fields")
             atomic_semantic_pattern = ET.SubElement(atomic_semantic_patterns, "atomic_semantic_pattern")
-            atomic_semantic_pattern.attrib["uri"] = record.get("URI")
 
             atomic_semantic_pattern_name = ET.SubElement(atomic_semantic_pattern, "atomic_semantic_pattern_name")
-            atomic_semantic_pattern_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
-            atomic_semantic_pattern_name_label = ET.SubElement(atomic_semantic_pattern_name, "atomic_semantic_pattern_name_label")
-            atomic_semantic_pattern_name_label.text = record.get("UI_Name")
+            atomic_semantic_pattern_name.text = record.get("UI_Name")
+
+            atomic_semantic_pattern_uri = ET.SubElement(atomic_semantic_pattern, "atomic_semantic_pattern_URI")
+            atomic_semantic_pattern_uri.text = record.get("URI")
 
         composite_semantic_patterns = ET.SubElement(components, "composite_semantic_patterns")
 
-        composite_patterns = self._airtable.get_all_records_from_table("Model")
-        composite_patterns.extend(self._airtable.get_all_records_from_table("Collection"))
+        composite_patterns = list(map(lambda x: {**x, **{"type": "model"}}, self._airtable.get_all_records_from_table("Model")))
+        composite_patterns.extend(list(map(lambda x: {**x, **{"type": "collection"}}, self._airtable.get_all_records_from_table("Collection"))))
 
         for pattern in composite_patterns:
             record = pattern.get("fields")
             composite_semantic_pattern = ET.SubElement(composite_semantic_patterns, "composite_semantic_pattern")
-            composite_semantic_pattern.attrib["uri"] = record.get("URI")
 
             composite_semantic_pattern_name = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_name")
-            composite_semantic_pattern_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
-            composite_semantic_pattern_name_label = ET.SubElement(composite_semantic_pattern_name, "composite_semantic_pattern_name_label")
-            composite_semantic_pattern_name_label.text = record.get("UI_Name")
+            composite_semantic_pattern_name.text = record.get("UI_Name")
+
+            composite_semantic_pattern_uri = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_URI")
+            composite_semantic_pattern_uri.text = record.get("URI")
+
+            composite_semantic_pattern_type = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_type")
+            composite_semantic_pattern_type_uri = ET.SubElement(composite_semantic_pattern_type, "composite_semantic_pattern_type_uri")
+            composite_semantic_pattern_type_label = ET.SubElement(composite_semantic_pattern_type, "composite_semantic_pattern_type_label")
+
+            if pattern["type"] == "model":
+                composite_semantic_pattern_type_uri.text = "http://vocab.getty.edu/aat/300456625"
+                composite_semantic_pattern_type_label.text = "Reference Model"
+            else:
+                composite_semantic_pattern_type_uri.text = "http://vocab.getty.edu/aat/300456626"
+                composite_semantic_pattern_type_label.text = "Reference Collection"
 
         provenance = ET.SubElement(root, "provenance")
         version_data = ET.SubElement(provenance, "version_data")
         creation_data = ET.SubElement(provenance, "creation_data")
         if fields.get('Version'):
             version_number = ET.SubElement(version_data, "version_number")
-            version_number.attrib["uri"] = "http://vocab.getty.edu/aat/300456598"
-            version_number_label = ET.SubElement(version_number, "version_number_label")
-            version_number_label.text = fields.get('Version')
+            version_number_content = ET.SubElement(version_number, "version_number_content")
+            version_number_content.text = fields.get('Version')
+            version_type = ET.SubElement(version_number, "version_type")
+            version_type_uri = ET.SubElement(version_type, "version_type_uri")
+            version_type_uri.text = "http://vocab.getty.edu/aat/300456598"
+            version_type_label = ET.SubElement(version_type, "version_type_label")
+            version_type_label.text = 'Version Number'
         if fields.get('Version_Date'):
             version_publication_date = ET.SubElement(version_data, "version_publication_date")
-            version_publication_date.attrib["uri"] = "http://vocab.getty.edu/aat/300456620"
-            version_publication_date_label = ET.SubElement(version_publication_date, "version_publication_date_label")
-            version_publication_date_label.text = fields.get('Version_Date')
+            version_publication_date.text = fields.get('Version_Date')
         if fields.get('Last_Modified'):
             post_version_modification_date = ET.SubElement(version_data, "post_version_modification_date")
-            post_version_modification_date.attrib["uri"] = "http://vocab.getty.edu/aat/300456620"
-            post_version_modification_date_label = ET.SubElement(post_version_modification_date, "post_version_modification_date_label")
-            post_version_modification_date_label.text = fields.get('Last_Modified')
+            post_version_modification_date.text = fields.get('Last_Modified')
 
         if fields.get("Author"):
             creators = ET.SubElement(creation_data, "creators")
             for record_id in fields.get("Author"):
                 author = self._airtable.get_record_by_id('Actors', record_id)
-                creator = ET.SubElement(creators, "creator")
-                creator.attrib['uri'] = author.get("fields", {}).get("URI", '')
 
+                creator = ET.SubElement(creators, "creator")
                 creator_name = ET.SubElement(creator, "creator_name")
-                creator_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
-                creator_name_label = ET.SubElement(creator_name, "creator_name_label")
-                creator_name_label.text = author.get("fields", {}).get("Name")
+                creator_name.text = author.get("fields", {}).get("Name")
+
+                creator_uri = ET.SubElement(creator, "creator_URI")
+                creator_uri.text = author.get("fields", {}).get("URI")
 
         funding = ET.SubElement(provenance, "funding")
         if fields.get("Funder"):
@@ -172,9 +197,10 @@ class ProjectExporter(Exporter):
                 funder_record = self._airtable.get_record_by_id('Actors', record_id)
 
                 funder_name = ET.SubElement(funder, "funder_name")
-                funder_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456619"
-                funder_name_label = ET.SubElement(funder_name, "funder_name_label")
-                funder_name_label.text = funder_record.get("fields", {}).get("Name")
+                funder_name.text = funder_record.get("fields", {}).get("Name")
+
+                funder_uri = ET.SubElement(funder, "funder_URI")
+                funder_uri.text = funder_record.get("fields", {}).get("URI")
 
         rough_string = ET.tostring(root, "utf-8")
         reparsed = minidom.parseString(rough_string)
