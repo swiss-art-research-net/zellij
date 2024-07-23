@@ -9,8 +9,12 @@
         <div class="fields">
             <label for="apiname">Name</label>
             <input name="apiname" id="apiname" required value="{{ existing["dbasename"] }}">
-            <label for="secret">API Key</label>
+            <label for="secret">APIKey</label>
             <input name="apikey" id="apikey" required value="{{ existing["dbaseapikey"] }}">
+            <label for="githubrepo">Repository Name</label>
+            <input name="githubrepo" id="githubrepo" value="{{ existing["githubrepo"] or "" }}">
+            <label for="githubtoken">Access Token</label>
+            <input name="githubtoken" id="githubtoken" value="{{ existing["githubtoken"] or "" }}">
 
             <button type="submit">{{ "Update" if existing else "Create" }} Database</button>
             {% if existing %}
