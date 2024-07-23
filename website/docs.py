@@ -10,8 +10,9 @@ from io import BytesIO
 from flask import Blueprint, render_template, request, abort, Response
 
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
+from github_wrapper import GithubWrapper
 from website.datasources import get_prefill
-from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt
+from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt, dict_gen_one
 from website.exporters.ModelExporter import ModelExporter
 from website.exporters.FieldExporter import FieldExporter
 from website.exporters.ProjectExporter import ProjectExporter
@@ -259,6 +260,15 @@ def patternlistexporttree(apikey, exportType, model):
         'project': ProjectExporter,
     }
 
+    database = get_db()
+    c = database.cursor()
+    c.execute("SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (apikey,))
+    existing = dict_gen_one(c)
+    if existing["githubtoken"]:
+        existing["githubtoken"] = decrypt(existing["githubtoken"])
+
+    github = GithubWrapper(existing["githubtoken"], existing["githubrepo"])
+
     item = request.args.get("item")
 
     files = []
@@ -266,6 +276,7 @@ def patternlistexporttree(apikey, exportType, model):
         exporter = exporters[exportType]().initialize(model, apikey, item)
         file = exporter.export()
         files.append({"name": exporter.get_name(), "file": file})
+        github.upload_file(f"space/{exporter.get_name()}.xml", file)
 
         schemas, secretkey = generate_airtable_schema(apikey)
         airtable = AirTableConnection(decrypt(secretkey), apikey)
