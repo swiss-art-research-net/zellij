@@ -645,6 +645,8 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
     if request.method == "POST":
         name = request.form["apiname"]
         key = request.form["apikey"]
+        github_repo = request.form["githubrepo"]
+        github_token = request.form["githubtoken"]
 
         if not name:
             error = "A descriptive name is required."
@@ -661,22 +663,26 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
         if error is None:
             if dbaseid:
                 c.execute(
-                    "UPDATE AirTableDatabases SET dbasename=%s, dbaseapikey=%s"
+                    "UPDATE AirTableDatabases SET dbasename=%s, dbaseapikey=%s, githubrepo=%s, githubtoken=%s"
                     + " WHERE dbaseid=%s",
                     (
                         name,
                         key,
+                        github_repo,
+                        encrypt(github_token),
                         dbaseid,
                     ),
                 )
             else:
                 c.execute(
-                    "INSERT INTO AirTableDatabases (airtableaccountkey, dbasename, dbaseapikey)"
+                    "INSERT INTO AirTableDatabases (airtableaccountkey, dbasename, dbaseapikey, githubrepo, githubtoken)"
                     + " VALUES (%s,%s,%s)",
                     (
                         accountid,
                         name,
                         key,
+                        github_repo,
+                        encrypt(github_token)
                     ),
                 )
 
@@ -690,5 +696,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
     if dbaseid:
         c.execute("SELECT * FROM AirTableDatabases WHERE dbaseid=%s", (dbaseid,))
         existing = dict_gen_one(c)
+        if existing["githubtoken"]:
+            existing["githubtoken"] = decrypt(existing["githubtoken"])
     c.close()
     return render_template("generator/airdbeditor.html", existing=existing)

@@ -266,7 +266,6 @@ nav ul {
     width: 24em;
     margin: auto;
     display: table;
-    clear: both; /* "clearfix */
     border: 1px solid black;
 }
 
@@ -275,10 +274,6 @@ nav ul {
     text-align: right;
     float: left;
     margin: 0.1em 0;
-}
-
-.fields > label:first-of-type { /* Don't know why? But it works. */
-    margin: 0.6em 0;
 }
 
 .fields label::after {

@@ -24,7 +24,8 @@ class FieldExporter(Exporter):
                 low_table = key
                 break
 
-        field = self._airtable.get_record_by_formula(low_table, match({"ID": self._item}))
+        field = (self._airtable.get_record_by_formula(low_table, match({"ID": self._item}))
+                 or self._airtable.get_record_by_id(low_table, self._item))
 
         if field is None:
             return ""
@@ -126,7 +127,8 @@ class FieldExporter(Exporter):
             semantic_path.text = fields.get('Ontological_Path')
 
             semantic_path_total = ET.SubElement(definition, "semantic_path_total")
-            semantic_path_total.text = field.get("fields", {}).get('Total_Ontological_Path') or field.get("fields", {}).get(
+            semantic_path_total.text = field.get("fields", {}).get('Total_Ontological_Path') or field.get("fields",
+                                                                                                          {}).get(
                 'Model_Fields_Total_Ontological_Path')
 
             expected_data = ET.SubElement(definition, "expected_data")

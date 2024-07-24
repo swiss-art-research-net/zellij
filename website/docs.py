@@ -10,8 +10,9 @@ from io import BytesIO
 from flask import Blueprint, render_template, request, abort, Response
 
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
+from github_wrapper import GithubWrapper
 from website.datasources import get_prefill
-from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt
+from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt, dict_gen_one
 from website.exporters.ModelExporter import ModelExporter
 from website.exporters.FieldExporter import FieldExporter
 from website.exporters.ProjectExporter import ProjectExporter
@@ -259,6 +260,16 @@ def patternlistexporttree(apikey, exportType, model):
         'project': ProjectExporter,
     }
 
+    database = get_db()
+    c = database.cursor()
+    c.execute("SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (apikey,))
+    existing = dict_gen_one(c)
+    github = None
+
+    if existing["githubtoken"]:
+        existing["githubtoken"] = decrypt(existing["githubtoken"])
+        github = GithubWrapper(existing["githubtoken"], existing["githubrepo"])
+
     item = request.args.get("item")
 
     files = []
@@ -266,6 +277,8 @@ def patternlistexporttree(apikey, exportType, model):
         exporter = exporters[exportType]().initialize(model, apikey, item)
         file = exporter.export()
         files.append({"name": exporter.get_name(), "file": file})
+        if github:
+            github.upload_file(f"space/{exporter.get_name()}.xml", file)
 
         schemas, secretkey = generate_airtable_schema(apikey)
         airtable = AirTableConnection(decrypt(secretkey), apikey)
@@ -281,12 +294,23 @@ def patternlistexporttree(apikey, exportType, model):
                 exporter = exporters["model"]().initialize(key, apikey, item["KeyField"])
                 file = exporter.export()
                 files.append({"name": f"{key}_{exporter.get_name()}", "file": file})
+                if github:
+                    github.upload_file(f"composite/{exporter.get_name()}.xml", file)
+
+                for field in item["Contains"]:
+                    field_exporter = exporters["field"]().initialize(key, apikey, field)
+                    file = field_exporter.export()
+                    files.append({"name": f"{key}_{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
+                    if github:
+                        github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
     if exportType == "model" or exportType == "collection":
         schemas, secretkey = generate_airtable_schema(apikey)
         airtable = AirTableConnection(decrypt(secretkey), apikey)
         exporter = exporters["model"]().initialize(model, apikey, item)
         file = exporter.export()
         files.append({"name": f"{exporter.get_name()}", "file": file})
+        if github:
+            github.upload_file(f"space/{exporter.get_name()}.xml", file)
 
         prefill_data, prefill_group, group_sort = get_prefill(apikey, exporter.get_schema().get("id"))
         fields = airtable.getSingleGroupedItem(
@@ -295,23 +319,25 @@ def patternlistexporttree(apikey, exportType, model):
 
         for idx, field in enumerate(fields._GroupedData.values()):
             print(f"Processing {idx} of {len(fields._GroupedData)}")
-            field_exporter = exporters["field"]().initialize(model, apikey, field['Field'][0])
+            field_exporter = exporters["field"]().initialize(model, apikey, field['KeyField'])
             file = field_exporter.export()
             files.append({"name": f"{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
+            if github:
+                github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
 
-
-    zipStream = BytesIO()
-    with zipfile.ZipFile(zipStream, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+    zip_stream = BytesIO()
+    with zipfile.ZipFile(zip_stream, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for file in files:
             zf.writestr(f"{file['name']}.xml", file['file'].read())
 
-    zipStream.seek(0)
-    w = FileWrapper(zipStream)
+    zip_stream.seek(0)
+    w = FileWrapper(zip_stream)
 
     response = Response(w, mimetype="application/zip", direct_passthrough=True)
     response.headers['Content-Disposition'] = f'attachment; filename=export.zip'
     response.headers['Content-Type'] = 'application/zip'
     return response
+
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
 def patternlist(apikey, pattern):
