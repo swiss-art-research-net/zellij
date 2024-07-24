@@ -325,19 +325,19 @@ def patternlistexporttree(apikey, exportType, model):
             if github:
                 github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
 
-
-    zipStream = BytesIO()
-    with zipfile.ZipFile(zipStream, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+    zip_stream = BytesIO()
+    with zipfile.ZipFile(zip_stream, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for file in files:
             zf.writestr(f"{file['name']}.xml", file['file'].read())
 
-    zipStream.seek(0)
-    w = FileWrapper(zipStream)
+    zip_stream.seek(0)
+    w = FileWrapper(zip_stream)
 
     response = Response(w, mimetype="application/zip", direct_passthrough=True)
     response.headers['Content-Disposition'] = f'attachment; filename=export.zip'
     response.headers['Content-Type'] = 'application/zip'
     return response
+
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
 def patternlist(apikey, pattern):
