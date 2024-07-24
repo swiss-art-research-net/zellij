@@ -264,10 +264,11 @@ def patternlistexporttree(apikey, exportType, model):
     c = database.cursor()
     c.execute("SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (apikey,))
     existing = dict_gen_one(c)
+    github = None
+
     if existing["githubtoken"]:
         existing["githubtoken"] = decrypt(existing["githubtoken"])
-
-    github = GithubWrapper(existing["githubtoken"], existing["githubrepo"])
+        github = GithubWrapper(existing["githubtoken"], existing["githubrepo"])
 
     item = request.args.get("item")
 
@@ -276,7 +277,8 @@ def patternlistexporttree(apikey, exportType, model):
         exporter = exporters[exportType]().initialize(model, apikey, item)
         file = exporter.export()
         files.append({"name": exporter.get_name(), "file": file})
-        github.upload_file(f"space/{exporter.get_name()}.xml", file)
+        if github:
+            github.upload_file(f"space/{exporter.get_name()}.xml", file)
 
         schemas, secretkey = generate_airtable_schema(apikey)
         airtable = AirTableConnection(decrypt(secretkey), apikey)
@@ -292,20 +294,23 @@ def patternlistexporttree(apikey, exportType, model):
                 exporter = exporters["model"]().initialize(key, apikey, item["KeyField"])
                 file = exporter.export()
                 files.append({"name": f"{key}_{exporter.get_name()}", "file": file})
-                github.upload_file(f"composite/{exporter.get_name()}.xml", file)
+                if github:
+                    github.upload_file(f"composite/{exporter.get_name()}.xml", file)
 
                 for field in item["Contains"]:
                     field_exporter = exporters["field"]().initialize(key, apikey, field)
                     file = field_exporter.export()
                     files.append({"name": f"{key}_{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
-                    github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
+                    if github:
+                        github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
     if exportType == "model" or exportType == "collection":
         schemas, secretkey = generate_airtable_schema(apikey)
         airtable = AirTableConnection(decrypt(secretkey), apikey)
         exporter = exporters["model"]().initialize(model, apikey, item)
         file = exporter.export()
         files.append({"name": f"{exporter.get_name()}", "file": file})
-        github.upload_file(f"space/{exporter.get_name()}.xml", file)
+        if github:
+            github.upload_file(f"space/{exporter.get_name()}.xml", file)
 
         prefill_data, prefill_group, group_sort = get_prefill(apikey, exporter.get_schema().get("id"))
         fields = airtable.getSingleGroupedItem(
@@ -317,7 +322,8 @@ def patternlistexporttree(apikey, exportType, model):
             field_exporter = exporters["field"]().initialize(model, apikey, field['KeyField'])
             file = field_exporter.export()
             files.append({"name": f"{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
-            github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
+            if github:
+                github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
 
 
     zipStream = BytesIO()
