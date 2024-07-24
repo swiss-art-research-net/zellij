@@ -59,7 +59,7 @@
                                     <option value="" hidden aria-hidden="true">Generators</option>
                                     <optgroup label="Pattern Export">
                                         <option value="space" data-id="{{ db['dbaseapikey'] }}" class="export-field">This Space XML</option>
-                                        <option value="total-space">Total Space XML</option>
+                                        <option value="total-space" data-id="{{ db['dbaseapikey'] }}" class="export-field-all">Total Space XML</option>
                                     </optgroup>
                                 </select>
                             </td>
@@ -88,6 +88,14 @@
             $(this).on("click", function (e) {
                 e.preventDefault();
                 window.location.href = "{{ url_for('docs.patternlistexport', apikey='API_KEY', exportType='project', model='API_KEY') }}"
+                    .replaceAll("API_KEY", e.currentTarget.dataset.id);
+            })
+        })
+
+        $('.export-field-all').each(function () {
+            $(this).on("click", function (e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('docs.patternlistexporttree', apikey='API_KEY', exportType='project', model='API_KEY') }}"
                     .replaceAll("API_KEY", e.currentTarget.dataset.id);
             })
         })

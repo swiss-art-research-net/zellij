@@ -101,7 +101,8 @@ def decrypt(bytestring, keyfile=None, key=None):
     try:
         plaintext = box.decrypt(bytestring)
         return plaintext.decode("utf-8")
-    except Exception:
+    except Exception as e:
+        print(e)
         return ""
 
 
