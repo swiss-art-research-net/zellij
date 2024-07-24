@@ -292,12 +292,20 @@ def patternlistexporttree(apikey, exportType, model):
                 exporter = exporters["model"]().initialize(key, apikey, item["KeyField"])
                 file = exporter.export()
                 files.append({"name": f"{key}_{exporter.get_name()}", "file": file})
+                github.upload_file(f"composite/{exporter.get_name()}.xml", file)
+
+                for field in item["Contains"]:
+                    field_exporter = exporters["field"]().initialize(key, apikey, field)
+                    file = field_exporter.export()
+                    files.append({"name": f"{key}_{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
+                    github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
     if exportType == "model" or exportType == "collection":
         schemas, secretkey = generate_airtable_schema(apikey)
         airtable = AirTableConnection(decrypt(secretkey), apikey)
         exporter = exporters["model"]().initialize(model, apikey, item)
         file = exporter.export()
         files.append({"name": f"{exporter.get_name()}", "file": file})
+        github.upload_file(f"space/{exporter.get_name()}.xml", file)
 
         prefill_data, prefill_group, group_sort = get_prefill(apikey, exporter.get_schema().get("id"))
         fields = airtable.getSingleGroupedItem(
@@ -306,9 +314,10 @@ def patternlistexporttree(apikey, exportType, model):
 
         for idx, field in enumerate(fields._GroupedData.values()):
             print(f"Processing {idx} of {len(fields._GroupedData)}")
-            field_exporter = exporters["field"]().initialize(model, apikey, field['Field'][0])
+            field_exporter = exporters["field"]().initialize(model, apikey, field['KeyField'])
             file = field_exporter.export()
             files.append({"name": f"{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
+            github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
 
 
     zipStream = BytesIO()
