@@ -10,7 +10,7 @@ from io import BytesIO
 from flask import Blueprint, render_template, request, abort, Response
 
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
-from github_wrapper import GithubWrapper
+from website.github_wrapper import GithubWrapper
 from website.datasources import get_prefill
 from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt, dict_gen_one
 from website.exporters.ModelExporter import ModelExporter

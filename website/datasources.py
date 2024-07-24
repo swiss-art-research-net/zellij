@@ -696,7 +696,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
     if dbaseid:
         c.execute("SELECT * FROM AirTableDatabases WHERE dbaseid=%s", (dbaseid,))
         existing = dict_gen_one(c)
-        if existing["githubtoken"]:
+        if "githubtoken" in existing:
             existing["githubtoken"] = decrypt(existing["githubtoken"])
     c.close()
     return render_template("generator/airdbeditor.html", existing=existing)
