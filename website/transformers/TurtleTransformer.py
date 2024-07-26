@@ -5,14 +5,8 @@ CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 
 
 class TurtleTransformer:
-    input_str: str
-
-    def __init__(self, input_str: str):
-        self.input_str = input_str
-
-    def transform(self):
-        input_str = "E7_Entity->P1_is_identified_by->E42_Identifier[8_1]->P2_has_type->E55_Type[9_1]"
-        print(input_str.split("->"))
+    @staticmethod
+    def transform(field_name: str, input_str: str):
         graph = Graph()
         graph.bind("crm", CRM)
         graph.bind("rdf", RDF)
@@ -32,7 +26,10 @@ class TurtleTransformer:
             current_part = parts[idx]
 
             if idx % 2 == 1:
-                graph.add((URIRef(uris[idx-1]), CRM[current_part], URIRef(uris[idx+1])))
+                if parts[idx + 1] == "rdf:literal":
+                    graph.add((URIRef(uris[idx-1]), CRM[current_part], Literal(field_name.replace(" ", "_")+"_value")))
+                else:
+                    graph.add((URIRef(uris[idx-1]), CRM[current_part], URIRef(uris[idx+1])))
             else:
                 graph.add((URIRef(uris[idx]), RDF.type, CRM[current_part.split('[')[0]]))
 
