@@ -264,9 +264,10 @@ def patternlistexporttree(apikey, exportType, model):
     c = database.cursor()
     c.execute("SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (apikey,))
     existing = dict_gen_one(c)
+
     github = None
 
-    if existing["githubtoken"]:
+    if existing is not None and "githubtoken" in existing:
         existing["githubtoken"] = decrypt(existing["githubtoken"])
         github = GithubWrapper(existing["githubtoken"], existing["githubrepo"])
 
