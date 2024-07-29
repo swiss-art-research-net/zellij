@@ -1,5 +1,5 @@
 import io
-from typing import List
+from typing import List, Dict
 
 from pyairtable.api.types import RecordDict
 from pyairtable.formulas import match
@@ -13,6 +13,7 @@ CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 
 
 class TurtleTransformer:
+    airtable: AirTableConnection
     field: RecordDict
     crm_class: RecordDict
 
@@ -21,48 +22,60 @@ class TurtleTransformer:
         self.api_key = api_key
 
         schemas, secretkey = generate_airtable_schema(api_key)
-        airtable = AirTableConnection(decrypt(secretkey), api_key)
-        self.field = (airtable.get_record_by_formula("Field", match({"ID": field_id}))
-                      or airtable.get_record_by_id("Field", field_id))
-        self.crm_class = airtable.get_record_by_id("CRM Class", self.field.get("fields", {}).get("Ontology_Scope")[0])
+        self.airtable = AirTableConnection(decrypt(secretkey), api_key)
+        self.field = (self.airtable.get_record_by_formula("Field", match({"ID": field_id}))
+                      or self.airtable.get_record_by_id("Field", field_id))
+        self.crm_class = self.airtable.get_record_by_id("CRM Class", self.field.get("fields", {}).get("Ontology_Scope")[0])
 
     def transform(self) -> io.BytesIO:
         graph = Graph()
-        graph.bind("crm", CRM)
+
+        namespaces: Dict[str, Namespace] = {}
+        for namespace in self.airtable.get_all_records_from_table("NameSpaces"):
+            prefix = namespace.get("fields", {}).get("Abbreviation", "")
+            uri = namespace.get("fields", {}).get("Namespace", "")
+            namespaces[prefix] = Namespace(uri)
+            graph.bind(prefix, namespaces[prefix])
         graph.bind("rdf", RDF)
 
-        total_path: str = (
-                self.crm_class.get("fields", {}).get("Class_Nim", "")
-                + self.field.get("fields", {}).get("Ontological_Long_Path", "")
-        )
+        total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
 
-        parts: List[str] = total_path.split("->")
-        uris = {}
+        parts: List[str] = total_path.lstrip("->").split("->")
+        uris = {-1: self.crm_class.get("fields", {}).get("Class_Ur_Instance").strip("<>")}
+
         for idx in range(len(parts)):
             part = parts[idx]
-            if idx % 2 == 0:
+            if idx % 2 == 1:
                 if "[" in part:
-                    identifiers = part.split('[')[1].split(']')[0]
-                    uris[idx] = f"https://linked.art/example/{identifiers}"
+                    class_identifier = part.split('[')[0].split("_")[0]
+                    crm_class = self.airtable.get_record_by_formula("CRM Class", match({"Class_Nim": class_identifier}))
+
+                    if crm_class is not None:
+                        uris[idx] = f'{self.crm_class.get("fields", {}).get("Instance Root", "")}{crm_class.get("fields", {}).get("Instance Modifier", class_identifier)}/{part.split("[")[1].split("]")[0]}'
+                    else:
+                        uris[idx] = f'{self.crm_class.get("fields", {}).get("Instance Root", "")}/{part.split("[")[1].split("]")[0]}'
                 else:
                     uris[idx] = f"https://linked.art/example/{part}"
 
         for idx in range(len(parts)):
             current_part = parts[idx]
+            namespace = namespaces[current_part.split(":")[0] if ":" in current_part else "crm"]
 
-            if idx % 2 == 1:
+            if idx % 2 == 0:
                 if parts[idx + 1] == "rdf:literal":
                     graph.add(
                         (
                             URIRef(uris[idx - 1]),
-                            CRM[current_part],
+                            namespaces[namespace][current_part],
                             Literal(self.field.get("fields", {}).get("System_Name", "").replace(" ", "_") + "_value")
                         )
                     )
                 else:
-                    graph.add((URIRef(uris[idx - 1]), CRM[current_part], URIRef(uris[idx + 1])))
+                    graph.add((URIRef(uris[idx - 1]), namespaces[namespace][current_part], URIRef(uris[idx + 1])))
             else:
-                graph.add((URIRef(uris[idx]), RDF.type, CRM[current_part.split('[')[0]]))
+                if current_part == "rdf:literal":
+                    continue
+                graph.add((URIRef(uris[idx]), RDF.type, namespaces[namespace][current_part.split('[')[0]]))
 
         file = io.BytesIO()
         file.name = f"{self.field.get('fields', {}).get('System_Name', '').replace(' ', '_')}.ttl"
