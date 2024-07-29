@@ -676,7 +676,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
             else:
                 c.execute(
                     "INSERT INTO AirTableDatabases (airtableaccountkey, dbasename, dbaseapikey, githubrepo, githubtoken)"
-                    + " VALUES (%s,%s,%s)",
+                    + " VALUES (%s,%s,%s,%s,%s)",
                     (
                         accountid,
                         name,
