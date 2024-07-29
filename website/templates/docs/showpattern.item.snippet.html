@@ -328,6 +328,11 @@
                                                         data-id="{{ fld['KeyField'] }}">Basic Atomic Pattern XML
                                                 </option>
                                             </optgroup>
+                                            <optgroup label="Pattern Transform">
+                                                <option value="composite" class="generate-turtle"
+                                                        data-id="{{ fld['Field'][0] }}">Basic Atomic Pattern Turtle
+                                                </option>
+                                            </optgroup>
                                         </select>
                                     </td>
                                 {% endif %}
@@ -370,6 +375,11 @@
                                             <optgroup label="Pattern Export">
                                                 <option value="composite" class="export-field"
                                                         data-id="{{ fld['KeyField'] }}">Basic Atomic Pattern XML
+                                                </option>
+                                            </optgroup>
+                                            <optgroup label="Pattern Transform">
+                                                <option value="composite" class="generate-turtle"
+                                                        data-id="{{ fld['Field'][0] }}">Basic Atomic Pattern Turtle
                                                 </option>
                                             </optgroup>
                                         </select>
@@ -553,10 +563,22 @@
         window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='field', model=pattern, item='') }}" + id;
     }
 
+    function transformField(id, type) {
+      if (type === "turtle") {
+          window.location.href = "{{ url_for('docs.patterntransformturtle', apikey=apikey, item='') }}" + id;
+      }
+    }
+
     $('.export-field').on('click', function (e) {
         e.preventDefault();
         const id = $(this).data('id');
         exportField(id);
+    })
+
+    $('.generate-turtle').on('click', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        transformField(id, "turtle");
     })
 
     async function renderMermaid(id, text, parent) {

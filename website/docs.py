@@ -19,6 +19,8 @@ from website.exporters.ProjectExporter import ProjectExporter
 from website.functions import functions
 from werkzeug.wsgi import FileWrapper
 
+from website.transformers.TurtleTransformer import TurtleTransformer
+
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
 
@@ -337,6 +339,19 @@ def patternlistexporttree(apikey, exportType, model):
     response = Response(w, mimetype="application/zip", direct_passthrough=True)
     response.headers['Content-Disposition'] = f'attachment; filename=export.zip'
     response.headers['Content-Type'] = 'application/zip'
+    return response
+
+
+@bp.route("/transform/turtle/<apikey>/<item>")
+def patterntransformturtle(apikey, item):
+    transformer = TurtleTransformer(apikey, item)
+    file = transformer.transform()
+
+    w = FileWrapper(file)
+
+    response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+    response.headers['Content-Disposition'] = f"attachment; filename={file.name}"
+    response.headers['Content-Type'] = "text/turtle"
     return response
 
 
