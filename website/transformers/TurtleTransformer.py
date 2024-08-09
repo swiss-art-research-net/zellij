@@ -49,7 +49,16 @@ class TurtleTransformer:
             raise ValueError(f"Could not find CRM Class with ID {ontology_scope}")
 
     def upload(self):
-        self.airtable.airtable.table(base_id=self.api_key, table_name="Field").update(self.id, {"Turtle_Representation": self.turtle})
+        escaped_ttl = (self.turtle
+                       .replace("_", r"\_")
+                       .replace("<", r"\<")
+                       .replace(">", r"\>")
+                       .replace("{", r"\{")
+                       .replace("}", r"\}")
+                       )
+
+        self.airtable.airtable.table(base_id=self.api_key, table_name="Field").update(self.id, {
+            "Turtle_Representation": escaped_ttl})
 
     def transform(self) -> io.BytesIO:
         graph = Graph()
@@ -68,7 +77,8 @@ class TurtleTransformer:
             pass
 
         for namespace in namespaces_records:
-            prefix = namespace.get("fields", {}).get("Abbreviation", "") or namespace.get("fields", {}).get("Prefix", "")
+            prefix = namespace.get("fields", {}).get("Abbreviation", "") or namespace.get("fields", {}).get("Prefix",
+                                                                                                            "")
             uri = namespace.get("fields", {}).get("Namespace", "")
             namespaces[prefix] = Namespace(uri)
             graph.bind(prefix, namespaces[prefix])
@@ -93,20 +103,22 @@ class TurtleTransformer:
 
                     try:
                         if crm_class is None:
-                            crm_class = self.airtable.get_record_by_formula("Ontology_Class", match({"Class_Nim": class_identifier}))
+                            crm_class = self.airtable.get_record_by_formula("Ontology_Class",
+                                                                            match({"Class_Nim": class_identifier}))
                     except:
                         pass
 
                     try:
                         if crm_class is None:
-                            crm_class = self.airtable.get_record_by_formula("CRM Class", match({"Class_Nim": class_identifier}))
+                            crm_class = self.airtable.get_record_by_formula("CRM Class",
+                                                                            match({"Class_Nim": class_identifier}))
                     except:
                         pass
 
                     if crm_class is not None:
                         instance_modifier = (
-                            crm_class.get("fields", {}).get("Instance Modifier", class_identifier)
-                            or crm_class.get("fields", {}).get("Instance_Modifier", class_identifier)
+                                crm_class.get("fields", {}).get("Instance Modifier", class_identifier)
+                                or crm_class.get("fields", {}).get("Instance_Modifier", class_identifier)
                         )
 
                         instance_root = (
