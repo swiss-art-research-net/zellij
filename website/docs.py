@@ -347,12 +347,20 @@ def patterntransformturtle(apikey, item):
     transformer = TurtleTransformer(apikey, item)
     file = transformer.transform()
 
-    w = FileWrapper(file)
+    if request.args.get("upload") == "true":
+        try:
+            transformer.upload()
 
-    response = Response(w, mimetype="text/turtle", direct_passthrough=True)
-    response.headers['Content-Disposition'] = f"attachment; filename={file.name}"
-    response.headers['Content-Type'] = "text/turtle"
-    return response
+            return "", 200
+        except:
+            return "", 500
+    else:
+        w = FileWrapper(file)
+
+        response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+        response.headers['Content-Disposition'] = f"attachment; filename={file.name}"
+        response.headers['Content-Type'] = "text/turtle"
+        return response
 
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])

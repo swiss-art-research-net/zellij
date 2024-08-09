@@ -16,6 +16,7 @@ class TurtleTransformer:
     airtable: AirTableConnection
     field: RecordDict
     crm_class: RecordDict
+    turtle: str
 
     def __init__(self, api_key: str, field_id: str):
         self.id = field_id
@@ -25,24 +26,62 @@ class TurtleTransformer:
         self.airtable = AirTableConnection(decrypt(secretkey), api_key)
         self.field = (self.airtable.get_record_by_formula("Field", match({"ID": field_id}))
                       or self.airtable.get_record_by_id("Field", field_id))
-        self.crm_class = self.airtable.get_record_by_id("CRM Class",
-                                                        self.field.get("fields", {}).get("Ontology_Scope")[0])
+
+        ontology_scope = self.field.get("fields", {}).get("Ontology_Scope")
+        if isinstance(ontology_scope, list):
+            ontology_scope = ontology_scope[0]
+
+        self.crm_class = None
+
+        try:
+            if self.crm_class is None:
+                self.crm_class = self.airtable.get_record_by_formula("Ontology_Class", match({"ID": ontology_scope}))
+        except:
+            pass
+
+        try:
+            if self.crm_class is None:
+                self.crm_class = self.airtable.get_record_by_id("CRM Class", ontology_scope)
+        except:
+            pass
+
+        if self.crm_class is None:
+            raise ValueError(f"Could not find CRM Class with ID {ontology_scope}")
+
+    def upload(self):
+        self.airtable.airtable.table(base_id=self.api_key, table_name="Field").update(self.id, {"Turtle_Representation": self.turtle})
 
     def transform(self) -> io.BytesIO:
         graph = Graph()
 
         namespaces: Dict[str, Union[Namespace, DefinedNamespaceMeta]] = {}
-        for namespace in self.airtable.get_all_records_from_table("NameSpaces"):
-            prefix = namespace.get("fields", {}).get("Abbreviation", "")
+        namespaces_records = []
+
+        try:
+            namespaces_records.extend(self.airtable.get_all_records_from_table("NameSpaces"))
+        except:
+            pass
+
+        try:
+            namespaces_records.extend(self.airtable.get_all_records_from_table("Ontology"))
+        except:
+            pass
+
+        for namespace in namespaces_records:
+            prefix = namespace.get("fields", {}).get("Abbreviation", "") or namespace.get("fields", {}).get("Prefix", "")
             uri = namespace.get("fields", {}).get("Namespace", "")
             namespaces[prefix] = Namespace(uri)
             graph.bind(prefix, namespaces[prefix])
         namespaces["rdf"] = RDF
         graph.bind("rdf", RDF)
 
-        total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
+        total_path: str = (
+                self.field.get("fields", {}).get("Ontological_Long_Path", "")
+                or self.field.get("fields", {}).get("Ontological_Path", "")
+        )
 
-        parts: List[str] = total_path.lstrip("->").split("->")
+        discriminator = "-->" if "-->" in total_path else "->"
+        parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
         uris = {-1: self.crm_class.get("fields", {}).get("Class_Ur_Instance").strip("<>")}
 
         for idx in range(len(parts)):
@@ -50,20 +89,43 @@ class TurtleTransformer:
             if idx % 2 == 1:
                 if "[" in part:
                     class_identifier = part.split('[')[0].split("_")[0]
-                    crm_class = self.airtable.get_record_by_formula("CRM Class", match({"Class_Nim": class_identifier}))
+                    crm_class = None
+
+                    try:
+                        if crm_class is None:
+                            crm_class = self.airtable.get_record_by_formula("Ontology_Class", match({"Class_Nim": class_identifier}))
+                    except:
+                        pass
+
+                    try:
+                        if crm_class is None:
+                            crm_class = self.airtable.get_record_by_formula("CRM Class", match({"Class_Nim": class_identifier}))
+                    except:
+                        pass
 
                     if crm_class is not None:
-                        instance_modifier = crm_class.get("fields", {}).get("Instance Modifier", class_identifier)
+                        instance_modifier = (
+                            crm_class.get("fields", {}).get("Instance Modifier", class_identifier)
+                            or crm_class.get("fields", {}).get("Instance_Modifier", class_identifier)
+                        )
+
+                        instance_root = (
+                                crm_class.get("fields", {}).get("Instance Root")
+                                or crm_class.get("fields", {}).get("Instance_Root", "")
+                        )
                         uris[idx] = (
-                            f'{self.crm_class.get("fields", {}).get("Instance Root", "")}' +
-                            f'{instance_modifier}/' +
-                            f'{part.split("[")[1].split("]")[0]}'
-                         )
+                                f'{instance_root}' +
+                                f'{instance_modifier}/' +
+                                f'{part.split("[")[1].split("]")[0]}'
+                        )
                     else:
-                        instance_root = self.crm_class.get("fields", {}).get("Instance Root", "")
+                        instance_root = (
+                                self.crm_class.get("fields", {}).get("Instance Root")
+                                or self.crm_class.get("fields", {}).get("Instance_Root", "")
+                        )
                         uris[idx] = (
-                            f'{instance_root}{"/" if instance_root[-1] != "/" else ""}' +
-                            f'{part.split("[")[1].split("]")[0]}'
+                                f'{instance_root}{"/" if instance_root[-1] != "/" else ""}' +
+                                f'{part.split("[")[1].split("]")[0]}'
                         )
                 else:
                     uris[idx] = f"https://linked.art/example/{part}"
@@ -72,6 +134,7 @@ class TurtleTransformer:
             current_part = parts[idx]
             namespace = namespaces[current_part.split(":")[0] if ":" in current_part else "crm"]
             ns_class = current_part.split(":")[1] if ":" in current_part else current_part
+            ns_class = ns_class.strip()
 
             if idx % 2 == 0:
                 if parts[idx + 1] == "rdf:literal":
@@ -89,9 +152,10 @@ class TurtleTransformer:
                     continue
                 graph.add((URIRef(uris[idx]), RDF.type, namespace[ns_class.split('[')[0]]))
 
+        self.turtle = graph.serialize(format="turtle")
         file = io.BytesIO()
         file.name = f"{self.field.get('fields', {}).get('System_Name', '').replace(' ', '_')}.ttl"
-        file.write(graph.serialize(format="turtle").encode("utf-8"))
+        file.write(self.turtle.encode("utf-8"))
         file.seek(0)
 
         return file
