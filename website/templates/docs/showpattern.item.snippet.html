@@ -328,6 +328,16 @@
                                                         data-id="{{ fld['KeyField'] }}">Basic Atomic Pattern XML
                                                 </option>
                                             </optgroup>
+                                            <optgroup label="Pattern Transform">
+                                                <option value="composite" class="generate-turtle"
+                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                    Generate Turtle File
+                                                </option>
+{#                                                <option value="composite" class="generate-turtle"#}
+{#                                                        data-id="{{ fld['Field'][0] }}" data-upload="true">#}
+{#                                                    Generate Turtle For System#}
+{#                                                </option>#}
+                                            </optgroup>
                                         </select>
                                     </td>
                                 {% endif %}
@@ -371,6 +381,16 @@
                                                 <option value="composite" class="export-field"
                                                         data-id="{{ fld['KeyField'] }}">Basic Atomic Pattern XML
                                                 </option>
+                                            </optgroup>
+                                            <optgroup label="Pattern Transform">
+                                                <option value="composite" class="generate-turtle"
+                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                    Generate Turtle File
+                                                </option>
+{#                                                <option value="composite" class="generate-turtle"#}
+{#                                                        data-id="{{ fld['Field'][0] }}" data-upload="true">#}
+{#                                                    Generate Turtle For System#}
+{#                                                </option>#}
                                             </optgroup>
                                         </select>
                                     </td>
@@ -553,10 +573,34 @@
         window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='field', model=pattern, item='') }}" + id;
     }
 
+    function transformField(id, type, upload = false) {
+      if (type === "turtle") {
+          if (upload) {
+              fetch("{{ url_for('docs.patterntransformturtle', apikey=apikey, item='') }}" + id + "?upload=" + upload)
+                  .then((res) => {
+                      if (res.ok) {
+                          alert("Turtle file has been generated and uploaded to the system.");
+                      } else {
+                            alert("An error occurred while uploading the turtle file to the system.");
+                      }
+                  })
+          } else {
+              window.location.href = "{{ url_for('docs.patterntransformturtle', apikey=apikey, item='') }}" + id;
+          }
+      }
+    }
+
     $('.export-field').on('click', function (e) {
         e.preventDefault();
         const id = $(this).data('id');
         exportField(id);
+    })
+
+    $('.generate-turtle').on('click', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        const upload = $(this).data('upload')
+        transformField(id, "turtle", upload);
     })
 
     async function renderMermaid(id, text, parent) {

@@ -19,6 +19,8 @@ from website.exporters.ProjectExporter import ProjectExporter
 from website.functions import functions
 from werkzeug.wsgi import FileWrapper
 
+from website.transformers.TurtleTransformer import TurtleTransformer
+
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
 
@@ -264,9 +266,10 @@ def patternlistexporttree(apikey, exportType, model):
     c = database.cursor()
     c.execute("SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (apikey,))
     existing = dict_gen_one(c)
+
     github = None
 
-    if existing["githubtoken"]:
+    if existing is not None and "githubtoken" in existing:
         existing["githubtoken"] = decrypt(existing["githubtoken"])
         github = GithubWrapper(existing["githubtoken"], existing["githubrepo"])
 
@@ -337,6 +340,27 @@ def patternlistexporttree(apikey, exportType, model):
     response.headers['Content-Disposition'] = f'attachment; filename=export.zip'
     response.headers['Content-Type'] = 'application/zip'
     return response
+
+
+@bp.route("/transform/turtle/<apikey>/<item>")
+def patterntransformturtle(apikey, item):
+    transformer = TurtleTransformer(apikey, item)
+    file = transformer.transform()
+
+    if request.args.get("upload") == "true":
+        try:
+            transformer.upload()
+
+            return "", 200
+        except:
+            return "", 500
+    else:
+        w = FileWrapper(file)
+
+        response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+        response.headers['Content-Disposition'] = f"attachment; filename={file.name}"
+        response.headers['Content-Type'] = "text/turtle"
+        return response
 
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
