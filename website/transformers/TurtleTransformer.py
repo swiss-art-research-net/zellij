@@ -7,7 +7,7 @@ from rdflib import Graph, URIRef, Literal, RDF
 from rdflib.namespace import Namespace, DefinedNamespaceMeta
 
 from ZellijData.AirTableConnection import AirTableConnection
-from db import generate_airtable_schema, decrypt
+from website.db import generate_airtable_schema, decrypt
 
 CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 
