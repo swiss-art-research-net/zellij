@@ -55,10 +55,20 @@ class TurtleTransformer:
                        .replace(">", r"\>")
                        .replace("{", r"\{")
                        .replace("}", r"\}")
-                       )
+        )
 
-        self.airtable.airtable.table(base_id=self.api_key, table_name="Field").update(self.id, {
-            "Turtle_Representation": escaped_ttl})
+        escaped_ttl_lines = list(filter(lambda line: not line.startswith("@") and line != "", self.turtle.splitlines()))
+        escaped_ttl_lines[0] = " ".join(escaped_ttl_lines[0].split(" ")[1:])
+        escaped_ttl = "\n".join(escaped_ttl_lines)
+
+        base_field = self.airtable.airtable.table(base_id=self.api_key, table_name="Field").first(formula=match({"ID": self.field.get("fields").get("ID")}))
+
+        if base_field is None:
+            raise ValueError(f"Could not find Field with ID {self.field.get('fields').get('ID')} in the base")
+
+        self.airtable.airtable.table(base_id=self.api_key, table_name="Field").update(base_field.get("id"), {
+            "Turtle_Representation": escaped_ttl
+        })
 
     def transform(self) -> io.BytesIO:
         graph = Graph()
