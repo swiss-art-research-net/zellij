@@ -57,7 +57,7 @@ class TurtleTransformer:
                        .replace("}", r"\}")
         )
 
-        escaped_ttl_lines = list(filter(lambda line: not line.startswith("@") and line != "", self.turtle.splitlines()))
+        escaped_ttl_lines = list(filter(lambda line: not line.startswith("@") and line != "", escaped_ttl.splitlines()))
         escaped_ttl_lines[0] = " ".join(escaped_ttl_lines[0].split(" ")[1:])
         escaped_ttl = "\n".join(escaped_ttl_lines)
 
