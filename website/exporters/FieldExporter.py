@@ -114,8 +114,13 @@ class FieldExporter(Exporter):
             description_language_label.text = 'English'
 
             ontological_scopes = ET.SubElement(definition, "ontological_scopes")
-            for ontology_id in fields.get('Ontology_Scope', []):
-                record = self._airtable.get_record_by_id('CRM Class', ontology_id)
+            ontological_scopes_records = fields.get('Ontology_Scope', []) if isinstance(fields.get('Ontology_Scope', []), list) else [fields.get('Ontology_Scope', [])]
+            for ontology_id in ontological_scopes_records:
+                try:
+                    record = self._airtable.get_record_by_id('CRM Class', ontology_id)
+                except:
+                    continue
+
                 ontology_class = ET.SubElement(ontological_scopes, "ontology_class")
                 ontology_class_uri = ET.SubElement(ontology_class, "uri")
                 ontology_class_uri.text = record.get("fields", {}).get("Subject", "")
