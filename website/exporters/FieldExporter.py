@@ -1,6 +1,8 @@
-from logging import log
+from os import confstr
+from typing import Union
 from xml.dom import minidom
 
+from pyairtable.api.types import RecordDict
 from pyairtable.formulas import OR, EQUAL, STR_VALUE, match
 
 from website.exporters.Exporter import Exporter
@@ -116,8 +118,16 @@ class FieldExporter(Exporter):
             ontological_scopes = ET.SubElement(definition, "ontological_scopes")
             ontological_scopes_records = fields.get('Ontology_Scope', []) if isinstance(fields.get('Ontology_Scope', []), list) else [fields.get('Ontology_Scope', [])]
             for ontology_id in ontological_scopes_records:
+                record: Union[RecordDict, None] = None
+
                 try:
                     record = self._airtable.get_record_by_id('CRM Class', ontology_id)
+                except:
+                    pass
+
+                try:
+                    if record is None:
+                        record = self._airtable.get_record_by_id('Ontology_Class', ontology_id)
                 except:
                     continue
 
@@ -202,9 +212,13 @@ class FieldExporter(Exporter):
 
             pattern_context = ET.SubElement(root, "pattern_context")
 
-            for project_id in fields.get("Project", []):
+            project_records = fields.get('Project', []) if isinstance(fields.get('Project', []), list) else [fields.get('Project', [])]
+            for project_id in project_records:
                 semantic_pattern_space = ET.SubElement(pattern_context, "semantic_pattern_space")
-                project_field = self._airtable.get_record_by_id("Project", project_id)
+                try:
+                    project_field = self._airtable.get_record_by_id("Project", project_id)
+                except:
+                    continue
 
                 semantic_pattern_space_uri = ET.SubElement(semantic_pattern_space, "uri")
                 semantic_pattern_space_uri.text = project_field.get("fields", {}).get("Namespace")
@@ -335,25 +349,29 @@ class FieldExporter(Exporter):
                 creator_label.text = author_field.get("fields", {}).get("Name")
 
             funding = ET.SubElement(provenance, "funding")
-            for funder_id in fields.get("Funder", []):
-                actor = self._airtable.get_record_by_id("Actors", funder_id)
-                funder = ET.SubElement(funding, "funder")
+            funder_records = fields.get("Funder", [])
+            if isinstance(funder_records, list):
+                for funder_id in funder_records:
+                    actor = self._airtable.get_record_by_id("Actors", funder_id)
+                    funder = ET.SubElement(funding, "funder")
 
-                funder_uri = ET.SubElement(funder, "uri")
-                funder_uri.text = actor.get("fields", {}).get("URI")
-                funder_label = ET.SubElement(funder, "label")
-                funder_label.text = actor.get("fields", {}).get("Name")
+                    funder_uri = ET.SubElement(funder, "uri")
+                    funder_uri.text = actor.get("fields", {}).get("URI")
+                    funder_label = ET.SubElement(funder, "label")
+                    funder_label.text = actor.get("fields", {}).get("Name")
 
             funding_project = ET.SubElement(funding, "funding_project")
-            for project_id in fields.get("Project", []):
-                project = self._airtable.get_record_by_id("Project", project_id)
-                project_field = ET.SubElement(funding_project, "project")
+            funding_project_records = fields.get("Project", [])
+            if isinstance(funding_project_records, list):
+                for project_id in funding_project_records:
+                    project = self._airtable.get_record_by_id("Project", project_id)
+                    project_field = ET.SubElement(funding_project, "project")
 
-                project_label = ET.SubElement(project_field, "label")
-                project_label.text = project.get("fields", {}).get("UI_Name")
+                    project_label = ET.SubElement(project_field, "label")
+                    project_label.text = project.get("fields", {}).get("UI_Name")
 
-                project_uri = ET.SubElement(project_field, "uri")
-                project_uri.text = project.get("fields", {}).get("Namespace")
+                    project_uri = ET.SubElement(project_field, "uri")
+                    project_uri.text = project.get("fields", {}).get("Namespace")
 
             semantic_context = ET.SubElement(definition, "semantic_context")
             ontologies = ET.SubElement(semantic_context, "ontologies")
