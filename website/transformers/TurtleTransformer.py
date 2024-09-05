@@ -1,6 +1,7 @@
 import io
 from typing import List, Dict, Union
 
+from website.db import get_db, generate_airtable_schema, decrypt, dict_gen_one
 from pyairtable.api.types import RecordDict
 from pyairtable.formulas import match
 from rdflib import Graph, URIRef, Literal, RDF
@@ -15,14 +16,14 @@ CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 class TurtleTransformer:
     airtable: AirTableConnection
     field: RecordDict
-    crm_class: RecordDict
+    crm_class: Union[RecordDict, None]
     turtle: str
 
     def __init__(self, api_key: str, field_id: str):
         self.id = field_id
         self.api_key = api_key
 
-        schemas, secretkey = generate_airtable_schema(api_key)
+        _, secretkey = generate_airtable_schema(api_key)
         self.airtable = AirTableConnection(decrypt(secretkey), api_key)
         self.field = (self.airtable.get_record_by_formula("Field", match({"ID": field_id}))
                       or self.airtable.get_record_by_id("Field", field_id))
@@ -31,7 +32,7 @@ class TurtleTransformer:
         if isinstance(ontology_scope, list):
             ontology_scope = ontology_scope[0]
 
-        self.crm_class = None
+        self.crm_class: Union[RecordDict, None] = None
 
         try:
             if self.crm_class is None:
@@ -49,6 +50,12 @@ class TurtleTransformer:
             raise ValueError(f"Could not find CRM Class with ID {ontology_scope}")
 
     def upload(self):
+        database = get_db()
+        c = database.cursor()
+        c.execute("SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (self.api_key,))
+        existing = dict_gen_one(c)
+        c.close()
+
         escaped_ttl = (self.turtle
                        .replace("_", r"\_")
                        .replace("<", r"\<")
@@ -61,14 +68,27 @@ class TurtleTransformer:
         escaped_ttl_lines[0] = " ".join(escaped_ttl_lines[0].split(" ")[1:])
         escaped_ttl = "\n".join(escaped_ttl_lines)
 
-        base_field = self.airtable.airtable.table(base_id=self.api_key, table_name="Field").first(formula=match({"ID": self.field.get("fields").get("ID")}))
+        base_api_key = self.api_key
+        if existing is not None and existing["fieldbase"] is not None:
+            base_api_key = existing["fieldbase"]
+
+        base_field = self.airtable.airtable.table(base_id=base_api_key, table_name="Field").first(formula=match({"ID": self.field.get("fields").get("ID")}))
 
         if base_field is None:
-            raise ValueError(f"Could not find Field with ID {self.field.get('fields').get('ID')} in the base")
+            base_field = self.airtable.airtable.table(base_id=self.api_key, table_name="Field").first(formula=match({"ID": self.field.get("fields").get("ID")}))
 
-        self.airtable.airtable.table(base_id=self.api_key, table_name="Field").update(base_field.get("id"), {
-            "Turtle_Representation": escaped_ttl
-        })
+            if base_field is not None:
+                base_api_key = self.api_key
+            else:
+                raise ValueError("Field already exists in Field table, but not in Field table in the Field Base")
+
+        try:
+            self.airtable.airtable.table(base_id=base_api_key, table_name="Field").update(base_field.get("id"), {
+                "Turtle_Representation": escaped_ttl
+            })
+        except Exception as e:
+            print("Error uploading Turtle: ", e)
+            raise e
 
     def transform(self) -> io.BytesIO:
         graph = Graph()

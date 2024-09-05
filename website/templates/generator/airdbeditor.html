@@ -15,6 +15,12 @@
             <input name="githubrepo" id="githubrepo" value="{{ existing["githubrepo"] or "" }}">
             <label for="githubtoken">Access Token</label>
             <input name="githubtoken" id="githubtoken" value="{{ existing["githubtoken"] or "" }}">
+            <label for="fieldbase">Field Base ID</label>
+            <input name="fieldbase" id="fieldbase" value="{{ existing["fieldbase"] or "" }}">
+            <label for="collectionbase">Collection Base ID</label>
+            <input name="collectionbase" id="collectionbase" value="{{ existing["collectionbase"] or "" }}">
+            <label for="projectbase">Project Base ID</label>
+            <input name="projectbase" id="projectbase" value="{{ existing["projectbase"] or "" }}">
 
             <button type="submit">{{ "Update" if existing else "Create" }} Database</button>
             {% if existing %}
