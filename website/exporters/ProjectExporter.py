@@ -1,5 +1,7 @@
 from xml.dom import minidom
 
+from pyairtable.api.types import RecordDict
+
 from website.exporters.Exporter import Exporter
 import xml.etree.ElementTree as ET
 
@@ -12,8 +14,12 @@ class ProjectExporter(Exporter):
         root = ET.Element("semantic_space")
         definition = ET.SubElement(root, "definition")
 
-        project = self._airtable.get_record_by_formula('Project', '{ID}')
-        fields = project.get('fields')
+        project: RecordDict = self._airtable.get_record_by_formula('Project', '{ID}')
+
+        if project is None:
+            return ""
+
+        fields = project.get('fields', {})
 
         uri = ET.SubElement(root, "uri")
         uri.text = fields.get("Namespace")
@@ -101,24 +107,27 @@ class ProjectExporter(Exporter):
 
         dataspace_context = ET.SubElement(semantic_context, "dataspace_context")
         services = ET.SubElement(dataspace_context, "services")
-        for service in self._airtable.get_all_records_from_table('Service'):
-            service_fields = service.get("fields")
+        try:
+            for service in self._airtable.get_all_records_from_table('Service'):
+                service_fields = service.get("fields")
 
-            if len(service_fields) == 0:
-                continue
+                if len(service_fields) == 0:
+                    continue
 
-            service_el = ET.SubElement(services, "service")
-            service_name = ET.SubElement(service_el, "service_name")
-            service_name.text = service_fields.get("UI_Name")
+                service_el = ET.SubElement(services, "service")
+                service_name = ET.SubElement(service_el, "service_name")
+                service_name.text = service_fields.get("UI_Name")
 
-            service_access_point = ET.SubElement(service_el, "service_access_point")
-            service_access_point.text = service_fields.get("Access_Point")
+                service_access_point = ET.SubElement(service_el, "service_access_point")
+                service_access_point.text = service_fields.get("Access_Point")
 
-            service_protocol = ET.SubElement(service_el, "service_protocol")
-            service_protocol.text = service_fields.get("Protocol")
+                service_protocol = ET.SubElement(service_el, "service_protocol")
+                service_protocol.text = service_fields.get("Protocol")
 
-            service_type = ET.SubElement(service_el, "service_type")
-            service_type.text = service_fields.get("Service_Type")
+                service_type = ET.SubElement(service_el, "service_type")
+                service_type.text = service_fields.get("Service_Type")
+        except:
+            pass
 
         components = ET.SubElement(root, "components")
         atomic_semantic_patterns = ET.SubElement(components, "atomic_semantic_patterns")
@@ -179,12 +188,14 @@ class ProjectExporter(Exporter):
 
         if fields.get("Author"):
             creators = ET.SubElement(creation_data, "creators")
-            for record_id in fields.get("Author"):
-                author = self._airtable.get_record_by_id('Actors', record_id)
-
+            records = self.get_records(fields.get("Author", []), "Actors")
+            for author in records:
                 creator = ET.SubElement(creators, "creator")
                 creator_name = ET.SubElement(creator, "creator_name")
                 creator_name.text = author.get("fields", {}).get("Name")
+
+                if creator_name.text is None:
+                    creator_name.text = author.get("fields", {}).get("ID")
 
                 creator_uri = ET.SubElement(creator, "creator_URI")
                 creator_uri.text = author.get("fields", {}).get("URI")
@@ -193,11 +204,13 @@ class ProjectExporter(Exporter):
         if fields.get("Funder"):
             funder = ET.SubElement(funding, "funder")
 
-            for record_id in fields.get("Funder"):
-                funder_record = self._airtable.get_record_by_id('Actors', record_id)
-
+            records = self.get_records(fields.get("Funder", []), "Actors")
+            for funder_record in records:
                 funder_name = ET.SubElement(funder, "funder_name")
                 funder_name.text = funder_record.get("fields", {}).get("Name")
+
+                if funder_name.text is None:
+                    funder_name.text = author.get("fields", {}).get("ID")
 
                 funder_uri = ET.SubElement(funder, "funder_URI")
                 funder_uri.text = funder_record.get("fields", {}).get("URI")
