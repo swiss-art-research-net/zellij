@@ -191,7 +191,7 @@ class ModelExporter(Exporter):
                     for model_field in self._airtable.get_multiple_records_by_formula(referenced_table, OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), val)))):
                         pattern = ET.SubElement(composition, "pattern")
 
-                        field_ui_names = model_field.get("fields", {}).get("Field_UI_Name")
+                        field_ui_names = model_field.get("fields", {}).get("Field_UI_Name", "")
                         pattern_name = ET.SubElement(pattern, "pattern_name")
                         pattern_name.text = field_ui_names[0] if len(field_ui_names) > 0 else ''
 

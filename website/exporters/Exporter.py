@@ -1,5 +1,9 @@
 import io
 from abc import ABC, abstractmethod
+from typing import List, Union
+
+from pyairtable.api.types import RecordDict
+from pyairtable.formulas import match
 
 from ZellijData.AirTableConnection import AirTableConnection
 from website.datasources import get_prefill
@@ -68,3 +72,23 @@ class Exporter(ABC):
 
     def get_schema(self):
         return self._schema
+
+    def get_records(self, item: Union[str, List[str]], table: str) -> List[RecordDict]:
+        records = []
+        if isinstance(item, str):
+            if "," in item:
+                items = item.split(", ")
+
+                for record in items:
+                    records.append(self._airtable.get_record_by_formula(table, match({"ID": record})))
+            elif "rec" in item:
+                records.append(self._airtable.get_record_by_id(table, item))
+            else:
+                records.append(self._airtable.get_record_by_formula(table, match({"ID": item})))
+        else:
+            for record in item:
+                records.append(self._airtable.get_record_by_id(table, record))
+        print(records[0])
+        
+        return records
+
