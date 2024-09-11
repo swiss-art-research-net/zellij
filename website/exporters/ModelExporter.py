@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
+from typing import Union
 from xml.dom import minidom
 
+from pyairtable.api.types import RecordDict
 from pyairtable.formulas import OR, EQUAL, STR_VALUE
 
 from website.exporters.Exporter import Exporter
@@ -143,7 +145,18 @@ class ModelExporter(Exporter):
                 if self._prefill_group.get(key, {}).get('name') == "Ontological_Scope":
                     ontological_scopes = ET.SubElement(definition, "ontological_scopes")
                     for record_id in val:
-                        record = self._airtable.get_record_by_id('CRM Class', record_id)
+                        record: Union[RecordDict, None] = None
+
+                        try:
+                            record = self._airtable.get_record_by_id('CRM Class', ontology_id)
+                        except:
+                            pass
+
+                        try:
+                            if record is None:
+                                record = self._airtable.get_record_by_id('Ontology_Class', ontology_id)
+                        except:
+                            continue
 
                         ontology_class = ET.SubElement(ontological_scopes, "ontology_class")
                         ontology_class_uri = ET.SubElement(ontology_class, "uri")
@@ -262,6 +275,8 @@ class ModelExporter(Exporter):
                         creator_uri.text = author.get("fields", {}).get("URI")
                         creator_label = ET.SubElement(creator, "label")
                         creator_label.text = author.get("fields", {}).get("Name")
+                        if not creator_label.text:
+                            creator_label.text = author.get("fields", {}).get("ID")
 
                 if self._prefill_group.get(key, {}).get('name') == "Funders":
                     for record_id in val:
@@ -272,6 +287,8 @@ class ModelExporter(Exporter):
                         funder_uri.text = funder_record.get("fields", {}).get("URI")
                         funder_label = ET.SubElement(funder, "label")
                         funder_label.text = funder_record.get("fields", {}).get("Name")
+                        if not funder_label.text:
+                            funder_label.text = funder_record.get("fields", {}).get("ID")
 
                 if self._prefill_group.get(key, {}).get('name') == "Funding_Project":
                     for record_id in val:
