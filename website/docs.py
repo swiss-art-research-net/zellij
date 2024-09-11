@@ -7,9 +7,10 @@ import logging
 import zipfile
 from io import BytesIO
 
-from flask import Blueprint, render_template, request, abort, Response
+from flask import Blueprint, render_template, request, abort, Response, g
 
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
+from auth import login_required
 from website.github_wrapper import GithubWrapper
 from website.datasources import get_prefill
 from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt, dict_gen_one
@@ -254,6 +255,7 @@ def patternlistexport(apikey, exportType, model):
 
 
 @bp.route("/list/<apikey>/export/<exportType>/<model>/all", methods=["GET"])
+@login_required
 def patternlistexporttree(apikey, exportType, model):
     exporters = {
         'model': ModelExporter,
@@ -348,6 +350,9 @@ def patterntransformturtle(apikey, item):
     file = transformer.transform()
 
     if request.args.get("upload") == "true":
+        if g.user is None:
+            return "", 401
+
         try:
             transformer.upload()
 
