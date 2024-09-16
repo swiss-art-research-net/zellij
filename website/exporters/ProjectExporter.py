@@ -49,7 +49,7 @@ class ProjectExporter(Exporter):
         name_language_uri.text = "http://vocab.getty.edu/aat/300388277"
         name_language_label = ET.SubElement(name_language, "name_language_label")
         name_language_label.text = 'English'
-        self._name = fields.get('UI_Name')
+        self._name = uri.text
 
         identifiers = ET.SubElement(definition, "identifiers")
         system_identifier = ET.SubElement(identifiers, "system_identifier")

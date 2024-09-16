@@ -36,6 +36,7 @@ class FieldExporter(Exporter):
         fields = base_field.get('fields')
         uri = ET.SubElement(root, "uri")
         uri.text = fields.get("URI")
+        self._name = fields.get("URI")
 
         definition = ET.SubElement(root, "definition")
         if 'Field' in self._prefill_data and self._prefill_data['Field']['exportable']:
@@ -66,7 +67,6 @@ class FieldExporter(Exporter):
             system_name_type_uri.text = "http://vocab.getty.edu/aat/300456630"
             system_name_type_label = ET.SubElement(system_name_type, "label")
             system_name_type_label.text = "System Name"
-            self._name = fields.get('System_Name', "")
 
             names = ET.SubElement(definition, "names")
             for col in ["Field_UI_Name", "Field_UI_Name_Inverse", "Model_Specific_Field_Name"]:

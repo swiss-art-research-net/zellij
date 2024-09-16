@@ -48,6 +48,7 @@ class ModelExporter(Exporter):
 
                 if self._prefill_group.get(key, {}).get('name') == "URI":
                     uri.text = val
+                    self._name = val
 
                 if self._prefill_group.get(key, {}).get('name') == "UI_Name":
                     name = ET.SubElement(names, "name")
@@ -76,7 +77,6 @@ class ModelExporter(Exporter):
                     system_name_type_uri.text = "http://vocab.getty.edu/aat/300456630"
                     system_name_type_label = ET.SubElement(system_name_type, "label")
                     system_name_type_label.text = "System Name"
-                    self._name = val
 
                 if self._prefill_group.get(key, {}).get('name') == "Identifier":
                     system_identifier = ET.SubElement(definition, "system_identifier")
