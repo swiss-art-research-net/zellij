@@ -12,7 +12,6 @@ class ProjectExporter(Exporter):
 
     def _generate_xml(self) -> str:
         root = ET.Element("semantic_space")
-        definition = ET.SubElement(root, "definition")
 
         project: RecordDict = self._airtable.get_record_by_formula('Project', '{ID}')
 
@@ -20,9 +19,10 @@ class ProjectExporter(Exporter):
             return ""
 
         fields = project.get('fields', {})
-
         uri = ET.SubElement(root, "uri")
         uri.text = fields.get("Namespace")
+
+        definition = ET.SubElement(root, "definition")
 
         names = ET.SubElement(definition, "names")
 
