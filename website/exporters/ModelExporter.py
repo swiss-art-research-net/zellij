@@ -46,7 +46,7 @@ class ModelExporter(Exporter):
                 if not self._prefill_group.get(key, {}).get("exportable", False) and key != "KeyField":
                     continue
 
-                if self._prefill_group.get(key, {}).get('name') == "URI":
+                if key == "URI":
                     uri.text = val
                     self._name = val
 
