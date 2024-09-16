@@ -28,7 +28,7 @@ class ModelExporter(Exporter):
             type_label.text = "Collection Model"
         else:
             type_uri.text = "http://vocab.getty.edu/aat/300456625"
-            type_label.text = "Collection Model"
+            type_label.text = "Reference Model"
 
         provenance = ET.SubElement(root, "provenance")
         version_data = ET.SubElement(provenance, "version_data")
