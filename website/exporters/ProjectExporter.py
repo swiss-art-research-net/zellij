@@ -30,9 +30,9 @@ class ProjectExporter(Exporter):
         name_content = ET.SubElement(system_name, "name_content")
         name_content.text = fields.get('System_Name')
         name_type = ET.SubElement(system_name, "name_type")
-        name_type_uri = ET.SubElement(name_type, "name_name_uri")
+        name_type_uri = ET.SubElement(name_type, "uri")
         name_type_uri.text = "http://vocab.getty.edu/aat/300456630"
-        name_type_label = ET.SubElement(name_type, "name_type_label")
+        name_type_label = ET.SubElement(name_type, "label")
         name_type_label.text = 'System Name'
 
         name = ET.SubElement(names, "name")
