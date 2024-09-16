@@ -24,7 +24,9 @@ class ProjectExporter(Exporter):
         uri = ET.SubElement(root, "uri")
         uri.text = fields.get("Namespace")
 
-        system_name = ET.SubElement(definition, "system_name")
+        names = ET.SubElement(definition, "names")
+
+        system_name = ET.SubElement(names, "system_name")
         name_content = ET.SubElement(system_name, "name_content")
         name_content.text = fields.get('System_Name')
         name_type = ET.SubElement(system_name, "name_type")
@@ -33,7 +35,6 @@ class ProjectExporter(Exporter):
         name_type_label = ET.SubElement(name_type, "name_type_label")
         name_type_label.text = 'System Name'
 
-        names = ET.SubElement(definition, "names")
         name = ET.SubElement(names, "name")
         name_content = ET.SubElement(name, "name_content")
         name_content.text = fields.get('UI_Name')
