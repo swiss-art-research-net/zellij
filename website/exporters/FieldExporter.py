@@ -173,10 +173,10 @@ class FieldExporter(Exporter):
                     reference_pattern = ET.SubElement(reference_patterns, "reference_pattern")
                     collection_field = self._airtable.get_record_by_id('Collection', collection)
 
-                    reference_pattern_uri = ET.SubElement(reference_pattern, "reference_pattern_uri")
+                    reference_pattern_uri = ET.SubElement(reference_pattern, "uri")
                     reference_pattern_uri.text = collection_field.get("fields", {}).get("URI", "")
 
-                    reference_pattern_label = ET.SubElement(reference_pattern, "reference_pattern_label")
+                    reference_pattern_label = ET.SubElement(reference_pattern, "label")
                     reference_pattern_label.text = collection_field.get("fields", {}).get("UI_Name")
 
                     reference_pattern_type = ET.SubElement(reference_pattern, "reference_pattern_type")
@@ -195,10 +195,10 @@ class FieldExporter(Exporter):
                     reference_pattern = ET.SubElement(reference_patterns, "reference_pattern")
                     model_field = self._airtable.get_record_by_id('Model', model)
 
-                    reference_pattern_uri = ET.SubElement(reference_pattern, "reference_pattern_uri")
+                    reference_pattern_uri = ET.SubElement(reference_pattern, "uri")
                     reference_pattern_uri.text = model_field.get("fields", {}).get("URI", "")
 
-                    reference_pattern_label = ET.SubElement(reference_pattern, "reference_pattern_label")
+                    reference_pattern_label = ET.SubElement(reference_pattern, "label")
                     reference_pattern_label.text = model_field.get("fields", {}).get("UI_Name")
 
                     reference_pattern_type = ET.SubElement(reference_patterns, "reference_pattern_type")
