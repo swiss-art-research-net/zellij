@@ -151,11 +151,11 @@ class ProjectExporter(Exporter):
             record = pattern.get("fields")
             composite_semantic_pattern = ET.SubElement(composite_semantic_patterns, "composite_semantic_pattern")
 
-            composite_semantic_pattern_name = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_name")
-            composite_semantic_pattern_name.text = record.get("UI_Name")
-
             composite_semantic_pattern_uri = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_URI")
             composite_semantic_pattern_uri.text = record.get("URI")
+
+            composite_semantic_pattern_name = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_label")
+            composite_semantic_pattern_name.text = record.get("UI_Name")
 
             composite_semantic_pattern_type = ET.SubElement(composite_semantic_pattern, "composite_semantic_pattern_type")
             composite_semantic_pattern_type_uri = ET.SubElement(composite_semantic_pattern_type, "uri")
