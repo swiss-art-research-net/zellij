@@ -136,11 +136,11 @@ class ProjectExporter(Exporter):
             record = field.get("fields")
             atomic_semantic_pattern = ET.SubElement(atomic_semantic_patterns, "atomic_semantic_pattern")
 
-            atomic_semantic_pattern_name = ET.SubElement(atomic_semantic_pattern, "label")
-            atomic_semantic_pattern_name.text = record.get("UI_Name")
-
             atomic_semantic_pattern_uri = ET.SubElement(atomic_semantic_pattern, "uri")
             atomic_semantic_pattern_uri.text = record.get("URI")
+
+            atomic_semantic_pattern_name = ET.SubElement(atomic_semantic_pattern, "label")
+            atomic_semantic_pattern_name.text = record.get("UI_Name")
 
         composite_semantic_patterns = ET.SubElement(components, "composite_semantic_patterns")
 
