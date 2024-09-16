@@ -38,6 +38,8 @@ class ModelExporter(Exporter):
         serialization = ET.SubElement(root, "serialization")
         encodings_el = ET.SubElement(serialization, "encodings")
 
+        identifiers = ET.SubElement(definition, "identifiers")
+
         names = ET.SubElement(definition, "names")
         for result in self._results:
             if result.get("KeyField") != self._item:
@@ -79,7 +81,7 @@ class ModelExporter(Exporter):
                     system_name_type_label.text = "System Name"
 
                 if self._prefill_group.get(key, {}).get('name') == "Identifier":
-                    system_identifier = ET.SubElement(definition, "system_identifier")
+                    system_identifier = ET.SubElement(identifiers, "system_identifier")
                     system_identifier_content = ET.SubElement(system_identifier, "system_identifier_content")
                     system_identifier_content.text = val
                     system_identifier_type = ET.SubElement(system_identifier, "system_identifier_type")
@@ -109,7 +111,6 @@ class ModelExporter(Exporter):
                         ontology_version_label.text = record.get("fields", {}).get("Version")
 
                 if key == "KeyField":
-                    identifiers = ET.SubElement(definition, "identifiers")
                     identifier = ET.SubElement(identifiers, "identifier")
 
                     identifier_content = ET.SubElement(identifier, "identifier_content")
