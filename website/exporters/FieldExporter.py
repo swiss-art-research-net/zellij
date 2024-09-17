@@ -378,9 +378,7 @@ class FieldExporter(Exporter):
 
             semantic_context = ET.SubElement(definition, "semantic_context")
             ontologies = ET.SubElement(semantic_context, "ontologies")
-            for ontology_field in self._airtable.get_multiple_records_by_formula('Ontology', OR(*list(
-                    map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'),
-                        field.get("fields").get("Ontology_Context", []))))):
+            for ontology_field in self.get_records(fields.get("Ontology_Context", []), 'Ontology'):
                 ontology = ET.SubElement(ontologies, "ontology")
 
                 ontology_uri = ET.SubElement(ontology, "ontology_URI")
