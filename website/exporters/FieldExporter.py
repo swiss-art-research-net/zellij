@@ -143,9 +143,11 @@ class FieldExporter(Exporter):
             semantic_path.text = fields.get('Ontological_Path')
 
             semantic_path_total = ET.SubElement(definition, "semantic_path_total")
-            semantic_path_total.text = field.get("fields", {}).get('Total_Ontological_Path') or field.get("fields",
-                                                                                                          {}).get(
-                'Model_Fields_Total_Ontological_Path')
+            semantic_path_total.text = (
+                    fields.get("Total_Ontological_Path") or
+                    field.get("fields", {}).get('Total_Ontological_Path') or
+                    field.get("fields", {}).get('Model_Fields_Total_Ontological_Path')
+            )
 
             expected_data = ET.SubElement(definition, "expected_data")
             data_type = ET.SubElement(expected_data, "data_type")
