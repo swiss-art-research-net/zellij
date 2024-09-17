@@ -52,7 +52,7 @@ class FieldExporter(Exporter):
             identifiers = ET.SubElement(definition, "identifiers")
             identifier = ET.SubElement(identifiers, "identifier")
             identifier_content = ET.SubElement(identifier, "identifier_content")
-            identifier_content.text = field.get("fields").get('ID') or field.get("fields").get('Field_Identifier')
+            identifier_content.text = fields.get('ID')
             identifier_type = ET.SubElement(identifier, "identifier_type")
             identifier_type_uri = ET.SubElement(identifier_type, "uri")
             identifier_type_uri.text = "http://vocab.getty.edu/aat/300404012"
