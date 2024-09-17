@@ -59,7 +59,9 @@ class FieldExporter(Exporter):
             identifier_type_label = ET.SubElement(identifier_type, "label")
             identifier_type_label.text = "Unique Identifiers"
 
-            system_name = ET.SubElement(definition, "system_name")
+            names = ET.SubElement(definition, "names")
+
+            system_name = ET.SubElement(names, "system_name")
             system_name_content = ET.SubElement(system_name, "name_content")
             system_name_content.text = fields.get('System_Name')
             system_name_type = ET.SubElement(system_name, "name_type")
@@ -68,7 +70,6 @@ class FieldExporter(Exporter):
             system_name_type_label = ET.SubElement(system_name_type, "label")
             system_name_type_label.text = "System Name"
 
-            names = ET.SubElement(definition, "names")
             for col in ["Field_UI_Name", "Field_UI_Name_Inverse", "Model_Specific_Field_Name"]:
                 if field.get("fields").get(col) is None:
                     continue
