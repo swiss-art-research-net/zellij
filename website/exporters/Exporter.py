@@ -88,7 +88,6 @@ class Exporter(ABC):
         else:
             for record in item:
                 records.append(self._airtable.get_record_by_id(table, record))
-        print(records[0])
-        
+
         return records
 
