@@ -227,7 +227,7 @@ class FieldExporter(Exporter):
                 semantic_pattern_space_uri.text = project_field.get("fields", {}).get("Namespace")
 
                 semantic_pattern_space_label = ET.SubElement(semantic_pattern_space, "label")
-                semantic_pattern_space_label.text = project_field.get("fields", {}).get("UI_Name")
+                semantic_pattern_space_label.text = project_field.get("fields", {}).get("ID")
 
             composite_semantic_patterns_deployed_in = ET.SubElement(pattern_context,
                                                                     "composite_semantic_patterns_deployed_in")
