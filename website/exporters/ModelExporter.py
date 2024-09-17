@@ -28,7 +28,7 @@ class ModelExporter(Exporter):
             type_label.text = "Collection Model"
         else:
             type_uri.text = "http://vocab.getty.edu/aat/300456625"
-            type_label.text = "Collection Model"
+            type_label.text = "Reference Model"
 
         provenance = ET.SubElement(root, "provenance")
         version_data = ET.SubElement(provenance, "version_data")
@@ -38,6 +38,8 @@ class ModelExporter(Exporter):
         serialization = ET.SubElement(root, "serialization")
         encodings_el = ET.SubElement(serialization, "encodings")
 
+        identifiers = ET.SubElement(definition, "identifiers")
+
         names = ET.SubElement(definition, "names")
         for result in self._results:
             if result.get("KeyField") != self._item:
@@ -46,8 +48,9 @@ class ModelExporter(Exporter):
                 if not self._prefill_group.get(key, {}).get("exportable", False) and key != "KeyField":
                     continue
 
-                if self._prefill_group.get(key, {}).get('name') == "URI":
+                if key == "URI":
                     uri.text = val
+                    self._name = val
 
                 if self._prefill_group.get(key, {}).get('name') == "UI_Name":
                     name = ET.SubElement(names, "name")
@@ -76,10 +79,9 @@ class ModelExporter(Exporter):
                     system_name_type_uri.text = "http://vocab.getty.edu/aat/300456630"
                     system_name_type_label = ET.SubElement(system_name_type, "label")
                     system_name_type_label.text = "System Name"
-                    self._name = val
 
                 if self._prefill_group.get(key, {}).get('name') == "Identifier":
-                    system_identifier = ET.SubElement(definition, "system_identifier")
+                    system_identifier = ET.SubElement(identifiers, "system_identifier")
                     system_identifier_content = ET.SubElement(system_identifier, "system_identifier_content")
                     system_identifier_content.text = val
                     system_identifier_type = ET.SubElement(system_identifier, "system_identifier_type")
@@ -109,7 +111,6 @@ class ModelExporter(Exporter):
                         ontology_version_label.text = record.get("fields", {}).get("Version")
 
                 if key == "KeyField":
-                    identifiers = ET.SubElement(definition, "identifiers")
                     identifier = ET.SubElement(identifiers, "identifier")
 
                     identifier_content = ET.SubElement(identifier, "identifier_content")
