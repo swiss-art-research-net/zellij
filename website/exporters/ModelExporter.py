@@ -93,22 +93,20 @@ class ModelExporter(Exporter):
                 if self._prefill_group.get(key, {}).get('name') == "Ontology_Context":
                     ontologies = ET.SubElement(semantic_context, "ontologies")
 
-                    for record in self._airtable.get_multiple_records_by_formula('Ontology', OR(*list(map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), val)))):
+                    for ontology_field in self.get_records(val, 'Ontology'):
                         ontology = ET.SubElement(ontologies, "ontology")
-                        ontology.attrib["uri"] = record.get("fields", {}).get("Namespace")
+
+                        ontology_uri = ET.SubElement(ontology, "ontology_URI")
+                        ontology_uri.text = ontology_field.get("fields", {}).get("Namespace", "")
 
                         ontology_prefix = ET.SubElement(ontology, "ontology_prefix")
-                        ontology_prefix.text = record.get("fields", {}).get("Prefix")
+                        ontology_prefix.text = ontology_field.get("fields", {}).get("Prefix")
 
                         ontology_name = ET.SubElement(ontology, "ontology_name")
-                        ontology_name.attrib["uri"] = "http://vocab.getty.edu/aat/300456628"
-                        ontology_name_label = ET.SubElement(ontology_name, "ontology_name_label")
-                        ontology_name_label.text = record.get("fields", {}).get("UI_Name")
+                        ontology_name.text = ontology_field.get("fields", {}).get("UI_Name")
 
                         ontology_version = ET.SubElement(ontology, "ontology_version")
-                        ontology_version.attrib["uri"] = "http://vocab.getty.edu/aat/300456598"
-                        ontology_version_label = ET.SubElement(ontology_version, "ontology_version_label")
-                        ontology_version_label.text = record.get("fields", {}).get("Version")
+                        ontology_version.text = ontology_field.get("fields", {}).get("Version")
 
                 if key == "KeyField":
                     identifier = ET.SubElement(identifiers, "identifier")
@@ -279,10 +277,13 @@ class ModelExporter(Exporter):
                         if not creator_label.text:
                             creator_label.text = author.get("fields", {}).get("ID")
 
-                if self._prefill_group.get(key, {}).get('name') == "Funders":
+                if self._prefill_group.get(key, {}).get('name') == "Funders" or self._prefill_group.get(key, {}).get('name') == "Funder":
                     for record_id in val:
                         funder = ET.SubElement(funding, "funder")
-                        funder_record = self._airtable.get_record_by_id('Institution', record_id)
+                        try:
+                            funder_record = self._airtable.get_record_by_id('Institution', record_id)
+                        except:
+                            funder_record = self._airtable.get_record_by_id('Actors', record_id)
 
                         funder_uri = ET.SubElement(funder, "uri")
                         funder_uri.text = funder_record.get("fields", {}).get("URI")

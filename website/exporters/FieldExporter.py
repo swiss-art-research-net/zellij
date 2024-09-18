@@ -172,9 +172,8 @@ class FieldExporter(Exporter):
                 reference_patterns = ET.SubElement(expected_data, "reference_patterns")
                 collections = fields.get('Expected_Collection_Model', [])
 
-                for collection in collections:
+                for collection_field in self.get_records(collections, 'Collection'):
                     reference_pattern = ET.SubElement(reference_patterns, "reference_pattern")
-                    collection_field = self._airtable.get_record_by_id('Collection', collection)
 
                     reference_pattern_uri = ET.SubElement(reference_pattern, "uri")
                     reference_pattern_uri.text = collection_field.get("fields", {}).get("URI", "")
@@ -194,9 +193,8 @@ class FieldExporter(Exporter):
                 reference_patterns = ET.SubElement(expected_data, "reference_patterns")
                 models = fields.get('Expected_Resource_Model', [])
 
-                for model in models:
+                for model_field in self.get_records(models, 'Model'):
                     reference_pattern = ET.SubElement(reference_patterns, "reference_pattern")
-                    model_field = self._airtable.get_record_by_id('Model', model)
 
                     reference_pattern_uri = ET.SubElement(reference_pattern, "uri")
                     reference_pattern_uri.text = model_field.get("fields", {}).get("URI", "")
@@ -215,13 +213,9 @@ class FieldExporter(Exporter):
 
             pattern_context = ET.SubElement(root, "pattern_context")
 
-            project_records = fields.get('Project', []) if isinstance(fields.get('Project', []), list) else [fields.get('Project', [])]
-            for project_id in project_records:
+            project_records = fields.get('Project', [])
+            for project_field in self.get_records(project_records, 'Project'):
                 semantic_pattern_space = ET.SubElement(pattern_context, "semantic_pattern_space")
-                try:
-                    project_field = self._airtable.get_record_by_id("Project", project_id)
-                except:
-                    continue
 
                 semantic_pattern_space_uri = ET.SubElement(semantic_pattern_space, "uri")
                 semantic_pattern_space_uri.text = project_field.get("fields", {}).get("Namespace")
