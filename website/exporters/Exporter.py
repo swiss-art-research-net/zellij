@@ -89,5 +89,5 @@ class Exporter(ABC):
             for record in item:
                 records.append(self._airtable.get_record_by_id(table, record))
 
-        return records
+        return list(filter(lambda x: x, records))
 
