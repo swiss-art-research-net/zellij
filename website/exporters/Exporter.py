@@ -30,6 +30,7 @@ class Exporter(ABC):
         "collection": "http://vocab.getty.edu/aat/300456626",
         "annotation data type": "http://vocab.getty.edu/aat/300456627",
         "concept": "http://vocab.getty.edu/aat/300435691",
+        "uri": " https://vocab.getty.edu/aat/300404629",
     }
 
     @abstractmethod

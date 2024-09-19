@@ -50,7 +50,9 @@ class ModelExporter(Exporter):
 
                 if key == "URI":
                     uri.text = val
-                    self._name = val
+
+                if key == "Identifer" or key == "Identifier":
+                    self._name = val.replace(".", "_")
 
                 if self._prefill_group.get(key, {}).get('name') == "UI_Name":
                     name = ET.SubElement(names, "name")

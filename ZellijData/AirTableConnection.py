@@ -282,7 +282,7 @@ class AirTableConnection(object):
 
         return record
 
-    def get_record_by_formula(self, table, formula):
+    def get_record_by_formula(self, table: str, formula: str):
         """
         A single call to the AirTable, returning the unprocessed JSON result from AirTable.
         """
