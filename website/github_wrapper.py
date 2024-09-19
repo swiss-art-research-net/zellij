@@ -7,9 +7,12 @@ class GithubWrapper:
     github: Github
     repo: Repository
 
-    def __init__(self, token: str, repo: str):
+    def __init__(self, token: str, repo: str, org: str):
         self.github = Github(auth=Auth.Token(token))
-        self.repo = self.github.get_user().get_repo(repo)
+        if org is not None:
+            self.repo = self.github.get_user(org).get_repo(repo)
+        else:
+            self.repo = self.github.get_user().get_repo(repo)
 
     def upload_file(self, file_path: str, content: io.BytesIO):
         content_file = None

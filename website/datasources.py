@@ -647,6 +647,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
         key = request.form["apikey"]
         github_repo = request.form["githubrepo"]
         github_token = request.form["githubtoken"]
+        github_org = request.form["githuborganization"]
         field_base = request.form["fieldbase"]
         collection_base = request.form["collectionbase"]
         project_base = request.form["projectbase"]
@@ -666,13 +667,14 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
         if error is None:
             if dbaseid:
                 c.execute(
-                    "UPDATE AirTableDatabases SET dbasename=%s, dbaseapikey=%s, githubrepo=%s, githubtoken=%s, fieldbase=%s, collectionbase=%s, projectbase=%s "
+                    "UPDATE AirTableDatabases SET dbasename=%s, dbaseapikey=%s, githubrepo=%s, githubtoken=%s, githuborganization=%s, fieldbase=%s, collectionbase=%s, projectbase=%s "
                     + " WHERE dbaseid=%s",
                     (
                         name,
                         key,
                         github_repo,
                         encrypt(github_token),
+                        github_org,
                         field_base,
                         collection_base,
                         project_base,
@@ -681,7 +683,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
                 )
             else:
                 c.execute(
-                    "INSERT INTO AirTableDatabases (airtableaccountkey, dbasename, dbaseapikey, githubrepo, githubtoken, fieldbase, collectionbase, projectbase)"
+                    "INSERT INTO AirTableDatabases (airtableaccountkey, dbasename, dbaseapikey, githubrepo, githubtoken, githuborganization, fieldbase, collectionbase, projectbase)"
                     + " VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                     (
                         accountid,
@@ -689,6 +691,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
                         key,
                         github_repo,
                         encrypt(github_token),
+                        github_org,
                         field_base,
                         collection_base,
                         project_base,

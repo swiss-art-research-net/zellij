@@ -273,7 +273,7 @@ def patternlistexporttree(apikey, exportType, model):
 
     if existing is not None and "githubtoken" in existing:
         existing["githubtoken"] = decrypt(existing["githubtoken"])
-        github = GithubWrapper(existing["githubtoken"], existing["githubrepo"])
+        github = GithubWrapper(existing["githubtoken"], existing["githubrepo"], existing["githuborganization"])
 
     item = request.args.get("item")
 
