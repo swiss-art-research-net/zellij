@@ -36,7 +36,8 @@ class FieldExporter(Exporter):
         fields = base_field.get('fields')
         uri = ET.SubElement(root, "uri")
         uri.text = fields.get("URI")
-        self._name = fields.get("URI")
+
+        self._name = (fields.get("Identifer") or fields.get("Identifier", "")).replace(".", "_")
 
         definition = ET.SubElement(root, "definition")
         if 'Field' in self._prefill_data and self._prefill_data['Field']['exportable']:
