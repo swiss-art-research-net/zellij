@@ -158,13 +158,14 @@ class FieldExporter(Exporter):
             data_type_label.text = expected_value_type
             data_type_uri.text = self.value_types_terms.get(expected_value_type.lower())
 
-            for set in fields.get('Expected_ConceptSet', []):
-                field_control_set = self._airtable.get_record_by_id("ConceptSet", set)
+            control_lists = ET.SubElement(expected_data, "control_lists")
+            for field_control_set in self.get_records(fields.get('Expected_Control_List', []), "ConceptSet"):
+                control_list = ET.SubElement(control_lists, "control_list")
+                control_list_uri = ET.SubElement(control_list, "uri")
+                control_list_uri.text = field_control_set.get("fields", {}).get("Identifier")
 
-                control_set = ET.SubElement(expected_data, "control_set")
-                control_set_uri = ET.SubElement(control_set, "uri")
-                control_set_uri.text = field_control_set.get("fields", {}).get("Name")
-                ET.SubElement(control_set, "label")
+                control_list_label = ET.SubElement(control_list, "label")
+                control_list_label.text = field_control_set.get("fields", {}).get("Name")
 
             reference_control = ET.SubElement(expected_data, "reference_control")
             reference_control.text = fields.get("Set_Value")
