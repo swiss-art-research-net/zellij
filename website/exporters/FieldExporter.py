@@ -159,7 +159,10 @@ class FieldExporter(Exporter):
             data_type_uri.text = self.value_types_terms.get(expected_value_type.lower())
 
             control_lists = ET.SubElement(expected_data, "control_lists")
-            for field_control_set in self.get_records(fields.get('Expected_Control_List', []), "ConceptSet"):
+            table_name = "ConceptSet"
+            if not self.contains_table(table_name) and self.contains_table("Control_List"):
+                table_name = "Control_List"
+            for field_control_set in self.get_records(fields.get('Expected_Control_List', []), table_name):
                 control_list = ET.SubElement(control_lists, "control_list")
                 control_list_uri = ET.SubElement(control_list, "uri")
                 control_list_uri.text = field_control_set.get("fields", {}).get("Identifier")
