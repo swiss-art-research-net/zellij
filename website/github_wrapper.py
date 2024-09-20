@@ -9,7 +9,7 @@ class GithubWrapper:
 
     def __init__(self, token: str, repo: str, org: str):
         self.github = Github(auth=Auth.Token(token))
-        if org is not None:
+        if org:
             self.repo = self.github.get_user(org).get_repo(repo)
         else:
             self.repo = self.github.get_user().get_repo(repo)
