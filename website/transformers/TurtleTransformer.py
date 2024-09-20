@@ -72,7 +72,11 @@ class TurtleTransformer:
         if existing is not None and existing["fieldbase"] is not None:
             base_api_key = existing["fieldbase"]
 
-        base_field = self.airtable.airtable.table(base_id=base_api_key, table_name="Field").first(formula=match({"ID": self.field.get("fields").get("ID")}))
+        base_field = None
+        try:
+            base_field = self.airtable.airtable.table(base_id=base_api_key, table_name="Field").first(formula=match({"ID": self.field.get("fields").get("ID")}))
+        except:
+            pass
 
         if base_field is None:
             base_field = self.airtable.airtable.table(base_id=self.api_key, table_name="Field").first(formula=match({"ID": self.field.get("fields").get("ID")}))
