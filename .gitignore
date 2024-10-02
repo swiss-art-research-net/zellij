@@ -151,8 +151,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-mysql-data
+mysql-data*
 
 .idea
 temp.ttl
 pyrightconfig.json
+.ruff_cache

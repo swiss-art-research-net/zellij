@@ -2,8 +2,11 @@
 Created on Mar. 18, 2021
 @author: Pete Harris
 """
+
+from abc import ABCMeta
 import asyncio
 import logging
+from typing import Dict
 import zipfile
 from io import BytesIO
 
@@ -13,7 +16,13 @@ from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
 from website.auth import login_required
 from website.github_wrapper import GithubWrapper
 from website.datasources import get_prefill
-from website.db import get_db, dict_gen_many, generate_airtable_schema, decrypt, dict_gen_one
+from website.db import (
+    get_db,
+    dict_gen_many,
+    generate_airtable_schema,
+    decrypt,
+    dict_gen_one,
+)
 from website.exporters.ModelExporter import ModelExporter
 from website.exporters.FieldExporter import FieldExporter
 from website.exporters.ProjectExporter import ProjectExporter
@@ -227,10 +236,10 @@ def patternlistall(apikey):
 @bp.route("/list/<apikey>/export/<exportType>/<model>", methods=["GET"])
 def patternlistexport(apikey, exportType, model):
     exporters = {
-        'model': ModelExporter,
-        'collection': ModelExporter,
-        'field': FieldExporter,
-        'project': ProjectExporter,
+        "model": ModelExporter,
+        "collection": ModelExporter,
+        "field": FieldExporter,
+        "project": ProjectExporter,
     }
 
     item = request.args.get("item")
@@ -244,24 +253,26 @@ def patternlistexport(apikey, exportType, model):
     elif item is None:
         filename = model
     else:
-        filename = "".join(c if c.isalpha() or c.isdigit() or c == ' ' else '_' for c in item).rstrip()
+        filename = "".join(
+            c if c.isalpha() or c.isdigit() or c == " " else "_" for c in item
+        ).rstrip()
 
     w = FileWrapper(file)
 
     response = Response(w, mimetype="text/xml", direct_passthrough=True)
-    response.headers['Content-Disposition'] = f'attachment; filename={filename}.xml'
-    response.headers['Content-Type'] = 'application/xml'
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}.xml"
+    response.headers["Content-Type"] = "application/xml"
     return response
 
 
 @bp.route("/list/<apikey>/export/<exportType>/<model>/all", methods=["GET"])
 @login_required
 def patternlistexporttree(apikey, exportType, model):
-    exporters = {
-        'model': ModelExporter,
-        'collection': ModelExporter,
-        'field': FieldExporter,
-        'project': ProjectExporter,
+    exporters: Dict[str, ABCMeta] = {
+        "model": ModelExporter,
+        "collection": ModelExporter,
+        "field": FieldExporter,
+        "project": ProjectExporter,
     }
 
     database = get_db()
@@ -273,7 +284,11 @@ def patternlistexporttree(apikey, exportType, model):
 
     if existing is not None and "githubtoken" in existing:
         existing["githubtoken"] = decrypt(existing["githubtoken"])
-        github = GithubWrapper(existing["githubtoken"], existing["githubrepo"], existing["githuborganization"])
+        github = GithubWrapper(
+            existing["githubtoken"],
+            existing["githubrepo"],
+            existing["githuborganization"],
+        )
 
     item = request.args.get("item")
 
@@ -296,7 +311,9 @@ def patternlistexporttree(apikey, exportType, model):
 
         for key, val in lists.items():
             for item in val:
-                exporter = exporters["model"]().initialize(key, apikey, item["KeyField"])
+                exporter = exporters["model"]().initialize(
+                    key, apikey, item["KeyField"]
+                )
                 file = exporter.export()
                 files.append({"name": f"{key}_{exporter.get_name()}", "file": file})
                 if github:
@@ -305,9 +322,17 @@ def patternlistexporttree(apikey, exportType, model):
                 for field in item["Contains"]:
                     field_exporter = exporters["field"]().initialize(key, apikey, field)
                     file = field_exporter.export()
-                    files.append({"name": f"{key}_{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
+                    files.append(
+                        {
+                            "name": f"{key}_{exporter.get_name()}_{field_exporter.get_name()}",
+                            "file": file,
+                        }
+                    )
                     if github:
-                        github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
+                        github.upload_file(
+                            f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml",
+                            file,
+                        )
     if exportType == "model" or exportType == "collection":
         schemas, secretkey = generate_airtable_schema(apikey)
         airtable = AirTableConnection(decrypt(secretkey), apikey)
@@ -317,30 +342,44 @@ def patternlistexporttree(apikey, exportType, model):
         if github:
             github.upload_file(f"space/{exporter.get_name()}.xml", file)
 
-        prefill_data, prefill_group, group_sort = get_prefill(apikey, exporter.get_schema().get("id"))
+        prefill_data, prefill_group, group_sort = get_prefill(
+            apikey, exporter.get_schema().get("id")
+        )
         fields = airtable.getSingleGroupedItem(
-            item, exporter.get_schema(), prefill_data=prefill_data, group_sort=group_sort
+            item,
+            exporter.get_schema(),
+            prefill_data=prefill_data,
+            group_sort=group_sort,
         )
 
         for idx, field in enumerate(fields._GroupedData.values()):
             print(f"Processing {idx} of {len(fields._GroupedData)}")
-            field_exporter = exporters["field"]().initialize(model, apikey, field['KeyField'])
+            field_exporter = exporters["field"]().initialize(
+                model, apikey, field["KeyField"]
+            )
             file = field_exporter.export()
-            files.append({"name": f"{exporter.get_name()}_{field_exporter.get_name()}", "file": file})
+            files.append(
+                {
+                    "name": f"{exporter.get_name()}_{field_exporter.get_name()}",
+                    "file": file,
+                }
+            )
             if github:
-                github.upload_file(f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file)
+                github.upload_file(
+                    f"atom/{exporter.get_name()}_{field_exporter.get_name()}.xml", file
+                )
 
     zip_stream = BytesIO()
     with zipfile.ZipFile(zip_stream, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for file in files:
-            zf.writestr(f"{file['name']}.xml", file['file'].read())
+            zf.writestr(f"{file['name']}.xml", file["file"].read())
 
     zip_stream.seek(0)
     w = FileWrapper(zip_stream)
 
     response = Response(w, mimetype="application/zip", direct_passthrough=True)
-    response.headers['Content-Disposition'] = f'attachment; filename=export.zip'
-    response.headers['Content-Type'] = 'application/zip'
+    response.headers["Content-Disposition"] = f"attachment; filename=export.zip"
+    response.headers["Content-Type"] = "application/zip"
     return response
 
 
@@ -363,8 +402,8 @@ def patterntransformturtle(apikey, item):
         w = FileWrapper(file)
 
         response = Response(w, mimetype="text/turtle", direct_passthrough=True)
-        response.headers['Content-Disposition'] = f"attachment; filename={file.name}"
-        response.headers['Content-Type'] = "text/turtle"
+        response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
+        response.headers["Content-Type"] = "text/turtle"
         return response
 
 
@@ -421,9 +460,9 @@ def patternitemdisplay(apikey, pattern):
     )
 
     if (
-            isinstance(item, EnhancedResponse)
-            or item is None
-            or isinstance(prefill_data, str)
+        isinstance(item, EnhancedResponse)
+        or item is None
+        or isinstance(prefill_data, str)
     ):
         return render_template("error/airtableerror_simple.html", error=item)
 
@@ -440,10 +479,10 @@ def patternitemdisplay(apikey, pattern):
             if value.get("sortable", False):
                 items = item._GroupedData
                 if all(
-                        [
-                            isinstance(x.get(key, False), str) and x.get(key, "").isdigit()
-                            for x in items.values()
-                        ]
+                    [
+                        isinstance(x.get(key, False), str) and x.get(key, "").isdigit()
+                        for x in items.values()
+                    ]
                 ):
                     for x in items.values():
                         x[key] = int(x[key])

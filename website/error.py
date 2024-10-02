@@ -3,6 +3,7 @@ Created on Mar. 23, 2021
 
 @author: Pete Harris
 """
+
 import traceback
 
 import nacl.secret

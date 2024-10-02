@@ -26,34 +26,43 @@ class FieldExporter(Exporter):
                 low_table = key
                 break
 
-        field = (self._airtable.get_record_by_formula(low_table, match({"ID": self._item}))
-                 or self._airtable.get_record_by_id(low_table, self._item))
+        field = self._airtable.get_record_by_formula(
+            low_table, match({"ID": self._item})
+        ) or self._airtable.get_record_by_id(low_table, self._item)
 
         if field is None:
             return ""
 
-        base_field = self._airtable.get_record_by_id("Field", field.get("fields", {}).get("Field", [])[0])
-        fields = base_field.get('fields')
+        base_field = self._airtable.get_record_by_id(
+            "Field", field.get("fields", {}).get("Field", [])[0]
+        )
+        fields = base_field.get("fields")
         uri = ET.SubElement(root, "uri")
         uri.text = fields.get("URI")
 
-        self._name = (fields.get("Identifer") or fields.get("Identifier", "")).replace(".", "_")
+        self._name = (fields.get("Identifer") or fields.get("Identifier", "")).replace(
+            ".", "_"
+        )
 
         definition = ET.SubElement(root, "definition")
-        if 'Field' in self._prefill_data and self._prefill_data['Field']['exportable']:
+        if "Field" in self._prefill_data and self._prefill_data["Field"]["exportable"]:
             system_identifier = ET.SubElement(definition, "system_identifier")
-            system_identifier_content = ET.SubElement(system_identifier, "identifier_content")
+            system_identifier_content = ET.SubElement(
+                system_identifier, "identifier_content"
+            )
             system_identifier_content.text = field.get("fields").get("ID")
             system_identifier_type = ET.SubElement(system_identifier, "identifier_type")
             system_identifier_type_uri = ET.SubElement(system_identifier_type, "uri")
             system_identifier_type_uri.text = "http://vocab.getty.edu/aat/300404012"
-            system_identifier_type_label = ET.SubElement(system_identifier_type, "label")
+            system_identifier_type_label = ET.SubElement(
+                system_identifier_type, "label"
+            )
             system_identifier_type_label.text = "Unique Identifiers"
 
             identifiers = ET.SubElement(definition, "identifiers")
             identifier = ET.SubElement(identifiers, "identifier")
             identifier_content = ET.SubElement(identifier, "identifier_content")
-            identifier_content.text = fields.get('ID')
+            identifier_content.text = fields.get("ID")
             identifier_type = ET.SubElement(identifier, "identifier_type")
             identifier_type_uri = ET.SubElement(identifier_type, "uri")
             identifier_type_uri.text = "http://vocab.getty.edu/aat/300404012"
@@ -64,14 +73,18 @@ class FieldExporter(Exporter):
 
             system_name = ET.SubElement(names, "system_name")
             system_name_content = ET.SubElement(system_name, "name_content")
-            system_name_content.text = fields.get('System_Name')
+            system_name_content.text = fields.get("System_Name")
             system_name_type = ET.SubElement(system_name, "name_type")
             system_name_type_uri = ET.SubElement(system_name_type, "uri")
             system_name_type_uri.text = "http://vocab.getty.edu/aat/300456630"
             system_name_type_label = ET.SubElement(system_name_type, "label")
             system_name_type_label.text = "System Name"
 
-            for col in ["Field_UI_Name", "Field_UI_Name_Inverse", "Model_Specific_Field_Name"]:
+            for col in [
+                "Field_UI_Name",
+                "Field_UI_Name_Inverse",
+                "Model_Specific_Field_Name",
+            ]:
                 if field.get("fields").get(col) is None:
                     continue
 
@@ -102,34 +115,41 @@ class FieldExporter(Exporter):
             description = ET.SubElement(descriptions, "description")
 
             description_content = ET.SubElement(description, "description_content")
-            description_content.text = field.get("fields").get('Model_Specific_Description') or field.get(
-                "fields").get('Description')
+            description_content.text = field.get("fields").get(
+                "Model_Specific_Description"
+            ) or field.get("fields").get("Description")
 
             description_type = ET.SubElement(description, "description_type")
             description_type_uri = ET.SubElement(description_type, "uri")
             description_type_uri.text = "http://vocab.getty.edu/aat/300456631"
             description_type_label = ET.SubElement(description_type, "label")
-            description_type_label.text = 'Scope Note'
+            description_type_label.text = "Scope Note"
 
             description_language = ET.SubElement(description, "description_language")
             description_language_uri = ET.SubElement(description_language, "uri")
             description_language_uri.text = "http://vocab.getty.edu/aat/300388277"
             description_language_label = ET.SubElement(description_language, "label")
-            description_language_label.text = 'English'
+            description_language_label.text = "English"
 
             ontological_scopes = ET.SubElement(definition, "ontological_scopes")
-            ontological_scopes_records = fields.get('Ontology_Scope', []) if isinstance(fields.get('Ontology_Scope', []), list) else [fields.get('Ontology_Scope', [])]
+            ontological_scopes_records = (
+                fields.get("Ontology_Scope", [])
+                if isinstance(fields.get("Ontology_Scope", []), list)
+                else [fields.get("Ontology_Scope", [])]
+            )
             for ontology_id in ontological_scopes_records:
                 record: Union[RecordDict, None] = None
 
                 try:
-                    record = self._airtable.get_record_by_id('CRM Class', ontology_id)
+                    record = self._airtable.get_record_by_id("CRM Class", ontology_id)
                 except:
                     pass
 
                 try:
                     if record is None:
-                        record = self._airtable.get_record_by_id('Ontology_Class', ontology_id)
+                        record = self._airtable.get_record_by_id(
+                            "Ontology_Class", ontology_id
+                        )
                 except:
                     continue
 
@@ -141,13 +161,13 @@ class FieldExporter(Exporter):
                 ontology_label.text = record.get("fields", {}).get("ID")
 
             semantic_path = ET.SubElement(definition, "semantic_path")
-            semantic_path.text = fields.get('Ontological_Path')
+            semantic_path.text = fields.get("Ontological_Path")
 
             semantic_path_total = ET.SubElement(definition, "semantic_path_total")
             semantic_path_total.text = (
-                    fields.get("Total_Ontological_Path") or
-                    field.get("fields", {}).get('Total_Ontological_Path') or
-                    field.get("fields", {}).get('Model_Fields_Total_Ontological_Path')
+                fields.get("Total_Ontological_Path")
+                or field.get("fields", {}).get("Total_Ontological_Path")
+                or field.get("fields", {}).get("Model_Fields_Total_Ontological_Path")
             )
 
             expected_data = ET.SubElement(definition, "expected_data")
@@ -160,108 +180,211 @@ class FieldExporter(Exporter):
 
             control_lists = ET.SubElement(expected_data, "control_lists")
             table_name = "ConceptSet"
-            if not self.contains_table(table_name) and self.contains_table("Control_List"):
+            if not self.contains_table(table_name) and self.contains_table(
+                "Control_List"
+            ):
                 table_name = "Control_List"
-            for field_control_set in self.get_records(fields.get('Expected_Control_List', []), table_name):
+            for field_control_set in self.get_records(
+                fields.get("Expected_Control_List", []), table_name
+            ):
                 control_list = ET.SubElement(control_lists, "control_list")
                 control_list_uri = ET.SubElement(control_list, "uri")
-                control_list_uri.text = field_control_set.get("fields", {}).get("Identifier")
+                control_list_uri.text = field_control_set.get("fields", {}).get(
+                    "Identifier"
+                )
 
                 control_list_label = ET.SubElement(control_list, "label")
-                control_list_label.text = field_control_set.get("fields", {}).get("Name")
+                control_list_label.text = field_control_set.get("fields", {}).get(
+                    "Name"
+                )
 
             reference_control = ET.SubElement(expected_data, "reference_control")
             reference_control.text = fields.get("Set_Value")
 
             if fields.get("Expected_Value_Type") == "Collection":
                 reference_patterns = ET.SubElement(expected_data, "reference_patterns")
-                collections = fields.get('Expected_Collection_Model', [])
+                collections = fields.get("Expected_Collection_Model", [])
 
-                for collection_field in self.get_records(collections, 'Collection'):
-                    reference_pattern = ET.SubElement(reference_patterns, "reference_pattern")
+                for collection_field in self.get_records(collections, "Collection"):
+                    reference_pattern = ET.SubElement(
+                        reference_patterns, "reference_pattern"
+                    )
 
                     reference_pattern_uri = ET.SubElement(reference_pattern, "uri")
-                    reference_pattern_uri.text = collection_field.get("fields", {}).get("URI", "")
+                    reference_pattern_uri.text = collection_field.get("fields", {}).get(
+                        "URI", ""
+                    )
 
                     reference_pattern_label = ET.SubElement(reference_pattern, "label")
-                    reference_pattern_label.text = collection_field.get("fields", {}).get("UI_Name")
+                    reference_pattern_label.text = collection_field.get(
+                        "fields", {}
+                    ).get("UI_Name")
 
-                    reference_pattern_type = ET.SubElement(reference_pattern, "reference_pattern_type")
-                    reference_pattern_type_uri = ET.SubElement(reference_pattern_type, "uri")
-                    reference_pattern_type_uri.text = "http://vocab.getty.edu/aat/300456626"
-                    reference_pattern_type_label = ET.SubElement(reference_pattern_type, "label")
+                    reference_pattern_type = ET.SubElement(
+                        reference_pattern, "reference_pattern_type"
+                    )
+                    reference_pattern_type_uri = ET.SubElement(
+                        reference_pattern_type, "uri"
+                    )
+                    reference_pattern_type_uri.text = (
+                        "http://vocab.getty.edu/aat/300456626"
+                    )
+                    reference_pattern_type_label = ET.SubElement(
+                        reference_pattern_type, "label"
+                    )
                     reference_pattern_type_label.text = "Reference Collection"
 
-                reference_pattern_type = ET.SubElement(reference_patterns, "reference_pattern_type")
+                reference_pattern_type = ET.SubElement(
+                    reference_patterns, "reference_pattern_type"
+                )
                 reference_pattern_type.text = "Collection"
             elif fields.get("Expected_Value_Type") == "Reference Model":
                 reference_patterns = ET.SubElement(expected_data, "reference_patterns")
-                models = fields.get('Expected_Resource_Model', [])
+                models = fields.get("Expected_Resource_Model", [])
 
-                for model_field in self.get_records(models, 'Model'):
-                    reference_pattern = ET.SubElement(reference_patterns, "reference_pattern")
+                for model_field in self.get_records(models, "Model"):
+                    reference_pattern = ET.SubElement(
+                        reference_patterns, "reference_pattern"
+                    )
 
                     reference_pattern_uri = ET.SubElement(reference_pattern, "uri")
-                    reference_pattern_uri.text = model_field.get("fields", {}).get("URI", "")
+                    reference_pattern_uri.text = model_field.get("fields", {}).get(
+                        "URI", ""
+                    )
 
                     reference_pattern_label = ET.SubElement(reference_pattern, "label")
-                    reference_pattern_label.text = model_field.get("fields", {}).get("UI_Name")
+                    reference_pattern_label.text = model_field.get("fields", {}).get(
+                        "UI_Name"
+                    )
 
-                    reference_pattern_type = ET.SubElement(reference_patterns, "reference_pattern_type")
-                    reference_pattern_type_uri = ET.SubElement(reference_pattern_type, "uri")
-                    reference_pattern_type_uri.text = "http://vocab.getty.edu/aat/300456625"
-                    reference_pattern_type_label = ET.SubElement(reference_pattern_type, "label")
+                    reference_pattern_type = ET.SubElement(
+                        reference_patterns, "reference_pattern_type"
+                    )
+                    reference_pattern_type_uri = ET.SubElement(
+                        reference_pattern_type, "uri"
+                    )
+                    reference_pattern_type_uri.text = (
+                        "http://vocab.getty.edu/aat/300456625"
+                    )
+                    reference_pattern_type_label = ET.SubElement(
+                        reference_pattern_type, "label"
+                    )
                     reference_pattern_type_label.text = "Reference Model"
 
-                reference_pattern_type = ET.SubElement(reference_patterns, "reference_pattern_type")
+                reference_pattern_type = ET.SubElement(
+                    reference_patterns, "reference_pattern_type"
+                )
                 reference_pattern_type.text = "Model"
 
             pattern_context = ET.SubElement(root, "pattern_context")
 
-            project_records = fields.get('Project', [])
-            for project_field in self.get_records(project_records, 'Project'):
-                semantic_pattern_space = ET.SubElement(pattern_context, "semantic_pattern_space")
+            project_records = fields.get("Project", [])
+            for project_field in self.get_records(project_records, "Project"):
+                semantic_pattern_space = ET.SubElement(
+                    pattern_context, "semantic_pattern_space"
+                )
 
-                semantic_pattern_space_uri = ET.SubElement(semantic_pattern_space, "uri")
-                semantic_pattern_space_uri.text = project_field.get("fields", {}).get("Namespace")
+                semantic_pattern_space_uri = ET.SubElement(
+                    semantic_pattern_space, "uri"
+                )
+                semantic_pattern_space_uri.text = project_field.get("fields", {}).get(
+                    "Namespace"
+                )
 
-                semantic_pattern_space_label = ET.SubElement(semantic_pattern_space, "label")
-                semantic_pattern_space_label.text = project_field.get("fields", {}).get("ID")
+                semantic_pattern_space_label = ET.SubElement(
+                    semantic_pattern_space, "label"
+                )
+                semantic_pattern_space_label.text = project_field.get("fields", {}).get(
+                    "ID"
+                )
 
-            composite_semantic_patterns_deployed_in = ET.SubElement(pattern_context,
-                                                                    "composite_semantic_patterns_deployed_in")
-            for model_field in self._airtable.get_multiple_records_by_formula('Model', OR(*list(
-                    map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Model_Deployed", []))))):
-                composite_semantic_pattern = ET.SubElement(composite_semantic_patterns_deployed_in,
-                                                           "composite_semantic_pattern")
-                composite_semantic_pattern_uri = ET.SubElement(composite_semantic_pattern, "uri")
-                composite_semantic_pattern_uri.text = model_field.get("fields", {}).get("URI", "")
+            composite_semantic_patterns_deployed_in = ET.SubElement(
+                pattern_context, "composite_semantic_patterns_deployed_in"
+            )
+            for model_field in self._airtable.get_multiple_records_by_formula(
+                "Model",
+                OR(
+                    *list(
+                        map(
+                            lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                            fields.get("Model_Deployed", []),
+                        )
+                    )
+                ),
+            ):
+                composite_semantic_pattern = ET.SubElement(
+                    composite_semantic_patterns_deployed_in,
+                    "composite_semantic_pattern",
+                )
+                composite_semantic_pattern_uri = ET.SubElement(
+                    composite_semantic_pattern, "uri"
+                )
+                composite_semantic_pattern_uri.text = model_field.get("fields", {}).get(
+                    "URI", ""
+                )
 
-                composite_semantic_pattern_label = ET.SubElement(composite_semantic_pattern, "label")
-                composite_semantic_pattern_label.text = model_field.get("fields", {}).get("UI_Name")
+                composite_semantic_pattern_label = ET.SubElement(
+                    composite_semantic_pattern, "label"
+                )
+                composite_semantic_pattern_label.text = model_field.get(
+                    "fields", {}
+                ).get("UI_Name")
 
-                composite_semantic_pattern_type = ET.SubElement(composite_semantic_pattern,
-                                                                "composite_semantic_pattern_type")
-                composite_semantic_pattern_type_uri = ET.SubElement(composite_semantic_pattern_type, "uri")
-                composite_semantic_pattern_type_uri.text = "http://vocab.getty.edu/aat/300456625"
-                composite_semantic_pattern_type_label = ET.SubElement(composite_semantic_pattern_type, "label")
+                composite_semantic_pattern_type = ET.SubElement(
+                    composite_semantic_pattern, "composite_semantic_pattern_type"
+                )
+                composite_semantic_pattern_type_uri = ET.SubElement(
+                    composite_semantic_pattern_type, "uri"
+                )
+                composite_semantic_pattern_type_uri.text = (
+                    "http://vocab.getty.edu/aat/300456625"
+                )
+                composite_semantic_pattern_type_label = ET.SubElement(
+                    composite_semantic_pattern_type, "label"
+                )
                 composite_semantic_pattern_type_label.text = "Reference Model"
 
-            for collection_field in self._airtable.get_multiple_records_by_formula('Collection', OR(*list(
-                    map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Collection_Deployed", []))))):
-                composite_semantic_pattern = ET.SubElement(composite_semantic_patterns_deployed_in,
-                                                           "composite_semantic_pattern")
-                composite_semantic_pattern_uri = ET.SubElement(composite_semantic_pattern, "uri")
-                composite_semantic_pattern_uri.text = collection_field.get("fields", {}).get("URI", "")
+            for collection_field in self._airtable.get_multiple_records_by_formula(
+                "Collection",
+                OR(
+                    *list(
+                        map(
+                            lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                            fields.get("Collection_Deployed", []),
+                        )
+                    )
+                ),
+            ):
+                composite_semantic_pattern = ET.SubElement(
+                    composite_semantic_patterns_deployed_in,
+                    "composite_semantic_pattern",
+                )
+                composite_semantic_pattern_uri = ET.SubElement(
+                    composite_semantic_pattern, "uri"
+                )
+                composite_semantic_pattern_uri.text = collection_field.get(
+                    "fields", {}
+                ).get("URI", "")
 
-                composite_semantic_pattern_label = ET.SubElement(composite_semantic_pattern, "label")
-                composite_semantic_pattern_label.text = collection_field.get("fields", {}).get("UI_Name")
+                composite_semantic_pattern_label = ET.SubElement(
+                    composite_semantic_pattern, "label"
+                )
+                composite_semantic_pattern_label.text = collection_field.get(
+                    "fields", {}
+                ).get("UI_Name")
 
-                composite_semantic_pattern_type = ET.SubElement(composite_semantic_pattern,
-                                                                "composite_semantic_pattern_type")
-                composite_semantic_pattern_type_uri = ET.SubElement(composite_semantic_pattern_type, "uri")
-                composite_semantic_pattern_type_uri.text = "http://vocab.getty.edu/aat/300456626"
-                composite_semantic_pattern_type_label = ET.SubElement(composite_semantic_pattern_type, "label")
+                composite_semantic_pattern_type = ET.SubElement(
+                    composite_semantic_pattern, "composite_semantic_pattern_type"
+                )
+                composite_semantic_pattern_type_uri = ET.SubElement(
+                    composite_semantic_pattern_type, "uri"
+                )
+                composite_semantic_pattern_type_uri.text = (
+                    "http://vocab.getty.edu/aat/300456626"
+                )
+                composite_semantic_pattern_type_label = ET.SubElement(
+                    composite_semantic_pattern_type, "label"
+                )
                 composite_semantic_pattern_type_label.text = "Collection Model"
 
             serialization = ET.SubElement(root, "serialization")
@@ -333,16 +456,29 @@ class FieldExporter(Exporter):
             version_number_type_label = ET.SubElement(version_number_type, "label")
             version_number_type_label.text = "Version Numbers"
 
-            version_publication_date = ET.SubElement(version_data, "version_publication_date")
+            version_publication_date = ET.SubElement(
+                version_data, "version_publication_date"
+            )
             version_publication_date.text = fields.get("Version_Date")
 
-            post_version_modification_date = ET.SubElement(version_data, "post_version_modification_date")
+            post_version_modification_date = ET.SubElement(
+                version_data, "post_version_modification_date"
+            )
             post_version_modification_date.text = fields.get("Last_Modified")
 
             creation_data = ET.SubElement(provenance, "creation_data")
             creators = ET.SubElement(creation_data, "creators")
-            for author_field in self._airtable.get_multiple_records_by_formula('Actors', OR(*list(
-                    map(lambda x: EQUAL(STR_VALUE(x), 'RECORD_ID()'), fields.get("Author", []))))):
+            for author_field in self._airtable.get_multiple_records_by_formula(
+                "Actors",
+                OR(
+                    *list(
+                        map(
+                            lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                            fields.get("Author", []),
+                        )
+                    )
+                ),
+            ):
                 creator = ET.SubElement(creators, "creator")
 
                 creator_uri = ET.SubElement(creator, "uri")
@@ -377,11 +513,15 @@ class FieldExporter(Exporter):
 
             semantic_context = ET.SubElement(definition, "semantic_context")
             ontologies = ET.SubElement(semantic_context, "ontologies")
-            for ontology_field in self.get_records(fields.get("Ontology_Context", []), 'Ontology'):
+            for ontology_field in self.get_records(
+                fields.get("Ontology_Context", []), "Ontology"
+            ):
                 ontology = ET.SubElement(ontologies, "ontology")
 
                 ontology_uri = ET.SubElement(ontology, "ontology_URI")
-                ontology_uri.text = ontology_field.get("fields", {}).get("Namespace", "")
+                ontology_uri.text = ontology_field.get("fields", {}).get(
+                    "Namespace", ""
+                )
 
                 ontology_prefix = ET.SubElement(ontology, "ontology_prefix")
                 ontology_prefix.text = ontology_field.get("fields", {}).get("Prefix")
