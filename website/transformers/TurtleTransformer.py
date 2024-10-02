@@ -106,9 +106,7 @@ class TurtleTransformer:
 
     def get_class(self, table: str, field: str, value: str) -> Union[RecordDict, None]:
         try:
-            return self.airtable.get_record_by_formula(
-                table, match({field: value})
-            )
+            return self.airtable.get_record_by_formula(table, match({field: value}))
         except Exception as e:
             print(f"Error getting {table}: ", e)
 
@@ -160,21 +158,29 @@ class TurtleTransformer:
                     crm_class = None
 
                     if crm_class is None:
-                        crm_class = self.get_class("Ontology_Class", "Identifier", class_identifier)
+                        crm_class = self.get_class(
+                            "Ontology_Class", "Identifier", class_identifier
+                        )
 
                     if crm_class is None:
-                        crm_class = self.get_class("Ontology_Class", "Class_Nim", class_identifier)
+                        crm_class = self.get_class(
+                            "Ontology_Class", "Class_Nim", class_identifier
+                        )
 
                     if crm_class is None:
-                        crm_class = self.get_class("CRM Class", "Class_Nim", class_identifier)
+                        crm_class = self.get_class(
+                            "CRM Class", "Class_Nim", class_identifier
+                        )
 
                     if crm_class is None:
-                        crm_class = self.get_class("CRM Class", "Identifier", class_identifier)
+                        crm_class = self.get_class(
+                            "CRM Class", "Identifier", class_identifier
+                        )
 
                     if crm_class is not None:
                         print("Found class with identifier: ", class_identifier)
                         instance_modifier = crm_class.get("fields", {}).get(
-                            "Instance Modifier", class_identifier
+                            "Instance Modifier"
                         ) or crm_class.get("fields", {}).get(
                             "Instance_Modifier", class_identifier
                         )
@@ -188,7 +194,11 @@ class TurtleTransformer:
                             + f'{part.split("[")[1].split("]")[0]}'
                         )
                     else:
-                        print("Could not find class with identifier: ", class_identifier, "using instance root")
+                        print(
+                            "Could not find class with identifier: ",
+                            class_identifier,
+                            "using instance root",
+                        )
                         instance_root = self.crm_class.get("fields", {}).get(
                             "Instance Root"
                         ) or self.crm_class.get("fields", {}).get("Instance_Root", "")
