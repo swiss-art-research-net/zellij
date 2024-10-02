@@ -24,6 +24,8 @@ class GithubWrapper:
             pass
 
         if content_file is not None:
-            self.repo.update_file(file_path, "Update file", content.getvalue(), content_file.sha)
+            self.repo.update_file(
+                file_path, "Update file", content.getvalue(), content_file.sha
+            )
         else:
             self.repo.create_file(file_path, "Create file", content.getvalue())

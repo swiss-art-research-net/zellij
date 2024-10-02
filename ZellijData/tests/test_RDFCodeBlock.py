@@ -8,12 +8,9 @@ from ZellijTable.RDFCodeBlock import RDFCodeBlock
 
 
 class TestErrorOut(unittest.TestCase):
-    
     def setUp(self):
         pass
-    
-    
-    
+
     def test_TurtleSingleBadURL(self):
         txt = """@prefix sari: <http://www.sari.com> .
 @prefix crmdig: <http://www.cidoc-crm.org/cidoc-crm/> .
@@ -123,10 +120,11 @@ crm:E33_E41_Linguistic_Appellation .
         buf = io.StringIO()
         with contextlib.redirect_stderr(buf):
             obj = RDFCodeBlock(txt)
-        self.assertIn("https://linked.art/example/conceptual_object/227 _1 does not look like a valid URI, trying to serialize this will break.", buf.getvalue())
-    
-    
-    
+        self.assertIn(
+            "https://linked.art/example/conceptual_object/227 _1 does not look like a valid URI, trying to serialize this will break.",
+            buf.getvalue(),
+        )
+
     def test_TurtleMultipleBadURL(self):
         txt = """@prefix sari: <http://www.sari.com> .
 @prefix crmdig: <http://www.cidoc-crm.org/cidoc-crm/> .
@@ -400,17 +398,29 @@ crm:P7_took_place_at
 <https://linked.art/example/place/201_2> a
 crm:E53_Place .
 """
-    
+
         buf = io.StringIO()
         with contextlib.redirect_stderr(buf):
             obj = RDFCodeBlock(txt)
         errstr = buf.getvalue()
-        self.assertIn("https://linked.art/example/conceptual_object/227 _1 does not look like a valid URI, trying to serialize this will break.", errstr)
-        self.assertIn("https://linked.art/example/type/229 _2 does not look like a valid URI, trying to serialize this will break.", errstr)
-        self.assertIn("https://linked.art/example/type/231 _2 does not look like a valid URI, trying to serialize this will break.", errstr)
-        self.assertTrue("https://linked.art/example/conceptual_object/227 _1" in obj.warnings)
+        self.assertIn(
+            "https://linked.art/example/conceptual_object/227 _1 does not look like a valid URI, trying to serialize this will break.",
+            errstr,
+        )
+        self.assertIn(
+            "https://linked.art/example/type/229 _2 does not look like a valid URI, trying to serialize this will break.",
+            errstr,
+        )
+        self.assertIn(
+            "https://linked.art/example/type/231 _2 does not look like a valid URI, trying to serialize this will break.",
+            errstr,
+        )
+        self.assertTrue(
+            "https://linked.art/example/conceptual_object/227 _1" in obj.warnings
+        )
         self.assertTrue("https://linked.art/example/type/229 _2" in obj.warnings)
         self.assertTrue("https://linked.art/example/type/231 _2" in obj.warnings)
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     unittest.main()

@@ -28,15 +28,16 @@ logging.basicConfig(level=logging.DEBUG)
 # 	                           'E77_Persistent_Item',
 # 	                           'E1_CRM_Entity']}
 
+
 def superClass(ontology, prefix, baseURL):
     g = Graph()
-    g.parse('CRITERIA/src/ontologies/{}'.format(ontology), format='xml')
+    g.parse("CRITERIA/src/ontologies/{}".format(ontology), format="xml")
 
     ns = Namespace(baseURL)
     g.bind(prefix, ns)
-    if baseURL != 'http://www.cidoc-crm.org/cidoc-crm/':
-        crm = Namespace('http://www.cidoc-crm.org/cidoc-crm/')
-        g.bind('crm', crm)
+    if baseURL != "http://www.cidoc-crm.org/cidoc-crm/":
+        crm = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
+        g.bind("crm", crm)
 
     clss = {}
     for c in g.subjects(RDF.type, RDFS.Class):
@@ -46,10 +47,10 @@ def superClass(ontology, prefix, baseURL):
             if l == 0:
                 sc = c
             for spc in g.objects(sc, RDFS.subClassOf):
-                spcList.append(spc.n3(g.namespace_manager).split(':')[1])
+                spcList.append(spc.n3(g.namespace_manager).split(":")[1])
                 sc = spc
             l += 1
-        clss[c.n3(g.namespace_manager).split(':')[1]] = spcList
+        clss[c.n3(g.namespace_manager).split(":")[1]] = spcList
     return clss
 
 
@@ -63,54 +64,69 @@ def superClass(ontology, prefix, baseURL):
 # 	 'E21_Person': 'Actor',
 # 	 'E22_Human-Made_Object': 'Physical_Thing'}
 
+
 def classDict():
     d = {}
     classes = source.classes
     # CIDOC-CRM
-    cidocClass = superClass(source.onto['crm'], 'crm', 'http://www.cidoc-crm.org/cidoc-crm/')
+    cidocClass = superClass(
+        source.onto["crm"], "crm", "http://www.cidoc-crm.org/cidoc-crm/"
+    )
     for sc in cidocClass:
         for spc in cidocClass[sc]:
             # spc = spc.split(':')[1]
             if spc in classes:
-                d[sc] = '_'.join(spc.split('_')[1:])
+                d[sc] = "_".join(spc.split("_")[1:])
                 break
             # exit loop after the first superclass is found in the classes list.
             # e.g. for 'E21_Person' the first superclass found in the classes list
             # is E39_Actor
     # FRBRoo
-    frbrClass = superClass(source.onto['frbroo'], 'frbroo', 'http://iflastandards.info/ns/fr/frbr/frbroo/')
+    frbrClass = superClass(
+        source.onto["frbroo"], "frbroo", "http://iflastandards.info/ns/fr/frbr/frbroo/"
+    )
     for fr in frbrClass:
-        crmSpc = frbrClass[fr][-1]  # retrieve the last/highest cidoc-crm superclass of a frbroo class.
+        crmSpc = frbrClass[fr][
+            -1
+        ]  # retrieve the last/highest cidoc-crm superclass of a frbroo class.
         for spc in cidocClass[crmSpc]:
             # spc = spc.split(':')[1]
             if spc in classes:
-                d[fr] = '_'.join(spc.split('_')[1:])
+                d[fr] = "_".join(spc.split("_")[1:])
                 break
     # CRMDig
-    digClass = superClass(source.onto['crmdig'], 'crmdig', 'http://www.ics.forth.gr/isl/CRMext/CRMdig.rdfs/')
+    digClass = superClass(
+        source.onto["crmdig"],
+        "crmdig",
+        "http://www.ics.forth.gr/isl/CRMext/CRMdig.rdfs/",
+    )
     for dig in digClass:
-        crmSpc = digClass[dig][-1]  # retrieve the last/highest cidoc-crm superclass of a crmdig class.
+        crmSpc = digClass[dig][
+            -1
+        ]  # retrieve the last/highest cidoc-crm superclass of a crmdig class.
         for spc in cidocClass[crmSpc]:
             # spc = spc.split(':')[1]
             if spc in classes:
-                d[dig] = '_'.join(spc.split('_')[1:])
+                d[dig] = "_".join(spc.split("_")[1:])
                 break
     # CRMpc
-    pcClass = superClass(source.onto['pc'], 'crm', 'http://www.cidoc-crm.org/cidoc-crm/')
+    pcClass = superClass(
+        source.onto["pc"], "crm", "http://www.cidoc-crm.org/cidoc-crm/"
+    )
     for pc in pcClass:
-        d[pc] = 'PC_Classes'
+        d[pc] = "PC_Classes"
 
     for c in classes:
         # d['crm:'+c] = '_'.join(c.split('_')[1:])
-        d[c] = '_'.join(c.split('_')[1:])
+        d[c] = "_".join(c.split("_")[1:])
     return d
 
 
 # Function to convert RDF triples to Mermaid statements.
 # Returns a list of statements
 def convert(rdfInput):
-    if '.json' in rdfInput or '.jsonld' in rdfInput:
-        inFormat = util.guess_format(rdfInput, {'json': 'json-ld', 'jsonld': 'json-ld'})
+    if ".json" in rdfInput or ".jsonld" in rdfInput:
+        inFormat = util.guess_format(rdfInput, {"json": "json-ld", "jsonld": "json-ld"})
     else:
         inFormat = util.guess_format(rdfInput)
 
@@ -141,45 +157,42 @@ def convert(rdfInput):
         else:
             n2 = i
             i += 1
-            if (isinstance(o, rdflib.URIRef) and
-                    p != 'rdf:type'):
+            if isinstance(o, rdflib.URIRef) and p != "rdf:type":
                 uriDict[o] = n2
 
         # check whether the object of the triple is a key in the returned dict of classDict
         # to retrieve the Mermaid class, i.e check for the object of the property rdf:type
-        if p == 'rdf:type':
-            c = o.n3(g.namespace_manager).split(':')[1]
+        if p == "rdf:type":
+            c = o.n3(g.namespace_manager).split(":")[1]
             if c in classes:
                 cl = classes[c]
             else:
-                cl = 'Default'
+                cl = "Default"
             if not s in doubleInst:
                 doubleInst.append(s)
-                uriCl = cl + '_URI'
+                uriCl = cl + "_URI"
             else:
-                uriCl = 'Multi_URI'
-            stmt = '{}([{}]):::{} -->|{}| {}[{}]:::{}'.format(n1,
-                                                              s.n3(g.namespace_manager),
-                                                              uriCl, p,
-                                                              n2,
-                                                              o.n3(g.namespace_manager),
-                                                              cl)
+                uriCl = "Multi_URI"
+            stmt = "{}([{}]):::{} -->|{}| {}[{}]:::{}".format(
+                n1,
+                s.n3(g.namespace_manager),
+                uriCl,
+                p,
+                n2,
+                o.n3(g.namespace_manager),
+                cl,
+            )
 
         elif '"' in o.n3(g.namespace_manager):
-            cl = 'Literal'
-            stmt = '{}([{}]) -->|{}| {}([{}]):::{}'.format(n1,
-                                                           s.n3(g.namespace_manager),
-                                                           p,
-                                                           n2,
-                                                           o.n3(g.namespace_manager),
-                                                           cl)
+            cl = "Literal"
+            stmt = "{}([{}]) -->|{}| {}([{}]):::{}".format(
+                n1, s.n3(g.namespace_manager), p, n2, o.n3(g.namespace_manager), cl
+            )
 
         else:
-            stmt = '{}([{}]) -->|{}| {}([{}])'.format(n1,
-                                                      s.n3(g.namespace_manager),
-                                                      p,
-                                                      n2,
-                                                      o.n3(g.namespace_manager))
+            stmt = "{}([{}]) -->|{}| {}([{}])".format(
+                n1, s.n3(g.namespace_manager), p, n2, o.n3(g.namespace_manager)
+            )
 
         stmtList.append(stmt)
     return stmtList
@@ -198,9 +211,9 @@ def instance(rdfInput):
     stmtList = convert("temp.ttl")
 
     for stmt in stmtList:
-        stmt = stmt.replace('"', "''").replace('[', '["').replace(']', '"]')
+        stmt = stmt.replace('"', "''").replace("[", '["').replace("]", '"]')
         stmt = stmt.replace('(["<', '(["').replace('>"])', '"])')
-        stmt = stmt.replace('|<', '|"').replace('>|', '"|').replace('--"', '-->')
+        stmt = stmt.replace("|<", '|"').replace(">|", '"|').replace('--"', "-->")
         out += f"{stmt}\n"
 
     return out
@@ -222,18 +235,20 @@ def ontology(rdfInput):
 
     stmtList = convert("temp.ttl")
     for stmt in stmtList:
-        stmt = stmt.replace('"', "''").replace('[', '["').replace(']', '"]')
-        stmt = stmt.replace('(["<', '([').replace('>"])', '])')
+        stmt = stmt.replace('"', "''").replace("[", '["').replace("]", '"]')
+        stmt = stmt.replace('(["<', "([").replace('>"])', "])")
 
         date = re.findall('\(\[".*\^xsd:dateTime"]\)', stmt)
-        lit = re.findall('\(\["\'\'.*\'\'.*"]\)', stmt)
+        lit = re.findall("\(\[\"''.*''.*\"]\)", stmt)
         if date:
-            stmt = stmt.replace(date[0], '[xsd:dateTime]')
+            stmt = stmt.replace(date[0], "[xsd:dateTime]")
         elif lit:
-            stmt = stmt.replace(lit[0], '[rdfs:Literal]')
-        if 'rdf:type' in stmt:
-            inst = re.findall('\(\[.*:.*\)', stmt)[0]  # get the uri part
-            clType = '[' + re.findall('\|.*\[".*"\].*', stmt)[0].split('[')[1]  # get the class part
+            stmt = stmt.replace(lit[0], "[rdfs:Literal]")
+        if "rdf:type" in stmt:
+            inst = re.findall("\(\[.*:.*\)", stmt)[0]  # get the uri part
+            clType = (
+                "[" + re.findall('\|.*\[".*"\].*', stmt)[0].split("[")[1]
+            )  # get the class part
             # add to the uriType dict the uri part as the key, and the class part as the value
             # so the class part will replace the uri part in the for loop below
             if not inst in uriType:
@@ -242,17 +257,17 @@ def ontology(rdfInput):
             # update the value of the 'inst' key by append the second class with <br> betwwen them
             # so that all classes are in the same box/node
             else:
-                clType = clType.split('["')[1].split(']')[0]
-                multi = uriType[inst].split('"]')[0] + '<br>' + clType + ']:::Multi'
+                clType = clType.split('["')[1].split("]")[0]
+                multi = uriType[inst].split('"]')[0] + "<br>" + clType + "]:::Multi"
                 uriType[inst] = multi
 
-        elif not 'rdfs:label' in stmt:
+        elif not "rdfs:label" in stmt:
             statements.append(stmt)
     # logging.debug(statements)
     for stmt in statements:
-        key1 = re.findall('\(\[.*:.*\) ', stmt)[0].split(' ')[0]
+        key1 = re.findall("\(\[.*:.*\) ", stmt)[0].split(" ")[0]
         stmt = stmt.replace(key1, uriType[key1])
-        key2 = re.findall('\(\[.*:.*\)', stmt)
+        key2 = re.findall("\(\[.*:.*\)", stmt)
         if key2:
             key2 = key2[0]
             stmt = stmt.replace(key2, uriType[key2])
@@ -262,25 +277,29 @@ def ontology(rdfInput):
 
 
 def main(Type, rdf, mmd):
-    if Type == 'instance':
+    if Type == "instance":
         instance(rdf, mmd)
-    elif Type == 'ontology':
+    elif Type == "ontology":
         ontology(rdf, mmd)
-    print('Success!')
+    print("Success!")
 
 
 # argparse arguments
 def parse_args():
-    parser = argparse.ArgumentParser(description='Convert CidocCRM-based RDF to Mermaid')
+    parser = argparse.ArgumentParser(
+        description="Convert CidocCRM-based RDF to Mermaid"
+    )
 
-    parser.add_argument("Type", help='The type of the diagram', choices=['instance', 'ontology'])
-    parser.add_argument("rdf", help='RDF input filename including path_to_file')
-    parser.add_argument("mmd", help='Mermaid output filename including path_to_file')
+    parser.add_argument(
+        "Type", help="The type of the diagram", choices=["instance", "ontology"]
+    )
+    parser.add_argument("rdf", help="RDF input filename including path_to_file")
+    parser.add_argument("mmd", help="Mermaid output filename including path_to_file")
 
     args = parser.parse_args()
     return args
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parse_args()
     main(args.Type, args.rdf, args.mmd)

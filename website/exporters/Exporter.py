@@ -58,7 +58,6 @@ class Exporter(ABC):
         self._item = item
         self._name = item
 
-
         return self
 
     def export(self) -> io.BytesIO:
@@ -66,7 +65,7 @@ class Exporter(ABC):
 
         content = self._generate_xml()
 
-        file.write(content.encode('utf-8'))
+        file.write(content.encode("utf-8"))
         file.seek(0)
 
         return file
@@ -86,11 +85,17 @@ class Exporter(ABC):
                 items = item.split(", ")
 
                 for record in items:
-                    records.append(self._airtable.get_record_by_formula(table, match({"ID": record})))
+                    records.append(
+                        self._airtable.get_record_by_formula(
+                            table, match({"ID": record})
+                        )
+                    )
             elif "rec" in item:
                 records.append(self._airtable.get_record_by_id(table, item))
             else:
-                records.append(self._airtable.get_record_by_formula(table, match({"ID": item})))
+                records.append(
+                    self._airtable.get_record_by_formula(table, match({"ID": item}))
+                )
         else:
             for record in item:
                 records.append(self._airtable.get_record_by_id(table, record))
