@@ -1,2 +1,2 @@
-SECRET_KEY="MQCpsXZBNm3cXtbFQ3y6g6ZA"
-UPLOAD_FOLDER="/Zellij/uploads"
+SECRET_KEY = "MQCpsXZBNm3cXtbFQ3y6g6ZA"
+UPLOAD_FOLDER = "/Zellij/uploads"

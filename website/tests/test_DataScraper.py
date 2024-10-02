@@ -7,7 +7,6 @@ from website.DataScraper import DataScraper
 
 
 class TestDataScraperCRUD(unittest.TestCase):
-
     TEST_DATABASE = "__test_Scrapers"
     FAKE_SECRET_KEY = b"12345678901234567890123456789012"
 

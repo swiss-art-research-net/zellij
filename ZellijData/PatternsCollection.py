@@ -1,22 +1,24 @@
-'''
+"""
 Created on Mar. 15, 2021
 
 @author: Pete Harris
-'''
+"""
+
 import html
 
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
-#from ZellijData.TurtleCodeBlock import TurtleCodeBlock
+# from ZellijData.TurtleCodeBlock import TurtleCodeBlock
 from ZellijTable.RDFCodeBlock import RDFCodeBlock
 
+
 class PatternsCollection(object):
-    '''
+    """
     A collection of named Patterns (typically Fields, Collections, Model, but could add more or less)
     and the data that was retrieved for them from the source (typically an AirTable).
-    
-    
-    
+
+
+
     aggregate = {
         (numeric field identifier; i.e. 1): {
             "Name": (name; i.e. "Activity"),
@@ -37,13 +39,14 @@ class PatternsCollection(object):
             "RDF": (RDFCodeBlock(), i.e. a parsed RDF Graph object)
         }
     }
-    
-    '''
+
+    """
+
     # TODO: Check out "Person"; it does display JSON-LD but does not display proper Turtle.
     #        It reports an error instead, or perhaps a warning. Need to deal.
 
     def __init__(self, schema=None):
-        '''
+        """
         Can be passed a dict of Pattern Fields, which map our names to the fields in the database.
         #TODO: is this necessary, or helpful in any way? Maybe they don't.
         PATTERNS SCHEMA
@@ -91,8 +94,7 @@ class PatternsCollection(object):
                     'Identifier': 'Identifier'
                 }
             }
-        }        
-        '''
+        }
+        """
         if schema:
             pass
-    
