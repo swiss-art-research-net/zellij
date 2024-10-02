@@ -104,6 +104,14 @@ class TurtleTransformer:
             print("Error uploading Turtle: ", e)
             raise e
 
+    def get_class(self, table: str, field: str, value: str) -> Union[RecordDict, None]:
+        try:
+            return self.airtable.get_record_by_formula(
+                table, match({field: value})
+            )
+        except Exception as e:
+            print(f"Error getting {table}: ", e)
+
     def transform(self) -> io.BytesIO:
         graph = Graph()
 
@@ -151,31 +159,20 @@ class TurtleTransformer:
                     class_identifier = part.split("[")[0].split("_")[0]
                     crm_class = None
 
-                    try:
-                        if crm_class is None:
-                            crm_class = self.airtable.get_record_by_formula(
-                                "Ontology_Class",
-                                OR(
-                                    match({"Identifier": class_identifier}),
-                                    match({"Class_Nim": class_identifier}),
-                                ),
-                            )
-                    except Exception as e:
-                        print("Error getting Ontology Class: ", e)
+                    if crm_class is None:
+                        crm_class = self.get_class("Ontology_Class", "Identifier", class_identifier)
 
-                    try:
-                        if crm_class is None:
-                            crm_class = self.airtable.get_record_by_formula(
-                                "CRM Class",
-                                OR(
-                                    match({"Identifier": class_identifier}),
-                                    match({"Class_Nim": class_identifier}),
-                                ),
-                            )
-                    except Exception as e:
-                        print("Error getting Ontology Class: ", e)
+                    if crm_class is None:
+                        crm_class = self.get_class("Ontology_Class", "Class_Nim", class_identifier)
+
+                    if crm_class is None:
+                        crm_class = self.get_class("CRM Class", "Class_Nim", class_identifier)
+
+                    if crm_class is None:
+                        crm_class = self.get_class("CRM Class", "Identifier", class_identifier)
 
                     if crm_class is not None:
+                        print("Found class with identifier: ", class_identifier)
                         instance_modifier = crm_class.get("fields", {}).get(
                             "Instance Modifier", class_identifier
                         ) or crm_class.get("fields", {}).get(
@@ -191,6 +188,7 @@ class TurtleTransformer:
                             + f'{part.split("[")[1].split("]")[0]}'
                         )
                     else:
+                        print("Could not find class with identifier: ", class_identifier, "using instance root")
                         instance_root = self.crm_class.get("fields", {}).get(
                             "Instance Root"
                         ) or self.crm_class.get("fields", {}).get("Instance_Root", "")
