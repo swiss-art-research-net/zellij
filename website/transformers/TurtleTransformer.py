@@ -6,12 +6,14 @@ from pyairtable.api.types import RecordDict
 from pyairtable.formulas import match, OR
 from rdflib import Graph, URIRef, Literal, RDF
 from rdflib.namespace import Namespace, DefinedNamespaceMeta
+from rdflib.plugin import register
+from rdflib.serializer import Serializer
 
 from ZellijData.AirTableConnection import AirTableConnection
 from website.db import generate_airtable_schema, decrypt
 
 CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
-
+register('turtle_custom', Serializer, 'website.transformers.serializers.TurtleSerializer', 'TurtleSerializerCustom')
 
 class TurtleTransformer:
     airtable: AirTableConnection
@@ -248,7 +250,7 @@ class TurtleTransformer:
                     (URIRef(uris[idx]), RDF.type, namespace[ns_class.split("[")[0]])
                 )
 
-        self.turtle = graph.serialize(format="turtle")
+        self.turtle = graph.serialize(format="turtle_custom")
         file = io.BytesIO()
         file.name = f"{self.field.get('fields', {}).get('System_Name', '').replace(' ', '_')}.ttl"
         file.write(self.turtle.encode("utf-8"))
