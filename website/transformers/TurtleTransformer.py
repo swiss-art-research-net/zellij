@@ -157,6 +157,8 @@ class TurtleTransformer:
             if idx % 2 == 1:
                 if "[" in part:
                     class_identifier = part.split("[")[0].split("_")[0]
+                    if ":" in class_identifier:
+                        class_identifier = class_identifier.split(":")[1]
                     crm_class = None
 
                     if crm_class is None:
