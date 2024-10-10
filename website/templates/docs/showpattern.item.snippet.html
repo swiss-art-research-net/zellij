@@ -337,6 +337,10 @@
                                                         data-id="{{ fld['Field'][0] }}" data-upload="true">
                                                     Generate Turtle For System
                                                 </option>
+                                                <option value="composite" class="generate-sparql"
+                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                    Generate SPARQL Query
+                                                </option>
                                             </optgroup>
                                         </select>
                                     </td>
@@ -390,6 +394,10 @@
                                                 <option value="composite" class="generate-turtle"
                                                         data-id="{{ fld['Field'][0] }}" data-upload="true">
                                                     Generate Turtle For System
+                                                </option>
+                                                <option value="composite" class="generate-sparql"
+                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                    Generate SPARQL Query
                                                 </option>
                                             </optgroup>
                                         </select>
@@ -587,6 +595,8 @@
           } else {
               window.location.href = "{{ url_for('docs.patterntransformturtle', apikey=apikey, item='') }}" + id;
           }
+      } else if (type === "sparql") {
+	  window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id;
       }
     }
 
@@ -601,6 +611,13 @@
         const id = $(this).data('id');
         const upload = $(this).data('upload')
         transformField(id, "turtle", upload);
+    })
+
+    $('.generate-sparql').on('click', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        const upload = $(this).data('upload')
+        transformField(id, "sparql", upload);
     })
 
     async function renderMermaid(id, text, parent) {
