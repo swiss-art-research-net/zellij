@@ -11,7 +11,7 @@ from ZellijData.AirTableConnection import AirTableConnection
 class Transformer(ABC):
     airtable: AirTableConnection
     field: RecordDict
-    crm_class: RecordDict
+    crm_class: Union[RecordDict, None] = None
     turtle: str
 
     def __init__(self, api_key: str, field_id: str):
