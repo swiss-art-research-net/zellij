@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Union
+from typing import List, Union
 
 from website.db import generate_airtable_schema, decrypt
 from pyairtable.api.types import RecordDict
@@ -51,3 +51,27 @@ class Transformer(ABC):
             return self.airtable.get_record_by_formula(table, match({field: value}))
         except Exception as e:
             print(f"Error getting {table}: ", e)
+
+    def get_records(self, item: Union[str, List[str]], table: str) -> List[RecordDict]:
+        records = []
+        if isinstance(item, str):
+            if "," in item:
+                items = item.split(", ")
+
+                for record in items:
+                    records.append(
+                        self.airtable.get_record_by_formula(
+                            table, match({"ID": record})
+                        )
+                    )
+            elif "rec" in item:
+                records.append(self.airtable.get_record_by_id(table, item))
+            else:
+                records.append(
+                    self.airtable.get_record_by_formula(table, match({"ID": item}))
+                )
+        else:
+            for record in item:
+                records.append(self.airtable.get_record_by_id(table, record))
+
+        return list(filter(lambda x: x, records))

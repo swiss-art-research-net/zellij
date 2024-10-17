@@ -1,16 +1,17 @@
 import io
 from typing import Dict, List, Union
 
-from pyairtable.api.types import RecordDict
 from rdflib import RDF, Namespace
 from rdflib.namespace import DefinedNamespaceMeta
-from website.transformers.Transformer import Transformer
 from SPARQLBurger.SPARQLQueryBuilder import (
+    Binding,
     Prefix,
     SPARQLGraphPattern,
     SPARQLSelectQuery,
     Triple,
 )
+
+from website.transformers.Transformer import Transformer
 
 
 class SparqlTransformer(Transformer):
@@ -20,23 +21,8 @@ class SparqlTransformer(Transformer):
     def get_field_or_default(self, field_name: str) -> str:
         return self.field.get("fields", {}).get(field_name, "")
 
-    def get_crm_class(self, class_identifier: str) -> Union[RecordDict, None]:
-        crm_class = None
-
-        if crm_class is None:
-            crm_class = self.get_field("Ontology_Class", "Identifier", class_identifier)
-
-        if crm_class is None:
-            crm_class = self.get_field("Ontology_Class", "Class_Nim", class_identifier)
-
-        if crm_class is None:
-            crm_class = self.get_field("CRM Class", "Class_Nim", class_identifier)
-
-        if crm_class is None:
-            crm_class = self.get_field("CRM Class", "Identifier", class_identifier)
-
     def transform(self):
-        query = SPARQLSelectQuery()
+        query = SPARQLSelectQuery(limit=100)
 
         namespaces: Dict[str, Union[Namespace, DefinedNamespaceMeta]] = {}
         namespaces_records = []
@@ -63,20 +49,18 @@ class SparqlTransformer(Transformer):
             if prefix in namespaces:
                 continue
 
-            uri = namespace.get("fields", {}).get("Namespace", "")
+            uri: str = namespace.get("fields", {}).get("Namespace", "")
             namespaces[prefix] = Namespace(uri)
             query.add_prefix(prefix=Prefix(prefix=prefix, namespace=namespaces[prefix]))
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
 
-        total_path: str = self.field.get("fields", {}).get(
-            "Ontological_Long_Path", ""
-        ) or self.field.get("fields", {}).get("Ontological_Path", "")
+        total_path: str = self.field.get("fields", {}).get("Ontological_Path", "")
 
         discriminator = "-->" if "-->" in total_path else "->"
         parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
         uris = {
-            -1: self.crm_class.get("fields", {})
+            -1: (self.crm_class or {}).get("fields", {})
             .get("Class_Ur_Instance", "")
             .strip("<>")
         }
@@ -84,22 +68,18 @@ class SparqlTransformer(Transformer):
         for idx, part in enumerate(parts):
             if idx % 2 == 1:
                 if "[" in part:
-                    class_identifier = part.split("[")[0].split("_")[0]
-                    if ":" in class_identifier:
-                        class_identifier = class_identifier.split(":")[1]
-
-                    crm_class = self.get_crm_class(class_identifier)
-
-                    if crm_class is not None:
-                        print("Found class with identifier: ", class_identifier)
-                        uris[idx] = part.split("[")[1].split("]")[0]
+                    ident = part.split("[")[1].split("]")[0]
+                    [major, _] = ident.split("_")
+                    if major in self.get_field_or_default("ID"):
+                        uris[idx] = major
                     else:
-                        print(
-                            "Could not find class with identifier: ",
-                            class_identifier,
-                            "using instance root",
-                        )
-                        uris[idx] = part.split("[")[1].split("]")[0]
+                        collection = self.get_field_or_default("Collection_Deployed")
+
+                        collection_field = self.get_records(collection, "Collection")
+                        if len(collection_field) == 1:
+                            uris[idx] = collection_field[0].get("fields", {}).get("ID", "").replace(".", "_")
+                        else:
+                            uris[idx] = part.split("[")[1].split("]")[0]
                 else:
                     uris[idx] = part
 
@@ -109,8 +89,7 @@ class SparqlTransformer(Transformer):
             namespace = current_part.split(":")[0] if ":" in current_part else "crm"
             ns_class = (
                 current_part.split(":")[1] if ":" in current_part else current_part
-            )
-            ns_class = ns_class.strip()
+            ).strip()
 
             if idx % 2 == 0:
                 if parts[idx + 1] == "rdf:literal":
@@ -119,7 +98,7 @@ class SparqlTransformer(Transformer):
                             Triple(
                                 subject=f"?{uris[idx - 1]}",
                                 predicate=f"{namespace}:{ns_class}",
-                                object=f'"{self.field.get("fields", {}).get("System_Name", "").replace(" ", "_") + "_value"}"',
+                                object=f'?{self.get_field_or_default("ID").replace(".", "_")}',
                             )
                         ]
                     )
@@ -157,6 +136,7 @@ class SparqlTransformer(Transformer):
                     ]
                 )
 
+        where_pattern.add_binding(Binding(f'?{self.get_field_or_default("ID").replace(".", "_")}', "?value"))
         query.set_where_pattern(where_pattern)
 
         file = io.BytesIO()
