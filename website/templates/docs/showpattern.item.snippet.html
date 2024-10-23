@@ -169,6 +169,72 @@
 {% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
     {% include 'docs/showattributes.html' %}
 {% endwith %}
+
+{% if patternitem.GroupedFields()|length > 1 %}
+    <div class="table-wrapper tabset">
+        <input type="radio" name="tabset_max" id="tabset_max_ontgraph" hidden aria-hidden="true"
+               checked>
+        <input type="radio" name="tabset_max" id="tabset_max_instgraph" hidden aria-hidden="true">
+        <input type="radio" name="tabset_max" id="tabset_max_turtle" hidden aria-hidden="true">
+        {% if patternitem.rdf_warnings() %}
+            <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
+        {% endif %}
+        <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
+        <ul hidden aira-hidden="true">
+            <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
+            </li>
+            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label
+                    for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if patternitem.rdf_warnings() %}
+                <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
+                    class="fas fa-stream"></i> JSON-LD</label></li>
+        </ul>
+        <div>
+            <section id="ontologyGraph">
+                <h2>Ontology Graph</h2>
+                <div id="aggregated-ontology-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
+            </section>
+            <section id="instanceGraph">
+                <h2>Instance Graph</h2>
+                <div id="aggregated-instance-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
+            </section>
+            <section id="turtleRDF">
+                <h2>Turtle RDF</h2>
+                <textarea rows="32" readonly="readonly">
+                        {{ patternitem.turtle() }}
+                </textarea>
+                <br/>
+            </section>
+            {% if patternitem.rdf_warnings() %}
+                <section>
+                    <h2>RDF Warnings</h2>
+                    <div class="rdfwarning">
+                        {{ patternitem.rdf_warnings()|safe }}
+                    </div>
+                    <br/>
+                </section>
+            {% endif %}
+            {% if patternitem.is_jsonld() %}
+                <section id="jsonLD">
+                    <h2>JSON-LD</h2>
+                    <textarea rows="32" readonly="readonly" id="aggregated-json-ld"></textarea>
+                </section>
+            {% else %}
+                <section>
+                    <h2 class="error">RDF Error</h2>
+                    <div class="errormessage">
+                        {{ patternitem.jsonld_error()|safe }}
+                    </div>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
 <h2 style="max-width: 1440px;">Fields</h2>
 
 {% set ns = namespace(fields=[]) %}
@@ -434,71 +500,6 @@
         {% endfor %}
     </div>
 {% endfor %}
-
-{% if patternitem.GroupedFields()|length > 1 %}
-    <div class="tabset">
-        <input type="radio" name="tabset_max" id="tabset_max_ontgraph" hidden aria-hidden="true"
-               checked>
-        <input type="radio" name="tabset_max" id="tabset_max_instgraph" hidden aria-hidden="true">
-        <input type="radio" name="tabset_max" id="tabset_max_turtle" hidden aria-hidden="true">
-        {% if patternitem.rdf_warnings() %}
-            <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
-        {% endif %}
-        <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
-        <ul hidden aira-hidden="true">
-            <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
-            </li>
-            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label
-                    for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
-            <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
-            {% if patternitem.rdf_warnings() %}
-                <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
-                    warnings</label></li>
-            {% endif %}
-            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
-                    class="fas fa-stream"></i> JSON-LD</label></li>
-        </ul>
-        <div>
-            <section id="ontologyGraph">
-                <h2>Ontology Graph</h2>
-                <div id="aggregated-ontology-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
-            </section>
-            <section id="instanceGraph">
-                <h2>Instance Graph</h2>
-                <div id="aggregated-instance-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
-            </section>
-            <section id="turtleRDF">
-                <h2>Turtle RDF</h2>
-                <textarea rows="32" readonly="readonly">
-                        {{ patternitem.turtle() }}
-                </textarea>
-                <br/>
-            </section>
-            {% if patternitem.rdf_warnings() %}
-                <section>
-                    <h2>RDF Warnings</h2>
-                    <div class="rdfwarning">
-                        {{ patternitem.rdf_warnings()|safe }}
-                    </div>
-                    <br/>
-                </section>
-            {% endif %}
-            {% if patternitem.is_jsonld() %}
-                <section id="jsonLD">
-                    <h2>JSON-LD</h2>
-                    <textarea rows="32" readonly="readonly" id="aggregated-json-ld"></textarea>
-                </section>
-            {% else %}
-                <section>
-                    <h2 class="error">RDF Error</h2>
-                    <div class="errormessage">
-                        {{ patternitem.jsonld_error()|safe }}
-                    </div>
-                </section>
-            {% endif %}
-        </div>
-    </div>
-{% endif %}
 
 <script type="module" defer>
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
