@@ -1,6 +1,7 @@
 import io
 from typing import Dict, List, Union
 
+from pyairtable.api.types import RecordDict
 from rdflib import RDF, Namespace
 from rdflib.namespace import DefinedNamespaceMeta
 from SPARQLBurger.SPARQLQueryBuilder import (
@@ -25,7 +26,7 @@ class SparqlTransformer(Transformer):
         query = SPARQLSelectQuery(limit=100)
 
         namespaces: Dict[str, Union[Namespace, DefinedNamespaceMeta]] = {}
-        namespaces_records = []
+        namespaces_records: List[RecordDict] = []
 
         try:
             namespaces_records.extend(
@@ -52,6 +53,7 @@ class SparqlTransformer(Transformer):
             uri: str = namespace.get("fields", {}).get("Namespace", "")
             namespaces[prefix] = Namespace(uri)
             query.add_prefix(prefix=Prefix(prefix=prefix, namespace=namespaces[prefix]))
+
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
 
@@ -60,7 +62,8 @@ class SparqlTransformer(Transformer):
         discriminator = "-->" if "-->" in total_path else "->"
         parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
         uris = {
-            -1: (self.crm_class or {}).get("fields", {})
+            -1: (self.crm_class or {})
+            .get("fields", {})
             .get("Class_Ur_Instance", "")
             .strip("<>")
         }
@@ -68,18 +71,18 @@ class SparqlTransformer(Transformer):
         for idx, part in enumerate(parts):
             if idx % 2 == 1:
                 if "[" in part:
-                    ident = part.split("[")[1].split("]")[0]
-                    [major, _] = ident.split("_")
-                    if major in self.get_field_or_default("ID"):
-                        uris[idx] = major
-                    else:
-                        collection = self.get_field_or_default("Collection_Deployed")
+                    collection = self.get_field_or_default("Collection_Deployed")
 
-                        collection_field = self.get_records(collection, "Collection")
-                        if len(collection_field) == 1:
-                            uris[idx] = collection_field[0].get("fields", {}).get("ID", "").replace(".", "_")
-                        else:
-                            uris[idx] = part.split("[")[1].split("]")[0]
+                    collection_field = self.get_records(collection, "Collection")
+                    if len(collection_field) == 1:
+                        uris[idx] = (
+                            collection_field[0]
+                            .get("fields", {})
+                            .get("ID", "")
+                            .replace(".", "_")
+                        )
+                    else:
+                        uris[idx] = self.get_field_or_default("ID").replace(".", "_")
                 else:
                     uris[idx] = part
 
@@ -136,7 +139,29 @@ class SparqlTransformer(Transformer):
                     ]
                 )
 
-        where_pattern.add_binding(Binding(f'?{self.get_field_or_default("ID").replace(".", "_")}', "?value"))
+        if self.get_field_or_default("ID").replace(".", "_") not in uris.values():
+            where_pattern.add_binding(
+                Binding(f"?{uris[1]}", f'?{self.get_field_or_default("ID").replace(".", "_")}')
+            )
+
+        where_pattern.add_binding(
+            Binding(f'?{self.get_field_or_default("ID").replace(".", "_")}', "?value")
+        )
+
+        if "rdf:literal" not in parts:
+            optional_label = SPARQLGraphPattern(optional=True)
+            optional_label.add_triples(
+                [
+                    Triple(
+                        subject=f'?{self.get_field_or_default("ID").replace(".", "_")}',
+                        predicate="rdfs:label",
+                        object=f'?{self.get_field_or_default("ID").replace(".", "_")}_label',
+                    )
+                ]
+            )
+
+            where_pattern.add_nested_graph_pattern(optional_label)
+
         query.set_where_pattern(where_pattern)
 
         file = io.BytesIO()
