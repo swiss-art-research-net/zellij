@@ -22,6 +22,12 @@ class SparqlTransformer(Transformer):
     def get_field_or_default(self, field_name: str) -> str:
         return self.field.get("fields", {}).get(field_name, "")
 
+    def get_major_number_of_part(self, part: str) -> str:
+        if "[" not in part:
+            return part
+
+        return part.split("[")[-1].split("]")[0].split("_")[0]
+
     def transform(self):
         query = SPARQLSelectQuery(limit=100)
 
@@ -68,23 +74,35 @@ class SparqlTransformer(Transformer):
             .strip("<>")
         }
 
+        self_uri = self.get_field_or_default("ID").replace(".", "_")
         for idx, part in enumerate(parts):
-            if idx % 2 == 1:
-                if "[" in part:
-                    collection = self.get_field_or_default("Collection_Deployed")
+            if idx % 2 == 0:
+                continue
 
-                    collection_field = self.get_records(collection, "Collection")
-                    if len(collection_field) == 1:
-                        uris[idx] = (
-                            collection_field[0]
-                            .get("fields", {})
-                            .get("ID", "")
-                            .replace(".", "_")
-                        )
-                    else:
-                        uris[idx] = self.get_field_or_default("ID").replace(".", "_")
-                else:
-                    uris[idx] = part
+            if part == "rdf:literal":
+                uris[idx] = part
+                continue
+
+            if part.startswith("xsl"):
+                uris[idx] = self_uri
+                continue
+
+            if idx > 2 and self.get_major_number_of_part(parts[idx - 2]) == self.get_major_number_of_part(part):
+                uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
+                continue
+
+            collection = self.get_field_or_default("Collection_Deployed")
+
+            collection_field = self.get_records(collection, "Collection")
+            if len(collection_field) == 1:
+                uris[idx] = (
+                    collection_field[0]
+                    .get("fields", {})
+                    .get("ID", "")
+                    .replace(".", "_")
+                )
+            else:
+                uris[idx] = self_uri
 
         where_pattern = SPARQLGraphPattern()
         for idx in range(len(parts)):
@@ -101,34 +119,36 @@ class SparqlTransformer(Transformer):
                             Triple(
                                 subject=f"?{uris[idx - 1]}",
                                 predicate=f"{namespace}:{ns_class}",
-                                object=f'?{self.get_field_or_default("ID").replace(".", "_")}',
+                                object=f'?{self_uri}',
+                            )
+                        ]
+                    )
+                    continue
+
+                if idx == 0:
+                    where_pattern.add_triples(
+                        [
+                            Triple(
+                                subject="?subject",
+                                predicate=f"{namespace}:{ns_class}",
+                                object=f"?{uris[idx + 1]}",
                             )
                         ]
                     )
                 else:
-                    if idx == 0:
-                        where_pattern.add_triples(
-                            [
-                                Triple(
-                                    subject="?subject",
-                                    predicate=f"{namespace}:{ns_class}",
-                                    object=f"?{uris[idx + 1]}",
-                                )
-                            ]
-                        )
-                    else:
-                        where_pattern.add_triples(
-                            [
-                                Triple(
-                                    subject=f"?{uris[idx - 1]}",
-                                    predicate=f"{namespace}:{ns_class}",
-                                    object=f"?{uris[idx + 1]}",
-                                )
-                            ]
-                        )
+                    where_pattern.add_triples(
+                        [
+                            Triple(
+                                subject=f"?{uris[idx - 1]}",
+                                predicate=f"{namespace}:{ns_class}",
+                                object=f"?{uris[idx + 1]}" if "<" not in uris[idx + 1] else uris[idx + 1],
+                            )
+                        ]
+                    )
             else:
-                if current_part == "rdf:literal":
+                if current_part == "rdf:literal" or "<" in uris[idx]:
                     continue
+
                 where_pattern.add_triples(
                     [
                         Triple(
@@ -139,23 +159,24 @@ class SparqlTransformer(Transformer):
                     ]
                 )
 
-        if self.get_field_or_default("ID").replace(".", "_") not in uris.values():
+        if self_uri not in uris.values() and "rdf:literal" not in uris.values():
             where_pattern.add_binding(
-                Binding(f"?{uris[1]}", f'?{self.get_field_or_default("ID").replace(".", "_")}')
+                Binding(f"?{uris[1]}", f'?{self_uri}')
             )
 
         where_pattern.add_binding(
-            Binding(f'?{self.get_field_or_default("ID").replace(".", "_")}', "?value")
+            Binding(f'?{self_uri}', "?value")
         )
 
-        if "rdf:literal" not in parts:
+        expected_value_type = self.get_field_or_default("Expected_Value_Type")
+        if "rdf:literal" not in parts and expected_value_type not in ["Date", "Integer"]:
             optional_label = SPARQLGraphPattern(optional=True)
             optional_label.add_triples(
                 [
                     Triple(
-                        subject=f'?{self.get_field_or_default("ID").replace(".", "_")}',
+                        subject=f'?{self_uri}',
                         predicate="rdfs:label",
-                        object=f'?{self.get_field_or_default("ID").replace(".", "_")}_label',
+                        object=f'?{self_uri}_label',
                     )
                 ]
             )
