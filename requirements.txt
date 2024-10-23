@@ -36,7 +36,6 @@ rdflib==6.2.0
 requests==2.31.0
 ruff==0.6.8
 six==1.16.0
-SPARQL-Burger==1.0.2
 SQLAlchemy==2.0.25
 typing_extensions==4.9.0
 tzlocal==5.2
