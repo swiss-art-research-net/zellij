@@ -29,6 +29,7 @@ from website.exporters.ProjectExporter import ProjectExporter
 from website.functions import functions
 from werkzeug.wsgi import FileWrapper
 
+from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.TurtleTransformer import TurtleTransformer
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
@@ -406,6 +407,28 @@ def patterntransformturtle(apikey, item):
         response.headers["Content-Type"] = "text/turtle"
         return response
 
+@bp.route("/transform/sparql/<apikey>/<item>")
+def patterntransformsparql(apikey, item):
+    transformer = SparqlTransformer(apikey, item)
+    file = transformer.transform()
+
+    if request.args.get("upload") == "true":
+        if g.user is None:
+            return "", 401
+
+        try:
+            transformer.upload()
+
+            return "", 200
+        except:
+            return "", 500
+    else:
+        w = FileWrapper(file)
+
+        response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+        response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
+        response.headers["Content-Type"] = "text/turtle"
+        return response
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
 def patternlist(apikey, pattern):

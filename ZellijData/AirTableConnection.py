@@ -10,6 +10,7 @@ import time
 from urllib.parse import unquote_plus, urlparse
 
 from pyairtable import Api
+from pyairtable.api import Table
 
 from ZellijData.SingleGroupedItem import SingleGroupedItem
 
@@ -299,11 +300,11 @@ class AirTableConnection(object):
 
         return record
 
-    def get_record_by_formula(self, table: str, formula: str):
+    def get_record_by_formula(self, table_name: str, formula: str):
         """
         A single call to the AirTable, returning the unprocessed JSON result from AirTable.
         """
-        table = self.airtable.table(self.airTableBaseAPI, table)
+        table: Table = self.airtable.table(self.airTableBaseAPI, table_name)
         return table.first(formula=formula)
 
     def get_multiple_records_by_formula(self, table, formula):
