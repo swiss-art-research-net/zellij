@@ -2,6 +2,7 @@ import io
 from typing import Dict, List, Union
 
 from pyairtable.api.types import RecordDict
+from pyairtable.formulas import match
 from rdflib import RDF, Namespace
 from rdflib.namespace import DefinedNamespaceMeta
 from SPARQLBurger.SPARQLQueryBuilder import (
@@ -12,6 +13,7 @@ from SPARQLBurger.SPARQLQueryBuilder import (
     Triple,
 )
 
+from website.db import dict_gen_one, get_db
 from website.transformers.Transformer import Transformer
 
 
@@ -27,6 +29,48 @@ class SparqlTransformer(Transformer):
             return part
 
         return part.split("[")[-1].split("]")[0].split("_")[0]
+
+    def upload(self):
+        database = get_db()
+        c = database.cursor()
+        c.execute(
+            "SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (self.api_key,)
+        )
+        existing = dict_gen_one(c)
+        c.close()
+
+        base_api_key = self.api_key
+        if existing is not None and existing["fieldbase"] is not None:
+            base_api_key = existing["fieldbase"]
+
+        base_field = None
+        try:
+            base_field = self.airtable.airtable.table(
+                base_id=base_api_key, table_name="Field"
+            ).first(formula=match({"ID": self.field.get("fields").get("ID")}))
+        except Exception as e:
+            print("Error getting Field: ", e)
+
+        if base_field is None:
+            base_field = self.airtable.airtable.table(
+                base_id=self.api_key, table_name="Field"
+            ).first(formula=match({"ID": self.field.get("fields").get("ID")}))
+
+            if base_field is not None:
+                base_api_key = self.api_key
+            else:
+                print("Field not found in Field table")
+                raise ValueError(
+                    "Field already exists in Field table, but not in Field table in the Field Base"
+                )
+
+        try:
+            self.airtable.airtable.table(
+                base_id=base_api_key, table_name="Field"
+            ).update(base_field.get("id"), {"sparql_test": self.sparql})
+        except Exception as e:
+            print("Error uploading Sparql: ", e)
+            raise e
 
     def transform(self):
         query = SPARQLSelectQuery(limit=100)
@@ -185,11 +229,12 @@ class SparqlTransformer(Transformer):
 
         query.set_where_pattern(where_pattern)
 
+        self.sparql = query.get_text()
         file = io.BytesIO()
         file.name = (
             f"{self.get_field_or_default('System_Name').replace(' ', '_')}.sparql"
         )
-        file.write(query.get_text().encode("utf-8"))
+        file.write(self.sparql.encode("utf-8"))
         file.seek(0)
 
         return file

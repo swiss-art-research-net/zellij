@@ -13,6 +13,7 @@ class Transformer(ABC):
     field: RecordDict
     crm_class: Union[RecordDict, None] = None
     turtle: str
+    sparql: str
 
     def __init__(self, api_key: str, field_id: str):
         self.id = field_id

@@ -412,12 +412,23 @@ def patterntransformsparql(apikey, item):
     transformer = SparqlTransformer(apikey, item)
     file = transformer.transform()
 
-    w = FileWrapper(file)
+    if request.args.get("upload") == "true":
+        if g.user is None:
+            return "", 401
 
-    response = Response(w, mimetype="text/turtle", direct_passthrough=True)
-    response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
-    response.headers["Content-Type"] = "text/turtle"
-    return response
+        try:
+            transformer.upload()
+
+            return "", 200
+        except:
+            return "", 500
+    else:
+        w = FileWrapper(file)
+
+        response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+        response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
+        response.headers["Content-Type"] = "text/turtle"
+        return response
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
 def patternlist(apikey, pattern):

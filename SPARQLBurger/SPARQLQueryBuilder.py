@@ -166,6 +166,12 @@ class SPARQLGraphPattern:
                     else:
                         return False
 
+            if not any([type(entry) is SPARQLGraphPattern for entry in self.graph]):
+                # Add binding texts
+                for binding in self.bindings:
+                    query_text += "%s%s\n" % (inner_indentation, binding.get_text())
+
+
             # Add filter texts
             for filter in self.filters:
                 query_text += "%s%s\n" % (inner_indentation, filter.get_text())

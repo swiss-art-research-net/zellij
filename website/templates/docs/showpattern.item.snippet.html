@@ -338,8 +338,12 @@
                                                     Generate Turtle For System
                                                 </option>
                                                 <option value="composite" class="generate-sparql"
-                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="false">
                                                     Generate SPARQL Query
+                                                </option>
+                                                <option value="composite" class="generate-sparql"
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="true">
+                                                    Generate SPARQL Query For System
                                                 </option>
                                             </optgroup>
                                         </select>
@@ -398,6 +402,10 @@
                                                 <option value="composite" class="generate-sparql"
                                                         data-id="{{ fld['Field'][0] }}" data-uplaod="false">
                                                     Generate SPARQL Query
+                                                </option>
+                                                <option value="composite" class="generate-sparql"
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="true">
+                                                    Generate SPARQL Query For System
                                                 </option>
                                             </optgroup>
                                         </select>
@@ -596,7 +604,18 @@
               window.location.href = "{{ url_for('docs.patterntransformturtle', apikey=apikey, item='') }}" + id;
           }
       } else if (type === "sparql") {
-	  window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id;
+          if (upload) {
+              fetch("{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id + "?upload=" + upload)
+                  .then((res) => {
+                      if (res.ok) {
+                          alert("Sparql Query has been generated and uploaded to the system.");
+                      } else {
+                          alert("An error occurred while uploading the Sparql Query to the system.");
+                      }
+                  })
+          } else {
+              window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id;
+          }
       }
     }
 
