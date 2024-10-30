@@ -2,6 +2,7 @@
 			<li><a href="{{ url_for('docs.main') }}">Generate<br />Documentation</a></li>
 			<li><a href="{{ url_for('datasources.connections') }}">Manage<br />Data Sources</a></li>
 			<li><a href="{{ url_for('tools.jsonconverter') }}">RDF to<br />JSON-LD</a></li>
+			<li><a href="{{ url_for('pages.about') }}">About</a></li>
 
 			<li><a href="{{ url_for('docs.multipleIndexGeneration') }}">Multiple<br />Index</a></li>
 
@@ -11,6 +12,7 @@
 {% else %}
 			<li><a href="{{ url_for('docs.main') }}">Generate<br />Documentation</a></li>
 			<li><a>Alphabetical<br/>Index</a></li>
+			<li><a href="{{ url_for('pages.about') }}">About</a></li>
 
 			<li class="user"><a href="{{ url_for('user.create') }}">Create<br />Account</a></li>
 			<li class="user"><a href="{{ url_for('user.login') }}">Log In</a></li>
