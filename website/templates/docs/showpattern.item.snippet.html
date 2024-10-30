@@ -150,7 +150,7 @@
     <tr>
         <th style="width: 90%;">Derivative Generators</th>
         <td>
-            <select style="background: transparent; border: 1px solid lightgray; outline: unset;" onclick='getSelectedOption(this).click()'>
+            <select style="background: transparent; border: 1px solid lightgray; outline: unset;" id="generate-field-select">
                 <option value="" hidden aria-hidden="true">Generators</option>
                 <optgroup label="Pattern Export">
                     <option value="composite" class="export-field" id="export-model-btn">
@@ -387,7 +387,7 @@
                                 {% endfor %}
                                 {% if 'Field' in fld %}
                                     <td>
-                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" onclick='getSelectedOption(this).click()'>
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" id="generate-select">
                                             <option value="" hidden aria-hidden="true">Generators</option>
                                             <optgroup label="Pattern Export">
                                                 <option value="composite" class="export-field"
@@ -396,7 +396,7 @@
                                             </optgroup>
                                             <optgroup label="Pattern Transform">
                                                 <option value="composite" class="generate-turtle"
-                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="false">
                                                     Generate Turtle File
                                                 </option>
                                                 <option value="composite" class="generate-turtle"
@@ -449,7 +449,7 @@
                                 {% endfor %}
                                 {% if 'Field' in fld %}
                                     <td>
-                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" onclick='getSelectedOption(this).click()'>
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" id="generate-select">
                                             <option value="" hidden aria-hidden="true">Generators</option>
                                             <optgroup label="Pattern Export">
                                                 <option value="composite" class="export-field"
@@ -458,7 +458,7 @@
                                             </optgroup>
                                             <optgroup label="Pattern Transform">
                                                 <option value="composite" class="generate-turtle"
-                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="false">
                                                     Generate Turtle File
                                                 </option>
                                                 <option value="composite" class="generate-turtle"
@@ -466,7 +466,7 @@
                                                     Generate Turtle For System
                                                 </option>
                                                 <option value="composite" class="generate-sparql"
-                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="false">
                                                     Generate SPARQL Query
                                                 </option>
                                                 <option value="composite" class="generate-sparql"
@@ -578,7 +578,8 @@
                 li.textContent = `${name}: ${value}`;
                 ul.appendChild(li);
             }
-            formDataDiv.appendChild(ul);
+            formDataDiv.appendChil
+d(ul);
         }
     }
 </script>
@@ -620,24 +621,30 @@
       }
     }
 
-    $('.export-field').on('click', function (e) {
+    $('#generate-field-select').on('change', function (e) {
         e.preventDefault();
-        const id = $(this).data('id');
-        exportField(id);
+        const selected = $(this).find(':selected');
+        const classes = selected.attr('class').split(' ');
+
+        if (classes.includes('export-field')) {
+            window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
+        } else {
+            window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
+        }
     })
 
-    $('.generate-turtle').on('click', function (e) {
+    $('#generate-select').on('change', function (e) {
         e.preventDefault();
-        const id = $(this).data('id');
-        const upload = $(this).data('upload')
-        transformField(id, "turtle", upload);
-    })
+        const selected = $(this).find(':selected');
+        const id = selected.data('id');
+        const upload = selected.data('upload');
+        const classes = selected.attr('class').split(' ');
 
-    $('.generate-sparql').on('click', function (e) {
-        e.preventDefault();
-        const id = $(this).data('id');
-        const upload = $(this).data('upload')
-        transformField(id, "sparql", upload);
+        if (classes.includes('generate-turtle')) {
+            transformField(id, 'turtle', upload);
+        } else {
+            transformField(id, 'sparql', upload);
+        }
     })
 
     async function renderMermaid(id, text, parent) {
@@ -709,14 +716,4 @@
             observer.observe(i)
         }
     });
-
-    $('#export-model-btn').on("click", function (e) {
-        e.preventDefault();
-        window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
-    })
-
-    $('#total-export-model-btn').on("click", function (e) {
-        e.preventDefault();
-        window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
-    })
 </script>
