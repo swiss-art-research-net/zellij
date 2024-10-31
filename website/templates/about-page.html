@@ -13,9 +13,8 @@
             <ul>
                 {% for project in projects[institution] %}
                     <li>
-<a href="{{ url_for('docs.patternlistall', apikey=project['dbaseapikey']) }}?flag=0">{{ project["dbasename"] }}</a>
-</li>
-
+                        <a href="{{ url_for('docs.patternlistall', apikey=project['dbaseapikey']) }}?flag=0">{{ project["dbasename"] }}</a>
+                    </li>
                 {% endfor %}
             </ul>
         {% endfor %}
