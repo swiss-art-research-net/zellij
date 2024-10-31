@@ -15,11 +15,9 @@
             },
             "args": [
                 "run",
-                "--no-debugger",
-                "--no-reload"
+                "--no-debugger"
             ],
             "jinja": true,
-            "autoStartBrowser": false
         }
     ]
 }

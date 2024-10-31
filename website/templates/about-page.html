@@ -8,9 +8,16 @@
     {% include 'about.html' %}
     <h2>List of Projects (and related institutions)</h2>
     <ul>
-        {% for project in projects %}
-            <li>{{ project }}</li>
+        {% for institution in projects.keys() %}
+            <li>{{ institution }}</li>
+            <ul>
+                {% for project in projects[institution] %}
+                    <li>
+<a href="{{ url_for('docs.patternlistall', apikey=project['dbaseapikey']) }}?flag=0">{{ project["dbasename"] }}</a>
+</li>
+
+                {% endfor %}
+            </ul>
         {% endfor %}
     </ul>
 {% endblock %}
-
