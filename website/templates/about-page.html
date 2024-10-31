@@ -1,0 +1,16 @@
+{% extends 'menubase.html' %}
+
+{% block header %}
+    <h1>{% block title %}About us{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    {% include 'about.html' %}
+    <h2>List of Projects (and related institutions)</h2>
+    <ul>
+        {% for project in projects %}
+            <li>{{ project }}</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+

@@ -6,11 +6,12 @@ Created on Mar. 9, 2021
 
 import logging
 import re
-import time
+from typing import Union
 from urllib.parse import unquote_plus, urlparse
 
 from pyairtable import Api
 from pyairtable.api import Table
+from pyairtable.formulas import OR, EQUAL, STR_VALUE
 
 from ZellijData.SingleGroupedItem import SingleGroupedItem
 
@@ -123,6 +124,7 @@ class AirTableConnection(object):
         if len(high_records) == 0:
             return None
 
+        schema = table.schema()
         searchtext = high_records[0]["fields"]["ID"]
         highout = {"ID": searchtext}
         for mykey, theirkey in high_remapper.items():
@@ -131,6 +133,35 @@ class AirTableConnection(object):
                 if theirkey in high_records[0]["fields"]
                 else ""
             )
+
+            if isinstance(highout[mykey], list) and any(["rec" in field for field in highout[mykey]]):
+                records = []
+                table_id: Union[str, None] = None
+
+                for field in schema.fields:
+                    if field.name == theirkey:
+                        table_id = field.options.linked_table_id
+
+                if table_id is None:
+                    print("Failed to find linked table id")
+                    continue
+
+                records.extend(
+                    self.get_multiple_records_by_formula(
+                        table_id,
+                OR(
+                            *list(
+                                map(
+                                    lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                    highout[mykey],
+                                )
+                            )
+                        )
+                    )
+                )
+
+                highout[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID"), records))))
+
         out = SingleGroupedItem(highout)
 
         # Now get all the low items grouped under the group record.
@@ -257,7 +288,7 @@ class AirTableConnection(object):
 
         """
         The key field for the high table is what we use for SEARCH().
-        
+
         There is always a field in the high list that has the same name as the low table, which contains a list
         of references. So if the list is empty, there are no matching low fields in the category. We want that list
         so we can skip the hyperlink.
