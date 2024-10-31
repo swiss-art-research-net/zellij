@@ -39,4 +39,4 @@ def about():
             grouped_dbs[db["accountname"]] = []
         grouped_dbs[db["accountname"]].append(db)
 
-    return render_template("about-page.html", projects=list(grouped_dbs.keys()))
+    return render_template("about-page.html", projects=grouped_dbs)
