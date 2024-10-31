@@ -309,13 +309,36 @@ class AirTableConnection(object):
         records = table.all(
             fields=high_fields,
         )
-
+        schema = table.schema()
+        cache = {}
         for rec in records:
             remapped = {}
             for mykey, theirkey in high_remapper.items():
                 remapped[mykey] = (
                     rec["fields"][theirkey] if theirkey in rec["fields"] else ""
                 )
+
+                if isinstance(remapped[mykey], list) and any(["rec" in field for field in remapped[mykey]]):
+                    fetched_records = []
+                    table_id: Union[str, None] = None
+
+                    for field in schema.fields:
+                        if field.name == theirkey:
+                            table_id = field.options.linked_table_id
+
+                    if table_id is None:
+                        print("Failed to find linked table id")
+                        continue
+
+                    if table_id not in cache:
+                        cache[table_id] = self.get_all_records_from_table(table_id)
+
+                    fetched_records.extend(
+                        list(filter(lambda x: x['id'] in remapped[mykey], cache[table_id]))
+                    )
+
+                    remapped[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID"), fetched_records))))
+
             out.append(remapped)
 
         return out
