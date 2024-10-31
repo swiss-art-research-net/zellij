@@ -55,7 +55,7 @@
                                 <a href="{{ url_for('docs.patternlistall', apikey=db['dbaseapikey']) }}?flag=0">{{ db["dbasename"] }}</a>
                             </td>
                             <td>
-                                <select style="background: transparent; border: 1px solid lightgray; outline: unset;" onclick='getSelectedOption(this).click()'>
+                                <select style="background: transparent; border: 1px solid lightgray; outline: unset;" class="generate-field-select">
                                     <option value="" hidden aria-hidden="true">Generators</option>
                                     <optgroup label="Pattern Export">
                                         <option value="space" data-id="{{ db['dbaseapikey'] }}" class="export-field">This Space XML</option>
@@ -84,20 +84,19 @@
     {% endfor %}
 
     <script defer type="module">
-        $('.export-field').each(function () {
-            $(this).on("click", function (e) {
-                e.preventDefault();
-                window.location.href = "{{ url_for('docs.patternlistexport', apikey='API_KEY', exportType='project', model='API_KEY') }}"
-                    .replaceAll("API_KEY", e.currentTarget.dataset.id);
-            })
-        })
+        $('.generate-field-select').on('change', function (e) {
+            e.preventDefault();
+            const selected = $(this).find(':selected');
+            const classes = selected.attr('class').split(' ');
+            const id = selected.data('id');
 
-        $('.export-field-all').each(function () {
-            $(this).on("click", function (e) {
-                e.preventDefault();
+            if (classes.includes('export-field')) {
+                window.location.href = "{{ url_for('docs.patternlistexport', apikey='API_KEY', exportType='project', model='API_KEY') }}"
+                    .replaceAll("API_KEY", id);
+            } else {
                 window.location.href = "{{ url_for('docs.patternlistexporttree', apikey='API_KEY', exportType='project', model='API_KEY') }}"
-                    .replaceAll("API_KEY", e.currentTarget.dataset.id);
-            })
+                    .replaceAll("API_KEY", id);
+            }
         })
     </script>
 {% endblock %}

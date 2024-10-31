@@ -150,7 +150,7 @@
     <tr>
         <th style="width: 90%;">Derivative Generators</th>
         <td>
-            <select style="background: transparent; border: 1px solid lightgray; outline: unset;" onclick='getSelectedOption(this).click()'>
+            <select style="background: transparent; border: 1px solid lightgray; outline: unset;" id="generate-field-select">
                 <option value="" hidden aria-hidden="true">Generators</option>
                 <optgroup label="Pattern Export">
                     <option value="composite" class="export-field" id="export-model-btn">
@@ -169,6 +169,72 @@
 {% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
     {% include 'docs/showattributes.html' %}
 {% endwith %}
+
+{% if patternitem.GroupedFields()|length > 1 %}
+    <div class="table-wrapper tabset">
+        <input type="radio" name="tabset_max" id="tabset_max_ontgraph" hidden aria-hidden="true"
+               checked>
+        <input type="radio" name="tabset_max" id="tabset_max_instgraph" hidden aria-hidden="true">
+        <input type="radio" name="tabset_max" id="tabset_max_turtle" hidden aria-hidden="true">
+        {% if patternitem.rdf_warnings() %}
+            <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
+        {% endif %}
+        <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
+        <ul hidden aira-hidden="true">
+            <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
+            </li>
+            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label
+                    for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if patternitem.rdf_warnings() %}
+                <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
+                    class="fas fa-stream"></i> JSON-LD</label></li>
+        </ul>
+        <div>
+            <section id="ontologyGraph">
+                <h2>Ontology Graph</h2>
+                <div id="aggregated-ontology-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
+            </section>
+            <section id="instanceGraph">
+                <h2>Instance Graph</h2>
+                <div id="aggregated-instance-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
+            </section>
+            <section id="turtleRDF">
+                <h2>Turtle RDF</h2>
+                <textarea rows="32" readonly="readonly">
+                        {{ patternitem.turtle() }}
+                </textarea>
+                <br/>
+            </section>
+            {% if patternitem.rdf_warnings() %}
+                <section>
+                    <h2>RDF Warnings</h2>
+                    <div class="rdfwarning">
+                        {{ patternitem.rdf_warnings()|safe }}
+                    </div>
+                    <br/>
+                </section>
+            {% endif %}
+            {% if patternitem.is_jsonld() %}
+                <section id="jsonLD">
+                    <h2>JSON-LD</h2>
+                    <textarea rows="32" readonly="readonly" id="aggregated-json-ld"></textarea>
+                </section>
+            {% else %}
+                <section>
+                    <h2 class="error">RDF Error</h2>
+                    <div class="errormessage">
+                        {{ patternitem.jsonld_error()|safe }}
+                    </div>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
 <h2 style="max-width: 1440px;">Fields</h2>
 
 {% set ns = namespace(fields=[]) %}
@@ -200,7 +266,7 @@
                                 </th>
                             {% endif %}
                         {% endfor %}
-                        {% if 'Field' in values[0] %}
+                        {% if 'Field' in values|list|first %}
                             <th>Derivatives</th>
                         {% endif %}
                     </tr>
@@ -235,7 +301,7 @@
                                 {% endif %}
                             {% endif %}
                         {% endfor %}
-                        {% if 'Field' in values[0] %}
+                        {% if 'Field' in values|list|first %}
                             <th>Derivatives</th>
                         {% endif %}
                     </tr>
@@ -321,7 +387,7 @@
                                 {% endfor %}
                                 {% if 'Field' in fld %}
                                     <td>
-                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" onclick='getSelectedOption(this).click()'>
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" id="generate-select">
                                             <option value="" hidden aria-hidden="true">Generators</option>
                                             <optgroup label="Pattern Export">
                                                 <option value="composite" class="export-field"
@@ -330,7 +396,7 @@
                                             </optgroup>
                                             <optgroup label="Pattern Transform">
                                                 <option value="composite" class="generate-turtle"
-                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="false">
                                                     Generate Turtle File
                                                 </option>
                                                 <option value="composite" class="generate-turtle"
@@ -383,7 +449,7 @@
                                 {% endfor %}
                                 {% if 'Field' in fld %}
                                     <td>
-                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" onclick='getSelectedOption(this).click()'>
+                                        <select style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;" id="generate-select">
                                             <option value="" hidden aria-hidden="true">Generators</option>
                                             <optgroup label="Pattern Export">
                                                 <option value="composite" class="export-field"
@@ -392,7 +458,7 @@
                                             </optgroup>
                                             <optgroup label="Pattern Transform">
                                                 <option value="composite" class="generate-turtle"
-                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="false">
                                                     Generate Turtle File
                                                 </option>
                                                 <option value="composite" class="generate-turtle"
@@ -400,7 +466,7 @@
                                                     Generate Turtle For System
                                                 </option>
                                                 <option value="composite" class="generate-sparql"
-                                                        data-id="{{ fld['Field'][0] }}" data-uplaod="false">
+                                                        data-id="{{ fld['Field'][0] }}" data-upload="false">
                                                     Generate SPARQL Query
                                                 </option>
                                                 <option value="composite" class="generate-sparql"
@@ -434,71 +500,6 @@
         {% endfor %}
     </div>
 {% endfor %}
-
-{% if patternitem.GroupedFields()|length > 1 %}
-    <div class="tabset">
-        <input type="radio" name="tabset_max" id="tabset_max_ontgraph" hidden aria-hidden="true"
-               checked>
-        <input type="radio" name="tabset_max" id="tabset_max_instgraph" hidden aria-hidden="true">
-        <input type="radio" name="tabset_max" id="tabset_max_turtle" hidden aria-hidden="true">
-        {% if patternitem.rdf_warnings() %}
-            <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
-        {% endif %}
-        <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
-        <ul hidden aira-hidden="true">
-            <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
-            </li>
-            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label
-                    for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
-            <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
-            {% if patternitem.rdf_warnings() %}
-                <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
-                    warnings</label></li>
-            {% endif %}
-            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
-                    class="fas fa-stream"></i> JSON-LD</label></li>
-        </ul>
-        <div>
-            <section id="ontologyGraph">
-                <h2>Ontology Graph</h2>
-                <div id="aggregated-ontology-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
-            </section>
-            <section id="instanceGraph">
-                <h2>Instance Graph</h2>
-                <div id="aggregated-instance-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
-            </section>
-            <section id="turtleRDF">
-                <h2>Turtle RDF</h2>
-                <textarea rows="32" readonly="readonly">
-                        {{ patternitem.turtle() }}
-                </textarea>
-                <br/>
-            </section>
-            {% if patternitem.rdf_warnings() %}
-                <section>
-                    <h2>RDF Warnings</h2>
-                    <div class="rdfwarning">
-                        {{ patternitem.rdf_warnings()|safe }}
-                    </div>
-                    <br/>
-                </section>
-            {% endif %}
-            {% if patternitem.is_jsonld() %}
-                <section id="jsonLD">
-                    <h2>JSON-LD</h2>
-                    <textarea rows="32" readonly="readonly" id="aggregated-json-ld"></textarea>
-                </section>
-            {% else %}
-                <section>
-                    <h2 class="error">RDF Error</h2>
-                    <div class="errormessage">
-                        {{ patternitem.jsonld_error()|safe }}
-                    </div>
-                </section>
-            {% endif %}
-        </div>
-    </div>
-{% endif %}
 
 <script type="module" defer>
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
@@ -577,7 +578,8 @@
                 li.textContent = `${name}: ${value}`;
                 ul.appendChild(li);
             }
-            formDataDiv.appendChild(ul);
+            formDataDiv.appendChil
+d(ul);
         }
     }
 </script>
@@ -619,24 +621,30 @@
       }
     }
 
-    $('.export-field').on('click', function (e) {
+    $('#generate-field-select').on('change', function (e) {
         e.preventDefault();
-        const id = $(this).data('id');
-        exportField(id);
+        const selected = $(this).find(':selected');
+        const classes = selected.attr('class').split(' ');
+
+        if (classes.includes('export-field')) {
+            window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
+        } else {
+            window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
+        }
     })
 
-    $('.generate-turtle').on('click', function (e) {
+    $('#generate-select').on('change', function (e) {
         e.preventDefault();
-        const id = $(this).data('id');
-        const upload = $(this).data('upload')
-        transformField(id, "turtle", upload);
-    })
+        const selected = $(this).find(':selected');
+        const id = selected.data('id');
+        const upload = selected.data('upload');
+        const classes = selected.attr('class').split(' ');
 
-    $('.generate-sparql').on('click', function (e) {
-        e.preventDefault();
-        const id = $(this).data('id');
-        const upload = $(this).data('upload')
-        transformField(id, "sparql", upload);
+        if (classes.includes('generate-turtle')) {
+            transformField(id, 'turtle', upload);
+        } else {
+            transformField(id, 'sparql', upload);
+        }
     })
 
     async function renderMermaid(id, text, parent) {
@@ -708,14 +716,4 @@
             observer.observe(i)
         }
     });
-
-    $('#export-model-btn').on("click", function (e) {
-        e.preventDefault();
-        window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
-    })
-
-    $('#total-export-model-btn').on("click", function (e) {
-        e.preventDefault();
-        window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
-    })
 </script>

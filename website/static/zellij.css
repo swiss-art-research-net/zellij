@@ -34,7 +34,11 @@ table.toc {
 
 .attributes-table > tbody > tr > td > div {
     max-height: 10vh;
-    /*overflow: scroll;*/
+    overflow-y: scroll;
+}
+
+.attributes-table > tbody > tr > td > div::-webkit-scrollbar {
+    display: none;
 }
 
 table.toc td.toctitle {
