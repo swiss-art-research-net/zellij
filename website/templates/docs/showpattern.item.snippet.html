@@ -646,6 +646,8 @@
 
         if (classes.includes('generate-turtle')) {
             transformField(id, 'turtle', upload);
+        } else if (classes.includes('export-field')) {
+            exportField(id);
         } else {
             transformField(id, 'sparql', upload);
         }
