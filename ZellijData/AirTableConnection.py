@@ -337,7 +337,7 @@ class AirTableConnection(object):
                         list(filter(lambda x: x['id'] in remapped[mykey], cache[table_id]))
                     )
 
-                    remapped[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID"), fetched_records))))
+                    remapped[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID", x.get("fields", {}).get("Name")), fetched_records))))
 
             out.append(remapped)
 
