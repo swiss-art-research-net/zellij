@@ -106,6 +106,23 @@ def decrypt(bytestring, keyfile=None, key=None):
         print(e)
         return ""
 
+def get_base_name(apikey):
+    db = get_db()
+    c = db.cursor()
+
+    c.execute(
+        "SELECT * FROM AirTableAccounts"
+        + " LEFT JOIN AirTableDatabases ON accountid = airtableaccountkey"
+        + " LEFT JOIN Scrapers ON dbaseid = dbasekey"
+        + " LEFT JOIN ScraperFields ON scraperid = scraperkey"
+        + " WHERE dbaseapikey=%s"
+        + " ORDER BY scraperkey, tablename, sortorder LIMIT 1",
+        (apikey,),
+    )
+    row = dict_gen_one(c)
+
+    return row.get('dbasename') if row else None
+
 
 def generate_airtable_schema(apikey, db=None):
     if not db:
@@ -130,6 +147,7 @@ def generate_airtable_schema(apikey, db=None):
         if not rec["scrapername"] in scrapers:
             scrapers[rec["scrapername"]] = {}
             scrapers[rec["scrapername"]]["id"] = rec["scraperkey"]
+
             if rec["data_table"]:
                 scrapers[rec["scrapername"]][rec["data_table"]] = OrderedDict()
                 scrapers[rec["scrapername"]][rec["data_table"]]["GroupBy"] = rec[
