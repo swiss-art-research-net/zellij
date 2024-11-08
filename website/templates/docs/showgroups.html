@@ -11,7 +11,6 @@
             <!-- <div class="close-btn">
                     <i class="fas fa-times"></i>
                 </div> -->
-            <h1>{{ name }}</h1>
             <h1 class="h1">List</h1>
 
             <div class="menu">
@@ -41,24 +40,28 @@
           </div> -->
 
         <div class="contents" id="iframe-contents" hidden="hidden" style="height: 100vh;">
-            <div style="display: flex; justify-content: center; align-items: center; height: 100%">
-                <div class="lds-spinner">
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
+            <h1>{{ name }}</h1>
+            <div id="item-content">
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%">
+                    <div class="lds-spinner">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="contents" id="grouping" hidden="hidden">
+            <h1>{{ name }}</h1>
             <h1>{{ scraper }}</h1>
             <table class="toc">
                 {% set list = lists[scraper] %}
@@ -170,7 +173,7 @@
                     $('.lds-spinner').css('visibility', 'visible');
                 },
                 success: function (data) {
-                    $('#iframe-contents').html(data);
+                    $('#item-content').html(data);
                 },
             })
         }
