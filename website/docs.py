@@ -20,6 +20,7 @@ from website.db import (
     get_db,
     dict_gen_many,
     generate_airtable_schema,
+    get_base_name,
     decrypt,
     dict_gen_one,
 )
@@ -464,6 +465,7 @@ def _patternlister(apikey, pattern=None):
         apikey=apikey,
         scraper=scraper,
         prefill_group=prefill_group,
+        name=get_base_name(apikey),  # noqa: F821
     )
 
 
