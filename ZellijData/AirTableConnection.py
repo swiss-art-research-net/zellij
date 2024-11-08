@@ -160,7 +160,7 @@ class AirTableConnection(object):
                     )
                 )
 
-                highout[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID"), records))))
+                highout[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID", x.get("fields", {}).get("Name")), records))))
 
         out = SingleGroupedItem(highout)
 
