@@ -173,7 +173,9 @@
                     $('.lds-spinner').css('visibility', 'visible');
                 },
                 success: function (data) {
+                    title = $('#item-content').children("h1").clone()
                     $('#item-content').html(data);
+                    $('#item-content').prepend(title);
                 },
             })
         }
