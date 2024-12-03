@@ -3,14 +3,13 @@ from typing import List, Dict, Union
 
 from website.db import get_db, generate_airtable_schema, decrypt, dict_gen_one
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import match, OR
+from pyairtable.formulas import match
 from rdflib import Graph, URIRef, Literal, RDF
 from rdflib.namespace import Namespace, DefinedNamespaceMeta
 from rdflib.plugin import register
 from rdflib.serializer import Serializer
 
 from ZellijData.AirTableConnection import AirTableConnection
-from website.db import generate_airtable_schema, decrypt
 
 CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 register('turtle_custom', Serializer, 'website.transformers.serializers.TurtleSerializer', 'TurtleSerializerCustom')

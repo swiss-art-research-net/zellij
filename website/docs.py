@@ -32,6 +32,7 @@ from werkzeug.wsgi import FileWrapper
 
 from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.TurtleTransformer import TurtleTransformer
+from website.transformers.X3MLTransformer import X3MLTransformer
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
@@ -412,6 +413,30 @@ def patterntransformturtle(apikey, item):
 def patterntransformsparql(apikey, item):
     transformer = SparqlTransformer(apikey, item)
     file = transformer.transform()
+
+    if request.args.get("upload") == "true":
+        if g.user is None:
+            return "", 401
+
+        try:
+            transformer.upload()
+
+            return "", 200
+        except:
+            return "", 500
+    else:
+        w = FileWrapper(file)
+
+        response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+        response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
+        response.headers["Content-Type"] = "text/turtle"
+        return response
+
+
+@bp.route("/transform/x3ml/<apikey>/<item>")
+def patterntransformx3ml(apikey, item):
+    transformer = X3MLTransformer(apikey, item)
+    file = transformer.transform(form="b")
 
     if request.args.get("upload") == "true":
         if g.user is None:
