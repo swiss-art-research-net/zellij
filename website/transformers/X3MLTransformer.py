@@ -9,6 +9,12 @@ from website.transformers.Transformer import Transformer
 
 
 class X3MLTransformer(Transformer):
+    literal_uris = {
+        "xsd:date": "http://www.w3.org/2001/XMLSchema#dateTime",
+        "xsd:dateTime": "http://www.w3.org/2001/XMLSchema#dateTime",
+        "rdf:literal": "http://www.w3.org/2001/XMLSchema#string"
+    }
+
     def __init__(self, api_key: str, field_id: str):
         super().__init__(api_key, field_id)
 
@@ -66,6 +72,7 @@ class X3MLTransformer(Transformer):
 
     def _add_mapping_domain(self, root: ET.Element) -> None:
         domain = ET.SubElement(root, "domain")
+        domain.attrib["template"] = self._get_collection_name()
         ET.SubElement(domain, "source_node")
         target_node = ET.SubElement(domain, "target_node")
         entity = ET.SubElement(target_node, "entity")
@@ -88,8 +95,8 @@ class X3MLTransformer(Transformer):
         entity_type = ET.SubElement(entity, "type")
         entity_instance_generator = ET.SubElement(entity, "instance_generator")
 
-        if part == "rdf:literal":
-            entity_type.text = "http://www.w3.org/2001/XMLSchema#string"
+        if part in ["rdf:literal", "xsd:date", "xsd:dateTime", "xsd:time"]:
+            entity_type.text = self.literal_uris[part]
             entity_instance_generator.attrib["name"] = "Literal"
             self._create_instance_generator_arg(
                 entity_instance_generator, "text", "xpath", "text()"

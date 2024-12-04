@@ -1,18 +1,24 @@
 import io
-from typing import List, Dict, Union
+from typing import Dict, List, Union
 
-from website.db import get_db, generate_airtable_schema, decrypt, dict_gen_one
 from pyairtable.api.types import RecordDict
 from pyairtable.formulas import match
-from rdflib import Graph, URIRef, Literal, RDF
-from rdflib.namespace import Namespace, DefinedNamespaceMeta
+from rdflib import RDF, Graph, Literal, URIRef
+from rdflib.namespace import DefinedNamespaceMeta, Namespace
 from rdflib.plugin import register
 from rdflib.serializer import Serializer
 
+from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from ZellijData.AirTableConnection import AirTableConnection
 
 CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
-register('turtle_custom', Serializer, 'website.transformers.serializers.TurtleSerializer', 'TurtleSerializerCustom')
+register(
+    "turtle_custom",
+    Serializer,
+    "website.transformers.serializers.TurtleSerializer",
+    "TurtleSerializerCustom",
+)
+
 
 class TurtleTransformer:
     airtable: AirTableConnection
