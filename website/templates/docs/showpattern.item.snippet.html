@@ -397,19 +397,19 @@
                             </option>
                         </optgroup>
                         <optgroup label="Pattern Transform">
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
                                 Generate Turtle File
                             </option>
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
                                 Generate Turtle For System
                             </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
                                 Generate SPARQL Query
                             </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
                                 Generate SPARQL Query For System
                             </option>
@@ -469,19 +469,19 @@
                             </option>
                         </optgroup>
                         <optgroup label="Pattern Transform">
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
                                 Generate Turtle File
                             </option>
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
                                 Generate Turtle For System
                             </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
                                 Generate SPARQL Query
                             </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'][0] }}"
+                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
                                 Generate SPARQL Query For System
                             </option>
