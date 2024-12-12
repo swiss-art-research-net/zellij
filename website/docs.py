@@ -3,36 +3,35 @@ Created on Mar. 18, 2021
 @author: Pete Harris
 """
 
-from abc import ABCMeta
 import asyncio
 import logging
-from typing import Dict
 import zipfile
+from abc import ABCMeta
 from io import BytesIO
+from typing import Dict
 
-from flask import Blueprint, render_template, request, abort, Response, g
-
-from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
-from website.auth import login_required
-from website.github_wrapper import GithubWrapper
-from website.datasources import get_prefill
-from website.db import (
-    get_db,
-    dict_gen_many,
-    generate_airtable_schema,
-    get_base_name,
-    decrypt,
-    dict_gen_one,
-)
-from website.exporters.ModelExporter import ModelExporter
-from website.exporters.FieldExporter import FieldExporter
-from website.exporters.ProjectExporter import ProjectExporter
-from website.functions import functions
+from flask import Blueprint, Response, abort, g, render_template, request
 from werkzeug.wsgi import FileWrapper
 
+from website.auth import login_required
+from website.datasources import get_prefill
+from website.db import (
+    decrypt,
+    dict_gen_many,
+    dict_gen_one,
+    generate_airtable_schema,
+    get_base_name,
+    get_db,
+)
+from website.exporters.FieldExporter import FieldExporter
+from website.exporters.ModelExporter import ModelExporter
+from website.exporters.ProjectExporter import ProjectExporter
+from website.functions import functions
+from website.github_wrapper import GithubWrapper
 from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.TurtleTransformer import TurtleTransformer
 from website.transformers.X3MLTransformer import X3MLTransformer
+from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
@@ -381,7 +380,7 @@ def patternlistexporttree(apikey, exportType, model):
     w = FileWrapper(zip_stream)
 
     response = Response(w, mimetype="application/zip", direct_passthrough=True)
-    response.headers["Content-Disposition"] = f"attachment; filename=export.zip"
+    response.headers["Content-Disposition"] = "attachment; filename=export.zip"
     response.headers["Content-Type"] = "application/zip"
     return response
 
@@ -409,6 +408,7 @@ def patterntransformturtle(apikey, item):
         response.headers["Content-Type"] = "text/turtle"
         return response
 
+
 @bp.route("/transform/sparql/<apikey>/<item>")
 def patterntransformsparql(apikey, item):
     transformer = SparqlTransformer(apikey, item)
@@ -433,10 +433,10 @@ def patterntransformsparql(apikey, item):
         return response
 
 
-@bp.route("/transform/x3ml/<apikey>/<item>")
-def patterntransformx3ml(apikey, item):
-    transformer = X3MLTransformer(apikey, item)
-    file = transformer.transform(form="b")
+@bp.route("/transform/x3ml/<apikey>/<pattern>/<modelid>/<item>/<formtype>")
+def patterntransformx3ml(apikey, pattern, modelid, item, formtype):
+    transformer = X3MLTransformer(apikey, pattern, modelid, item)
+    file = transformer.transform(form=formtype)
 
     if request.args.get("upload") == "true":
         if g.user is None:
@@ -455,6 +455,7 @@ def patterntransformx3ml(apikey, item):
         response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
         response.headers["Content-Type"] = "text/turtle"
         return response
+
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
 def patternlist(apikey, pattern):

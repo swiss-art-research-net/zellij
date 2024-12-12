@@ -1,22 +1,41 @@
 import io
 import xml.etree.ElementTree as ET
-from typing import Literal, Union, List
+from typing import List, Literal, Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
+from pyairtable.formulas import match
 
+from website.db import decrypt, generate_airtable_schema
 from website.transformers.Transformer import Transformer
+from ZellijData.AirTableConnection import AirTableConnection
 
 
 class X3MLTransformer(Transformer):
     literal_uris = {
         "xsd:date": "http://www.w3.org/2001/XMLSchema#dateTime",
         "xsd:dateTime": "http://www.w3.org/2001/XMLSchema#dateTime",
-        "rdf:literal": "http://www.w3.org/2001/XMLSchema#string"
+        "rdf:literal": "http://www.w3.org/2001/XMLSchema#string",
     }
 
-    def __init__(self, api_key: str, field_id: str):
-        super().__init__(api_key, field_id)
+    def __init__(self, api_key: str, pattern: str, model_id: str, field_id: str):
+        self.model_id = model_id
+        self.field_id = field_id
+        self.api_key = api_key
+
+        _, secretkey = generate_airtable_schema(api_key)
+        self.airtable = AirTableConnection(decrypt(secretkey), api_key)
+        self.pattern = pattern
+
+        if field_id:
+            self.field = self.airtable.get_record_by_formula(
+                "Field", match({"ID": field_id})
+            ) or self.airtable.get_record_by_id("Field", field_id)
+
+    def _fetch_model(self):
+        models = self.get_records(self.model_id, self.pattern)
+        if len(models) == 1:
+            self.model = models[0]
 
     def get_field_or_default(self, field_name: str) -> str:
         return self.field.get("fields", {}).get(field_name, "")
@@ -70,17 +89,24 @@ class X3MLTransformer(Transformer):
 
         return ""
 
-    def _add_mapping_domain(self, root: ET.Element) -> None:
+    def _add_mapping_domain(
+        self, root: ET.Element, template: str, parts: Union[List[str], None] = None
+    ) -> None:
         domain = ET.SubElement(root, "domain")
-        domain.attrib["template"] = self._get_collection_name()
-        ET.SubElement(domain, "source_node")
+        domain.attrib["template"] = template
+        source_node = ET.SubElement(domain, "source_node")
         target_node = ET.SubElement(domain, "target_node")
         entity = ET.SubElement(target_node, "entity")
         entity_type = ET.SubElement(entity, "type")
-        entity_type.text = self._get_collection_name()
+        entity_type.text = template
 
-        instance_generator = ET.SubElement(entity, "instance_generator")
-        instance_generator.attrib["name"] = "UUID"
+        if parts:
+            relationship = ET.SubElement(source_node, "relationship")
+            relationship.text = parts[0]
+            self._self_populate_entity_node(entity, parts[-1])
+        else:
+            instance_generator = ET.SubElement(entity, "instance_generator")
+            instance_generator.attrib["name"] = "UUID"
 
     def _create_instance_generator_arg(
         self, parent: ET.Element, name: str, type: str, content: str
@@ -109,16 +135,22 @@ class X3MLTransformer(Transformer):
             entity_type.text = part.split("[")[0] if "[" in part else part
             entity_instance_generator.attrib["name"] = "UUID"
 
-    def _populate_link(self, parent: ET.Element, field_id: str, form: Union[Literal["a"], Literal["b"]]) -> None:
+    def _add_field(
+        self,
+        parent: ET.Element,
+        field_id: str,
+        form: Union[Literal["a"], Literal["b"]],
+        first_part: bool = True,
+    ) -> List[str]:
         field: Union[RecordDict, None] = None
-        if field_id == self.id:
+        if field_id == self.field_id:
             field = self.field
         else:
             records = self.get_records(field_id, "Field")
             field = records[0] if len(records) >= 1 else None
 
         if field is None:
-            return
+            return []
 
         link = ET.SubElement(parent, "link")
         link.attrib["template"] = field.get("fields", {}).get("ID", "")
@@ -133,7 +165,7 @@ class X3MLTransformer(Transformer):
         parts = self._parse_ontological_path(total_path)
         # for form b take only the last two parts of the path
         if form == "b":
-            parts = parts[-2:]
+            parts = parts[0:2] if first_part else parts[-2:]
 
         for idx, part in enumerate(parts):
             # if it is even then it is a relation else is an entity
@@ -149,14 +181,37 @@ class X3MLTransformer(Transformer):
                 else:
                     self._self_populate_entity_node(target_relation, part)
 
-    def _populate_mappings(self, root: ET.Element, form: Union[Literal["a"], Literal["b"]]) -> None:
+        return parts
+
+    def _populate_mappings(
+        self, root: ET.Element, form: Union[Literal["a"], Literal["b"]]
+    ) -> None:
         mappings = ET.SubElement(root, "mappings")
-        mapping = ET.SubElement(mappings, "mapping")
-        self._add_mapping_domain(mapping)
-        self._populate_link(mapping, self.id, form)
+        if form == "a":
+            mapping = ET.SubElement(mappings, "mapping")
+            self._add_mapping_domain(mapping, self._get_collection_name())
+            self._add_field(mapping, self.field_id, form)
+        else:
+            self._fetch_model()
+
+            mapping = ET.SubElement(mappings, "mapping")
+            self._add_mapping_domain(
+                mapping, self.model.get("fields", {}).get("ID", "")
+            )
+            if self.field:
+                domain_parts = self._add_field(mapping, self.field_id, form, True)
+
+            model_mapping = ET.SubElement(mappings, "mapping")
+            self._add_mapping_domain(
+                model_mapping, self.field.get("fields", {}).get("ID", ""), domain_parts
+            )
+            self._add_field(model_mapping, self.field_id, form, False)
 
     def transform(self, form: Union[Literal["a"], Literal["b"]]) -> io.BytesIO:
         root = ET.Element("x3ml")
+
+        if form != "a" and form != "b":
+            raise ValueError("Form must be either 'a' or 'b'")
 
         self._populate_namespaces(root)
         self._populate_mappings(root, form)
