@@ -161,6 +161,10 @@
                         Total Composite Semantic Pattern XML
                     </option>
                 </optgroup>
+                <optgroup label="Pattern Transform">
+                    <option class="export-x3ml-form-a">Generate X3ML Mappings (Form A)</option>
+                    <option class="export-x3ml-form-b">Generate X3ML Mappings (Form B)</option>
+                </optgroup>
             </select>
         </td>
     </tr>
@@ -415,19 +419,19 @@
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
-                                Generate X3ML Query (Form A)
+                                Generate X3ML Mappings (Form A)
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
-                                Generate X3ML Query For System (Form A)
+                                Generate X3ML Mappings For System (Form A)
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
-                                Generate X3ML Query (Form B)
+                                Generate X3ML Mappings (Form B)
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
-                                Generate X3ML Query For System (Form B)
+                                Generate X3ML Mappings For System (Form B)
                             </option>
                         </optgroup>
                     </select>
@@ -495,19 +499,19 @@
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
-                                Generate X3ML Query (Form A)
+                                Generate X3ML Mappings (Form A)
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
-                                Generate X3ML Query For System (Form A)
+                                Generate X3ML Mappings For System (Form A)
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="false">
-                                Generate X3ML Query (Form B)
+                                Generate X3ML Mappings (Form B)
                             </option>
                             <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
-                                Generate X3ML Query For System (Form B)
+                                Generate X3ML Mappings For System (Form B)
                             </option>
                         </optgroup>
                     </select>
@@ -666,6 +670,10 @@
 
         if (classes.includes('export-field')) {
             window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
+        } else if (classes.includes('export-x3ml-form-a')) {
+            window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='a') }}";
+        } else if (classes.includes('export-x3ml-form-b')) {
+            window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='b') }}";
         } else {
             window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
         }

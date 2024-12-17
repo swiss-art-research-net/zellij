@@ -435,7 +435,9 @@ def patterntransformsparql(apikey, item):
 
 @bp.route("/transform/x3ml/<apikey>/<pattern>/<modelid>/<item>/<formtype>")
 def patterntransformx3ml(apikey, pattern, modelid, item, formtype):
-    transformer = X3MLTransformer(apikey, pattern, modelid, item)
+    transformer = X3MLTransformer(
+        apikey, pattern, modelid, item if item != "model" else None
+    )
     file = transformer.transform(form=formtype)
 
     if request.args.get("upload") == "true":

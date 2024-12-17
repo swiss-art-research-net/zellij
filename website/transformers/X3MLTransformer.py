@@ -18,10 +18,13 @@ class X3MLTransformer(Transformer):
         "rdf:literal": "http://www.w3.org/2001/XMLSchema#string",
     }
 
-    def __init__(self, api_key: str, pattern: str, model_id: str, field_id: str):
+    def __init__(
+        self, api_key: str, pattern: str, model_id: str, field_id: Union[str, None]
+    ):
         self.model_id = model_id
         self.field_id = field_id
         self.api_key = api_key
+        self.field: Union[RecordDict, None] = None
 
         _, secretkey = generate_airtable_schema(api_key)
         self.airtable = AirTableConnection(decrypt(secretkey), api_key)
@@ -32,12 +35,22 @@ class X3MLTransformer(Transformer):
                 "Field", match({"ID": field_id})
             ) or self.airtable.get_record_by_id("Field", field_id)
 
+        self.model = None
+        if model_id and not field_id:
+            self._fetch_model()
+
     def _fetch_model(self):
         models = self.get_records(self.model_id, self.pattern)
         if len(models) == 1:
             self.model = models[0]
 
+    def _fetch_model_fields(self):
+        return self.airtable.get_all_records_from_table("Field")
+
     def get_field_or_default(self, field_name: str) -> str:
+        if self.model:
+            return self.model.get("fields", {}).get(field_name, "")
+
         return self.field.get("fields", {}).get(field_name, "")
 
     def get_major_number_of_part(self, part: str) -> str:
@@ -138,13 +151,15 @@ class X3MLTransformer(Transformer):
     def _add_field(
         self,
         parent: ET.Element,
-        field_id: str,
+        field_id: Union[str, RecordDict],
         form: Union[Literal["a"], Literal["b"]],
         first_part: bool = True,
     ) -> List[str]:
         field: Union[RecordDict, None] = None
         if field_id == self.field_id:
             field = self.field
+        elif not isinstance(field_id, str):
+            field = field_id
         else:
             records = self.get_records(field_id, "Field")
             field = records[0] if len(records) >= 1 else None
@@ -158,9 +173,12 @@ class X3MLTransformer(Transformer):
         path = ET.SubElement(link, "path")
         ET.SubElement(path, "source_relation")
         target_relation = ET.SubElement(path, "target_relation")
-        total_path = self.get_field_or_default(
-            "Ontological_Long_Path"
-        ) or self.get_field_or_default("Ontological_Path")
+        total_path = field.get("fields", {}).get("Ontological_Long_Path") or field.get(
+            "fields", {}
+        ).get("Ontological_Path")
+
+        if not total_path:
+            return []
 
         parts = self._parse_ontological_path(total_path)
         # for form b take only the last two parts of the path
@@ -187,14 +205,23 @@ class X3MLTransformer(Transformer):
         self, root: ET.Element, form: Union[Literal["a"], Literal["b"]]
     ) -> None:
         mappings = ET.SubElement(root, "mappings")
-        if form == "a":
-            mapping = ET.SubElement(mappings, "mapping")
-            self._add_mapping_domain(mapping, self._get_collection_name())
-            self._add_field(mapping, self.field_id, form)
-        else:
-            self._fetch_model()
+        mapping = ET.SubElement(mappings, "mapping")
 
-            mapping = ET.SubElement(mappings, "mapping")
+        if form == "a":
+            if self.field_id:
+                self._add_mapping_domain(mapping, self._get_collection_name())
+                self._add_field(mapping, self.field_id, form)
+            else:
+                self._add_mapping_domain(
+                    mapping, self.model.get("fields", {}).get("ID", "")
+                )
+                fields = self._fetch_model_fields()
+
+                for field in fields:
+                    self._add_field(mapping, field, form)
+        else:
+            if not self.model:
+                self._fetch_model()
             self._add_mapping_domain(
                 mapping, self.model.get("fields", {}).get("ID", "")
             )
