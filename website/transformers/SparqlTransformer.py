@@ -5,6 +5,7 @@ from pyairtable.api.types import RecordDict
 from pyairtable.formulas import match
 from rdflib import RDF, Namespace
 from rdflib.namespace import DefinedNamespaceMeta
+
 from SPARQLBurger.SPARQLQueryBuilder import (
     Binding,
     Prefix,
@@ -12,7 +13,6 @@ from SPARQLBurger.SPARQLQueryBuilder import (
     SPARQLSelectQuery,
     Triple,
 )
-
 from website.db import dict_gen_one, get_db
 from website.transformers.Transformer import Transformer
 
@@ -107,7 +107,7 @@ class SparqlTransformer(Transformer):
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
 
-        total_path: str = self.field.get("fields", {}).get("Ontological_Path", "")
+        total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
 
         discriminator = "-->" if "-->" in total_path else "->"
         parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
@@ -131,7 +131,9 @@ class SparqlTransformer(Transformer):
                 uris[idx] = self_uri
                 continue
 
-            if idx > 2 and self.get_major_number_of_part(parts[idx - 2]) == self.get_major_number_of_part(part):
+            if idx > 2 and self.get_major_number_of_part(
+                parts[idx - 2]
+            ) == self.get_major_number_of_part(part):
                 uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
                 continue
 
@@ -163,7 +165,7 @@ class SparqlTransformer(Transformer):
                             Triple(
                                 subject=f"?{uris[idx - 1]}",
                                 predicate=f"{namespace}:{ns_class}",
-                                object=f'?{self_uri}',
+                                object=f"?{self_uri}",
                             )
                         ]
                     )
@@ -185,7 +187,9 @@ class SparqlTransformer(Transformer):
                             Triple(
                                 subject=f"?{uris[idx - 1]}",
                                 predicate=f"{namespace}:{ns_class}",
-                                object=f"?{uris[idx + 1]}" if "<" not in uris[idx + 1] else uris[idx + 1],
+                                object=f"?{uris[idx + 1]}"
+                                if "<" not in uris[idx + 1]
+                                else uris[idx + 1],
                             )
                         ]
                     )
@@ -204,23 +208,22 @@ class SparqlTransformer(Transformer):
                 )
 
         if self_uri not in uris.values() and "rdf:literal" not in uris.values():
-            where_pattern.add_binding(
-                Binding(f"?{uris[1]}", f'?{self_uri}')
-            )
+            where_pattern.add_binding(Binding(f"?{uris[1]}", f"?{self_uri}"))
 
-        where_pattern.add_binding(
-            Binding(f'?{self_uri}', "?value")
-        )
+        where_pattern.add_binding(Binding(f"?{self_uri}", "?value"))
 
         expected_value_type = self.get_field_or_default("Expected_Value_Type")
-        if "rdf:literal" not in parts and expected_value_type not in ["Date", "Integer"]:
+        if "rdf:literal" not in parts and expected_value_type not in [
+            "Date",
+            "Integer",
+        ]:
             optional_label = SPARQLGraphPattern(optional=True)
             optional_label.add_triples(
                 [
                     Triple(
-                        subject=f'?{self_uri}',
+                        subject=f"?{self_uri}",
                         predicate="rdfs:label",
-                        object=f'?{self_uri}_label',
+                        object=f"?{self_uri}_label",
                     )
                 ]
             )
