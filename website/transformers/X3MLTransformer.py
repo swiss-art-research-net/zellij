@@ -4,7 +4,7 @@ from typing import List, Literal, Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import match
+from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
 from website.db import decrypt, generate_airtable_schema
 from website.transformers.Transformer import Transformer
@@ -26,9 +26,18 @@ class X3MLTransformer(Transformer):
         self.api_key = api_key
         self.field: Union[RecordDict, None] = None
 
-        _, secretkey = generate_airtable_schema(api_key)
+        schemas, secretkey = generate_airtable_schema(api_key)
         self.airtable = AirTableConnection(decrypt(secretkey), api_key)
         self.pattern = pattern
+
+        schema = schemas[pattern]
+        for tablename, fieldlist in schema.items():
+            if not isinstance(fieldlist, dict):
+                continue
+            if "GroupBy" in fieldlist:
+                self.field_table = tablename
+                self.field_table_group_by = fieldlist["GroupBy"]
+                break
 
         if field_id:
             self.field = self.airtable.get_record_by_formula(
@@ -48,7 +57,7 @@ class X3MLTransformer(Transformer):
                 self.file_name = (
                     self.model.get("fields", {})
                     .get("System_Name", "")
-                    .replace(" ", "_"),
+                    .replace(" ", "_")
                 )
 
     def _fetch_model(self):
@@ -57,7 +66,34 @@ class X3MLTransformer(Transformer):
             self.model = models[0]
 
     def _fetch_model_fields(self):
-        return self.airtable.get_all_records_from_table("Field")
+        if not self.model:
+            return []
+
+        searchtext = self.model["fields"]["ID"]
+        model_fields_ids = list(
+            map(
+                lambda x: x["fields"]["Field"][0]
+                if len(x["fields"]["Field"][0]) > 0
+                else x["fields"]["Field"],
+                self.airtable.get_multiple_records_by_formula(
+                    self.field_table,
+                    f'SEARCH("{searchtext}",{{{self.field_table_group_by}}})',
+                ),
+            )
+        )
+        print(model_fields_ids)
+
+        return self.airtable.get_multiple_records_by_formula(
+            "Field",
+            OR(
+                *list(
+                    map(
+                        lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                        model_fields_ids,
+                    )
+                )
+            ),
+        )
 
     def get_major_number_of_part(self, part: str) -> str:
         if "[" not in part:
@@ -231,6 +267,7 @@ class X3MLTransformer(Transformer):
                     mapping, self.model.get("fields", {}).get("ID", "")
                 )
                 fields = self._fetch_model_fields()
+                print(fields)
 
                 for field in fields:
                     self._add_field(mapping, field, form)
