@@ -34,10 +34,22 @@ class X3MLTransformer(Transformer):
             self.field = self.airtable.get_record_by_formula(
                 "Field", match({"ID": field_id})
             ) or self.airtable.get_record_by_id("Field", field_id)
+            if self.field:
+                self.file_name = (
+                    self.field.get("fields", {})
+                    .get("System_Name", "")
+                    .replace(" ", "_")
+                )
 
         self.model = None
         if model_id and not field_id:
             self._fetch_model()
+            if self.model:
+                self.file_name = (
+                    self.model.get("fields", {})
+                    .get("System_Name", "")
+                    .replace(" ", "_"),
+                )
 
     def _fetch_model(self):
         models = self.get_records(self.model_id, self.pattern)
@@ -46,12 +58,6 @@ class X3MLTransformer(Transformer):
 
     def _fetch_model_fields(self):
         return self.airtable.get_all_records_from_table("Field")
-
-    def get_field_or_default(self, field_name: str) -> str:
-        if self.model:
-            return self.model.get("fields", {}).get(field_name, "")
-
-        return self.field.get("fields", {}).get(field_name, "")
 
     def get_major_number_of_part(self, part: str) -> str:
         if "[" not in part:
@@ -64,7 +70,7 @@ class X3MLTransformer(Transformer):
         reparsed = minidom.parseString(rough_string)
 
         file = io.BytesIO()
-        file.name = f"{self.get_field_or_default('System_Name').replace(' ', '_')}.x3ml"
+        file.name = f"{self.file_name}.x3ml"
         file.write(reparsed.toprettyxml(indent=4 * " ").encode("utf-8"))
         file.seek(0)
 
@@ -94,9 +100,8 @@ class X3MLTransformer(Transformer):
             namespace.attrib["prefix"] = record["fields"]["Prefix"]
             namespace.attrib["uri"] = record["fields"]["Namespace"]
 
-    def _get_collection_name(self) -> str:
-        collection = self.get_field_or_default("Collection_Deployed")
-        collection_fields = self.get_records(collection, "Collection")
+    def _get_collection_name(self, collection_id: str) -> str:
+        collection_fields = self.get_records(collection_id, "Collection")
         if len(collection_fields) == 1:
             return collection_fields[0].get("fields", {}).get("ID", "")
 
@@ -168,7 +173,12 @@ class X3MLTransformer(Transformer):
             return []
 
         link = ET.SubElement(parent, "link")
-        link.attrib["template"] = field.get("fields", {}).get("ID", "")
+        if form == "a":
+            link.attrib["template"] = field.get("fields", {}).get("ID", "")
+        else:
+            link.attrib["template"] = self._get_collection_name(
+                field.get("fields", {}).get("Collection_Deployed", "")
+            )
 
         path = ET.SubElement(link, "path")
         ET.SubElement(path, "source_relation")
@@ -208,10 +218,15 @@ class X3MLTransformer(Transformer):
         mapping = ET.SubElement(mappings, "mapping")
 
         if form == "a":
-            if self.field_id:
-                self._add_mapping_domain(mapping, self._get_collection_name())
+            if self.field_id and self.field:
+                self._add_mapping_domain(
+                    mapping,
+                    self._get_collection_name(
+                        self.field.get("fields", {}).get("Collection_Deployed", "")
+                    ),
+                )
                 self._add_field(mapping, self.field_id, form)
-            else:
+            elif self.model_id and self.model:
                 self._add_mapping_domain(
                     mapping, self.model.get("fields", {}).get("ID", "")
                 )
@@ -219,18 +234,29 @@ class X3MLTransformer(Transformer):
 
                 for field in fields:
                     self._add_field(mapping, field, form)
+            else:
+                print("No model or field found")
         else:
-            if not self.model:
+            if self.model is None:
                 self._fetch_model()
+
+            assert self.model is not None
+
             self._add_mapping_domain(
                 mapping, self.model.get("fields", {}).get("ID", "")
             )
-            if self.field:
-                domain_parts = self._add_field(mapping, self.field_id, form, True)
+            if not self.field or not self.field_id:
+                return
+
+            domain_parts = self._add_field(mapping, self.field_id, form, True)
 
             model_mapping = ET.SubElement(mappings, "mapping")
             self._add_mapping_domain(
-                model_mapping, self.field.get("fields", {}).get("ID", ""), domain_parts
+                model_mapping,
+                self._get_collection_name(
+                    self.field.get("fields", {}).get("Collection_Deployed", "")
+                ),
+                domain_parts,
             )
             self._add_field(model_mapping, self.field_id, form, False)
 
