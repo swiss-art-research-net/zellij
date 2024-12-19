@@ -1,6 +1,7 @@
 import io
 import xml.etree.ElementTree as ET
-from typing import List, Literal, Union
+from itertools import chain
+from typing import Dict, List, Literal, Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
@@ -12,6 +13,7 @@ from ZellijData.AirTableConnection import AirTableConnection
 
 
 class X3MLTransformer(Transformer):
+    collection_cache: Dict[str, RecordDict] = {}
     literal_uris = {
         "xsd:date": "http://www.w3.org/2001/XMLSchema#dateTime",
         "xsd:dateTime": "http://www.w3.org/2001/XMLSchema#dateTime",
@@ -81,18 +83,25 @@ class X3MLTransformer(Transformer):
                 ),
             )
         )
-        print(model_fields_ids)
 
-        return self.airtable.get_multiple_records_by_formula(
-            "Field",
-            OR(
-                *list(
-                    map(
-                        lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
-                        model_fields_ids,
-                    )
+        return list(
+            filter(
+                lambda field: len(
+                    field.get("fields", {}).get("Collection_Deployed", "")
                 )
-            ),
+                > 0,
+                self.airtable.get_multiple_records_by_formula(
+                    "Field",
+                    OR(
+                        *list(
+                            map(
+                                lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                model_fields_ids,
+                            )
+                        )
+                    ),
+                ),
+            )
         )
 
     def get_major_number_of_part(self, part: str) -> str:
@@ -116,10 +125,14 @@ class X3MLTransformer(Transformer):
         pass
 
     def _parse_ontological_path(self, path: str) -> List[str]:
-        discriminator = "-->" if "-->" in path else "->"
-        stripped_path = path.strip(discriminator)
+        long_discriminator = "-->"
+        short_discriminator = "->"
+        stripped_path = path.strip(short_discriminator).strip(long_discriminator)
 
-        return stripped_path.split(discriminator)
+        parts = stripped_path.split(long_discriminator)
+        parts = list(map(lambda x: x.split(short_discriminator), parts))
+
+        return list(chain.from_iterable(parts))
 
     def _extract_entity_variable(self, entity: str) -> str:
         if "[" not in entity:
@@ -137,8 +150,17 @@ class X3MLTransformer(Transformer):
             namespace.attrib["uri"] = record["fields"]["Namespace"]
 
     def _get_collection_name(self, collection_id: str) -> str:
+        cache_collection_id = (
+            collection_id[0] if isinstance(collection_id, list) else collection_id
+        )
+        if cache_collection_id in self.collection_cache:
+            return (
+                self.collection_cache[collection_id[0]].get("fields", {}).get("ID", "")
+            )
+
         collection_fields = self.get_records(collection_id, "Collection")
         if len(collection_fields) == 1:
+            self.collection_cache[cache_collection_id] = collection_fields[0]
             return collection_fields[0].get("fields", {}).get("ID", "")
 
         return ""
@@ -211,10 +233,12 @@ class X3MLTransformer(Transformer):
         link = ET.SubElement(parent, "link")
         if form == "a":
             link.attrib["template"] = field.get("fields", {}).get("ID", "")
-        else:
+        elif form == "b" and first_part:
             link.attrib["template"] = self._get_collection_name(
                 field.get("fields", {}).get("Collection_Deployed", "")
             )
+        elif form == "b" and not first_part:
+            link.attrib["template"] = field.get("fields", {}).get("ID", "")
 
         path = ET.SubElement(link, "path")
         ET.SubElement(path, "source_relation")
@@ -229,7 +253,10 @@ class X3MLTransformer(Transformer):
         parts = self._parse_ontological_path(total_path)
         # for form b take only the last two parts of the path
         if form == "b":
-            parts = parts[0:2] if first_part else parts[-2:]
+            parts = parts[0:2] if first_part else parts[2:]
+
+        # handles mappings the in the form of "a 'integer' -> rdf:literal"
+        parts = list(map(lambda x: x.split(" ")[0], parts))
 
         for idx, part in enumerate(parts):
             # if it is even then it is a relation else is an entity
@@ -266,10 +293,8 @@ class X3MLTransformer(Transformer):
                 self._add_mapping_domain(
                     mapping, self.model.get("fields", {}).get("ID", "")
                 )
-                fields = self._fetch_model_fields()
-                print(fields)
 
-                for field in fields:
+                for field in self._fetch_model_fields():
                     self._add_field(mapping, field, form)
             else:
                 print("No model or field found")
@@ -279,23 +304,47 @@ class X3MLTransformer(Transformer):
 
             assert self.model is not None
 
-            self._add_mapping_domain(
-                mapping, self.model.get("fields", {}).get("ID", "")
-            )
-            if not self.field or not self.field_id:
-                return
+            if self.field and self.field_id:
+                self._add_mapping_domain(
+                    mapping, self.model.get("fields", {}).get("ID", "")
+                )
+                domain_path_parts = self._add_field(mapping, self.field_id, form, True)
 
-            domain_parts = self._add_field(mapping, self.field_id, form, True)
+                model_mapping = ET.SubElement(mappings, "mapping")
+                self._add_mapping_domain(
+                    model_mapping,
+                    self._get_collection_name(
+                        self.field.get("fields", {}).get("Collection_Deployed", "")
+                    ),
+                    domain_path_parts,
+                )
+                self._add_field(model_mapping, self.field_id, form, False)
+            else:
+                self._add_mapping_domain(
+                    mapping, self.model.get("fields", {}).get("ID", "")
+                )
+                inserted_collections: Dict[str, ET.Element] = {}
 
-            model_mapping = ET.SubElement(mappings, "mapping")
-            self._add_mapping_domain(
-                model_mapping,
-                self._get_collection_name(
-                    self.field.get("fields", {}).get("Collection_Deployed", "")
-                ),
-                domain_parts,
-            )
-            self._add_field(model_mapping, self.field_id, form, False)
+                for field in self._fetch_model_fields():
+                    collection_name = self._get_collection_name(
+                        field.get("fields", {}).get("Collection_Deployed", "")
+                    )
+
+                    if collection_name not in inserted_collections:
+                        domain_path_parts = self._add_field(mapping, field, form, True)
+
+                    if collection_name in inserted_collections:
+                        model_mapping = inserted_collections[collection_name]
+                    else:
+                        model_mapping = ET.SubElement(mappings, "mapping")
+                        self._add_mapping_domain(
+                            model_mapping,
+                            collection_name,
+                            domain_path_parts,
+                        )
+                        inserted_collections[collection_name] = model_mapping
+
+                    self._add_field(model_mapping, field, form, False)
 
     def transform(self, form: Union[Literal["a"], Literal["b"]]) -> io.BytesIO:
         root = ET.Element("x3ml")
