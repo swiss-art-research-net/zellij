@@ -162,8 +162,10 @@
                     </option>
                 </optgroup>
                 <optgroup label="Pattern Transform">
-                    <option class="export-x3ml-form-a">Generate X3ML Mappings (Form A)</option>
-                    <option class="export-x3ml-form-b">Generate X3ML Mappings (Form B)</option>
+                    <option class="export-x3ml-form-a" data-upload="false">Generate X3ML Mappings (Form A)</option>
+                    <option class="export-x3ml-form-a" data-upload="true">Generate X3ML Mappings For System (Form A)</option>
+                    <option class="export-x3ml-form-b" data-upload="false">Generate X3ML Mappings (Form B)</option>
+                    <option class="export-x3ml-form-b" data-upload="true">Generate X3ML Mappings For System (Form B)</option>
                 </optgroup>
             </select>
         </td>
@@ -659,7 +661,18 @@
                 window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id;
             }
         } else if (type === "x3ml") {
-            window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE', formtype='FORM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type);
+            if (upload) {
+              fetch("{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE', formtype='FORM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type) + `?upload=${upload}`)
+                  .then((res) => {
+                      if (res.ok) {
+                          alert(`X3ML Mappings (Form ${form_type.toUpperCase()}) have been generated and uploaded to the system.`);
+                      } else {
+                          alert("An error occurred while uploading the X3ML Mappings to the system.");
+                      }
+                  })
+            } else {
+              window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE', formtype='FORM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type);
+            }
         }
     }
 
@@ -667,13 +680,36 @@
         e.preventDefault();
         const selected = $(this).find(':selected');
         const classes = selected.attr('class').split(' ');
+        const upload = selected.data('upload');
 
         if (classes.includes('export-field')) {
             window.location.href = "{{ url_for('docs.patternlistexport', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
         } else if (classes.includes('export-x3ml-form-a')) {
-            window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='a') }}";
+            if (upload) {
+              fetch("{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='a') }}" + `?upload=${upload}`)
+                  .then((res) => {
+                      if (res.ok) {
+                          alert("X3ML Mappings (Form A) have been generated and uploaded to the system.");
+                      } else {
+                          alert("An error occurred while uploading the X3ML Mappings to the system.");
+                      }
+                  })
+            } else {
+              window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='a') }}";
+            }
         } else if (classes.includes('export-x3ml-form-b')) {
-            window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='b') }}";
+            if (upload) {
+              fetch("{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='b') }}" + `?upload=${upload}`)
+                  .then((res) => {
+                      if (res.ok) {
+                          alert("X3ML Mappings (Form B) have been generated and uploaded to the system.");
+                      } else {
+                          alert("An error occurred while uploading the X3ML Mappings to the system.");
+                      }
+                  })
+            } else {
+                window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='b') }}";
+            }
         } else {
             window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
         }

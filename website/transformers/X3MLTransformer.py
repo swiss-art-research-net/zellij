@@ -7,7 +7,7 @@ from xml.dom import minidom
 from pyairtable.api.types import RecordDict
 from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
-from website.db import decrypt, generate_airtable_schema
+from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.Transformer import Transformer
 from ZellijData.AirTableConnection import AirTableConnection
 
@@ -110,19 +110,65 @@ class X3MLTransformer(Transformer):
 
         return part.split("[")[-1].split("]")[0].split("_")[0]
 
-    def _create_export_file(self, root: ET.Element) -> io.BytesIO:
+    def _parse_xml(self, root: ET.Element) -> str:
         rough_string = ET.tostring(root, "utf-8")
-        reparsed = minidom.parseString(rough_string)
+        return minidom.parseString(rough_string).toprettyxml(indent=4 * " ")
 
+    def _create_export_file(self, document: str) -> io.BytesIO:
         file = io.BytesIO()
         file.name = f"{self.file_name}.x3ml"
-        file.write(reparsed.toprettyxml(indent=4 * " ").encode("utf-8"))
+        file.write(document.encode("utf-8"))
         file.seek(0)
 
         return file
 
-    def upload(self):
-        pass
+    def upload(self, form: Union[Literal["a"], Literal["b"]]):
+        database = get_db()
+        c = database.cursor()
+        c.execute(
+            "SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (self.api_key,)
+        )
+        existing = dict_gen_one(c)
+        c.close()
+
+        column_name = "x3ml_a" if form == "a" else "x3ml_b"
+        table_name = "Field" if self.field_id else self.pattern
+        record_id = self.field_id if self.field_id else self.model_id
+
+        base_api_key = self.api_key
+        if existing is not None and existing["fieldbase"]:
+            base_api_key = existing["fieldbase"]
+
+        base_field = None
+        try:
+            base_field = self.airtable.airtable.table(
+                base_id=base_api_key, table_name=table_name
+            ).first(formula=match({"ID": record_id}))
+        except Exception as e:
+            print("Error getting Field: ", e)
+
+        if base_field is None:
+            table = self.airtable.airtable.table(
+                base_id=self.api_key, table_name=table_name
+            )
+            base_field = table.first(
+                formula=match({"ID": record_id})
+            ) or self.airtable.get_record_by_id("Field", record_id)
+
+            if base_field is not None:
+                base_api_key = self.api_key
+            else:
+                raise ValueError(
+                    "Field already exists in Field table, but not in Field table in the Field Base"
+                )
+
+        try:
+            self.airtable.airtable.table(
+                base_id=base_api_key, table_name=table_name
+            ).update(base_field.get("id"), {column_name: self.content})
+        except Exception as e:
+            print("Error uploading X3ML: ", e)
+            raise e
 
     def _parse_ontological_path(self, path: str) -> List[str]:
         long_discriminator = "-->"
@@ -355,4 +401,6 @@ class X3MLTransformer(Transformer):
         self._populate_namespaces(root)
         self._populate_mappings(root, form)
 
-        return self._create_export_file(root)
+        self.content = self._parse_xml(root)
+
+        return self._create_export_file(self.content)

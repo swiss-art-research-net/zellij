@@ -445,7 +445,7 @@ def patterntransformx3ml(apikey, pattern, modelid, item, formtype):
             return "", 401
 
         try:
-            transformer.upload()
+            transformer.upload(formtype)
 
             return "", 200
         except:
