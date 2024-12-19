@@ -20,6 +20,15 @@ class X3MLTransformer(Transformer):
         "rdf:literal": "http://www.w3.org/2001/XMLSchema#string",
     }
 
+    def _fetch_scraper_definition(self):
+        database = get_db()
+        c = database.cursor()
+        c.execute(
+            "SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (self.api_key,)
+        )
+        self.scraper_definition = dict_gen_one(c)
+        c.close()
+
     def __init__(
         self, api_key: str, pattern: str, model_id: str, field_id: Union[str, None]
     ):
@@ -31,6 +40,7 @@ class X3MLTransformer(Transformer):
         schemas, secretkey = generate_airtable_schema(api_key)
         self.airtable = AirTableConnection(decrypt(secretkey), api_key)
         self.pattern = pattern
+        self._fetch_scraper_definition()
 
         schema = schemas[pattern]
         for tablename, fieldlist in schema.items():
@@ -39,7 +49,8 @@ class X3MLTransformer(Transformer):
             if "GroupBy" in fieldlist:
                 self.field_table = tablename
                 self.field_table_group_by = fieldlist["GroupBy"]
-                break
+            else:
+                self.pattern = tablename
 
         if field_id:
             self.field = self.airtable.get_record_by_formula(
@@ -123,21 +134,13 @@ class X3MLTransformer(Transformer):
         return file
 
     def upload(self, form: Union[Literal["a"], Literal["b"]]):
-        database = get_db()
-        c = database.cursor()
-        c.execute(
-            "SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (self.api_key,)
-        )
-        existing = dict_gen_one(c)
-        c.close()
-
         column_name = "x3ml_a" if form == "a" else "x3ml_b"
         table_name = "Field" if self.field_id else self.pattern
         record_id = self.field_id if self.field_id else self.model_id
 
         base_api_key = self.api_key
-        if existing is not None and existing["fieldbase"]:
-            base_api_key = existing["fieldbase"]
+        if self.scraper_definition is not None and self.scraper_definition["fieldbase"]:
+            base_api_key = self.scraper_definition["fieldbase"]
 
         base_field = None
         try:
@@ -201,10 +204,19 @@ class X3MLTransformer(Transformer):
         )
         if cache_collection_id in self.collection_cache:
             return (
-                self.collection_cache[collection_id[0]].get("fields", {}).get("ID", "")
+                self.collection_cache[cache_collection_id]
+                .get("fields", {})
+                .get("ID", "")
             )
 
-        collection_fields = self.get_records(collection_id, "Collection")
+        if self.scraper_definition and self.scraper_definition["collectionbase"]:
+            collection_fields = self.get_records(
+                collection_id,
+                "Collection",
+                api_key=self.scraper_definition["collectionbase"],
+            )
+        else:
+            collection_fields = self.get_records(collection_id, "Collection")
         if len(collection_fields) == 1:
             self.collection_cache[cache_collection_id] = collection_fields[0]
             return collection_fields[0].get("fields", {}).get("ID", "")
