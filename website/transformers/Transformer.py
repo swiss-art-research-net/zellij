@@ -1,10 +1,10 @@
 from abc import ABC
 from typing import List, Union
 
-from website.db import generate_airtable_schema, decrypt
 from pyairtable.api.types import RecordDict
 from pyairtable.formulas import match
 
+from website.db import decrypt, generate_airtable_schema
 from ZellijData.AirTableConnection import AirTableConnection
 
 
@@ -53,7 +53,15 @@ class Transformer(ABC):
         except Exception as e:
             print(f"Error getting {table}: ", e)
 
-    def get_records(self, item: Union[str, List[str]], table: str) -> List[RecordDict]:
+    def get_records(
+        self, item: Union[str, List[str]], table: str, api_key: Union[str, None] = None
+    ) -> List[RecordDict]:
+        airtable_conn = self.airtable
+
+        if api_key:
+            _, secret = generate_airtable_schema(api_key)
+            airtable_conn = AirTableConnection(decrypt(secret), api_key)
+
         records = []
         if isinstance(item, str):
             if "," in item:
@@ -61,18 +69,18 @@ class Transformer(ABC):
 
                 for record in items:
                     records.append(
-                        self.airtable.get_record_by_formula(
+                        airtable_conn.get_record_by_formula(
                             table, match({"ID": record})
                         )
                     )
             elif "rec" in item:
-                records.append(self.airtable.get_record_by_id(table, item))
+                records.append(airtable_conn.get_record_by_id(table, item))
             else:
                 records.append(
-                    self.airtable.get_record_by_formula(table, match({"ID": item}))
+                    airtable_conn.get_record_by_formula(table, match({"ID": item}))
                 )
         else:
             for record in item:
-                records.append(self.airtable.get_record_by_id(table, record))
+                records.append(airtable_conn.get_record_by_id(table, record))
 
         return list(filter(lambda x: x, records))
