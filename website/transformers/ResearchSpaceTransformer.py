@@ -152,7 +152,45 @@ class ResearchSpaceTransformer(Transformer):
 
         return file
 
-    def upload(self) -> None: ...
+    def upload(self) -> None:
+        column_name = "rs"
+        table_name = "Field" if self.field_id else self.pattern
+        record_id = self.field_id if self.field_id else self.model_id
+
+        base_api_key = self.api_key
+        if self.scraper_definition is not None and self.scraper_definition["fieldbase"]:
+            base_api_key = self.scraper_definition["fieldbase"]
+
+        base_field = None
+        try:
+            base_field = self.airtable.airtable.table(
+                base_id=base_api_key, table_name=table_name
+            ).first(formula=match({"ID": record_id}))
+        except Exception as e:
+            print("Error getting Field: ", e)
+
+        if base_field is None:
+            table = self.airtable.airtable.table(
+                base_id=self.api_key, table_name=table_name
+            )
+            base_field = table.first(
+                formula=match({"ID": record_id})
+            ) or self.airtable.get_record_by_id("Field", record_id)
+
+            if base_field is not None:
+                base_api_key = self.api_key
+            else:
+                raise ValueError(
+                    "Field already exists in Field table, but not in Field table in the Field Base"
+                )
+
+        try:
+            self.airtable.airtable.table(
+                base_id=base_api_key, table_name=table_name
+            ).update(base_field.get("id"), {column_name: self.content})
+        except Exception as e:
+            print("Error uploading RS Definition: ", e)
+            raise e
 
     def transform(self) -> io.BytesIO:
         data = {"prefix": "", "container": ""}
@@ -160,12 +198,10 @@ class ResearchSpaceTransformer(Transformer):
         self._populate_namespaces(data)
         self._populate_fields(data)
 
-        return self._create_export_file(
-            yaml.safe_dump(
-                data,
-                default_flow_style=False,
-                sort_keys=False,
-                explicit_start=True,
-                line_break="\n",
-            )
+        self.content = yaml.safe_dump(
+            data,
+            default_flow_style=False,
+            sort_keys=False,
         )
+
+        return self._create_export_file(self.content)
