@@ -166,6 +166,8 @@
                     <option class="export-x3ml-form-a" data-upload="true">Generate X3ML Mappings For System (Form A)</option>
                     <option class="export-x3ml-form-b" data-upload="false">Generate X3ML Mappings (Form B)</option>
                     <option class="export-x3ml-form-b" data-upload="true">Generate X3ML Mappings For System (Form B)</option>
+                    <option class="export-rs" data-upload="false">Generate ResearchSpace Definition</option>
+                    <option class="export-rs" data-upload="true">Generate ResearchSpace Definition For System</option>
                 </optgroup>
             </select>
         </td>
@@ -739,6 +741,19 @@
             } else {
                 window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model', formtype='b') }}";
             }
+        } else if (classes.includes('export-rs')) {
+          if (upload) {
+            fetch("{{ url_for('docs.patterntransformrs', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model') }}" + `?upload=${upload}`)
+                .then((res) => {
+                    if (res.ok) {
+                        alert("ResearchSpace Definitions have been generated and uploaded to the system.");
+                    } else {
+                        alert("An error occurred while uploading the ResearchSpace Definitions to the system.");
+                    }
+                })
+          } else {
+              window.location.href = "{{ url_for('docs.patterntransformrs', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model') }}";
+          }
         } else {
             window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
         }
