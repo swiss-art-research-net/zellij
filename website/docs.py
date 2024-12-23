@@ -28,6 +28,7 @@ from website.exporters.ModelExporter import ModelExporter
 from website.exporters.ProjectExporter import ProjectExporter
 from website.functions import functions
 from website.github_wrapper import GithubWrapper
+from website.transformers.ResearchSpaceTransformer import ResearchSpaceTransformer
 from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.TurtleTransformer import TurtleTransformer
 from website.transformers.X3MLTransformer import X3MLTransformer
@@ -427,9 +428,9 @@ def patterntransformsparql(apikey, item):
     else:
         w = FileWrapper(file)
 
-        response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+        response = Response(w, mimetype="text/plain", direct_passthrough=True)
         response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
-        response.headers["Content-Type"] = "text/turtle"
+        response.headers["Content-Type"] = "text/plain"
         return response
 
 
@@ -453,9 +454,35 @@ def patterntransformx3ml(apikey, pattern, modelid, item, formtype):
     else:
         w = FileWrapper(file)
 
-        response = Response(w, mimetype="text/turtle", direct_passthrough=True)
+        response = Response(w, mimetype="application/xml", direct_passthrough=True)
         response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
-        response.headers["Content-Type"] = "text/turtle"
+        response.headers["Content-Type"] = "application/xml"
+        return response
+
+
+@bp.route("/transform/rs/<apikey>/<pattern>/<modelid>/<item>")
+def patterntransformrs(apikey, pattern, modelid, item):
+    transformer = ResearchSpaceTransformer(
+        apikey, pattern, modelid, item if item != "model" else None
+    )
+    file = transformer.transform()
+
+    if request.args.get("upload") == "true":
+        if g.user is None:
+            return "", 401
+
+        try:
+            transformer.upload()
+
+            return "", 200
+        except:
+            return "", 500
+    else:
+        w = FileWrapper(file)
+
+        response = Response(w, mimetype="text/yaml", direct_passthrough=True)
+        response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
+        response.headers["Content-Type"] = "text/yaml"
         return response
 
 

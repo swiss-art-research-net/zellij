@@ -435,6 +435,14 @@
                                 data-upload="true">
                                 Generate X3ML Mappings For System (Form B)
                             </option>
+                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                data-upload="false">
+                                Generate ResearchSpace Definition
+                            </option>
+                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                data-upload="true">
+                                Generate ResearchSpace Definition for System
+                            </option>
                         </optgroup>
                     </select>
                 </td>
@@ -514,6 +522,14 @@
                             <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                 data-upload="true">
                                 Generate X3ML Mappings For System (Form B)
+                            </option>
+                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                data-upload="false">
+                                Generate ResearchSpace Definition
+                            </option>
+                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                data-upload="true">
+                                Generate ResearchSpace Definition for System
                             </option>
                         </optgroup>
                     </select>
@@ -673,6 +689,19 @@
             } else {
               window.location.href = "{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE', formtype='FORM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type);
             }
+        } else if (type === "rs") {
+            if (upload) {
+              fetch("{{ url_for('docs.patterntransformrs', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type) + `?upload=${upload}`)
+                    .then((res) => {
+                        if (res.ok) {
+                            alert("ResearchSpace Definition has been generated and uploaded to the system.");
+                        } else {
+                            alert("An error occurred while uploading the ResearchSpace Definition to the system.");
+                        }
+                    })
+            } else {
+                window.location.href = "{{ url_for('docs.patterntransformrs', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type);
+            }
         }
     }
 
@@ -729,6 +758,8 @@
         } else if (classes.includes('generate-x3ml')) {
             const form_type = selected.data("form")
             transformField(id, 'x3ml', upload, form_type);
+        } else if (classes.includes('generate-rs')) {
+            transformField(id, 'rs', upload);
         } else {
             transformField(id, 'sparql', upload);
         }
