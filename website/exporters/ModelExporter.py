@@ -1,8 +1,6 @@
 import xml.etree.ElementTree as ET
-from typing import Union
 from xml.dom import minidom
 
-from pyairtable.api.types import RecordDict
 from pyairtable.formulas import EQUAL, OR, STR_VALUE
 
 from website.exporters.Exporter import Exporter
@@ -176,37 +174,6 @@ class ModelExporter(Exporter):
                     )
                     description_language_label.text = "English"
 
-                if self._prefill_group.get(key, {}).get("name") == "Ontological_Scope":
-                    ontological_scopes = ET.SubElement(definition, "ontological_scopes")
-                    for record_id in val:
-                        record: Union[RecordDict, None] = None
-
-                        try:
-                            record = self._airtable.get_record_by_id(
-                                "CRM Class", ontology_id
-                            )
-                        except:
-                            pass
-
-                        try:
-                            if record is None:
-                                record = self._airtable.get_record_by_id(
-                                    "Ontology_Class", ontology_id
-                                )
-                        except:
-                            continue
-
-                        ontology_class = ET.SubElement(
-                            ontological_scopes, "ontology_class"
-                        )
-                        ontology_class_uri = ET.SubElement(ontology_class, "uri")
-                        ontology_class_uri.text = record.get("fields", {}).get(
-                            "Subject"
-                        )
-
-                        ontology_class_label = ET.SubElement(ontology_class, "label")
-                        ontology_class_label.text = record.get("fields", {}).get("ID")
-
                 if self._prefill_group.get(key, {}).get("name") == "Model_NameSpaces":
                     semantic_context = ET.SubElement(root, "semantic_context")
 
@@ -275,14 +242,7 @@ class ModelExporter(Exporter):
                     fields_to_populate = {}
                     fields_uris = []
 
-                    for model_field in self._airtable.get_multiple_records_by_formula(
-                        referenced_table,
-                        OR(
-                            *list(
-                                map(lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"), val)
-                            )
-                        ),
-                    ):
+                    for model_field in self.get_records(val, referenced_table):
                         pattern = ET.SubElement(composition, "pattern")
 
                         field_ui_names = model_field.get("fields", {}).get(
@@ -293,13 +253,10 @@ class ModelExporter(Exporter):
                             field_ui_names[0] if len(field_ui_names) > 0 else ""
                         )
 
-                        if len(model_field.get("fields", {}).get("Field")) > 0:
-                            fields_to_populate[
-                                model_field.get("fields", {}).get("Field")[0]
-                            ] = pattern
-                            fields_uris.append(
-                                model_field.get("fields", {}).get("Field")[0]
-                            )
+                        fields = model_field.get("fields", {}).get("Field", [])
+                        if len(fields) > 0:
+                            fields_to_populate[fields[0]] = pattern
+                            fields_uris.append(fields[0])
 
                     for field in self._airtable.get_multiple_records_by_formula(
                         "Field",
