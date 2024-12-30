@@ -356,7 +356,12 @@ class ModelExporter(Exporter):
                     self._prefill_group.get(key, {}).get("name") == "Funders"
                     or self._prefill_group.get(key, {}).get("name") == "Funder"
                 ):
-                    for funder_record in self.get_records(val, "Institution"):
+                    try:
+                        records = self.get_records(val, "Institution")
+                    except Exception:
+                        records = self.get_records(val, "Actors")
+
+                    for funder_record in records:
                         funder = ET.SubElement(funding, "funder")
                         funder_uri = ET.SubElement(funder, "uri")
                         funder_uri.text = funder_record.get("fields", {}).get("URI")
