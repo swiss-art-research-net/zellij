@@ -4,11 +4,11 @@ from typing import List, Union
 
 from pyairtable import Table
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import match
+from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
-from ZellijData.AirTableConnection import AirTableConnection
 from website.datasources import get_prefill
-from website.db import generate_airtable_schema, decrypt
+from website.db import decrypt, generate_airtable_schema
+from ZellijData.AirTableConnection import AirTableConnection
 
 
 class Exporter(ABC):
@@ -79,26 +79,45 @@ class Exporter(ABC):
         return self._schema
 
     def get_records(self, item: Union[str, List[str]], table: str) -> List[RecordDict]:
+        table_schema = self._airtable.airtable.table(
+            table_name=table, base_id=self._airtable.airTableBaseAPI
+        ).schema()
         records = []
         if isinstance(item, str):
             if "," in item:
                 items = item.split(", ")
 
-                for record in items:
-                    records.append(
-                        self._airtable.get_record_by_formula(
-                            table, match({"ID": record})
+                formula = OR(
+                    *list(
+                        map(
+                            lambda x: EQUAL(
+                                STR_VALUE(x), table_schema.primary_field_id
+                            ),
+                            items,
                         )
                     )
+                )
+                records.extend(
+                    self._airtable.get_multiple_records_by_formula(
+                        table,
+                        formula,
+                    )
+                )
             elif "rec" in item:
                 records.append(self._airtable.get_record_by_id(table, item))
             else:
                 records.append(
-                    self._airtable.get_record_by_formula(table, match({"ID": item}))
+                    self._airtable.get_record_by_formula(
+                        table, match({table_schema.primary_field_id: item})
+                    )
                 )
         else:
-            for record in item:
-                records.append(self._airtable.get_record_by_id(table, record))
+            records.extend(
+                self._airtable.get_multiple_records_by_formula(
+                    table,
+                    OR(*list(map(lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"), item))),
+                )
+            )
 
         return list(filter(lambda x: x, records))
 
