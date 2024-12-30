@@ -88,14 +88,19 @@ class X3MLTransformer(Transformer):
                 lambda x: x["fields"]["Field"][0]
                 if len(x["fields"]["Field"][0]) > 0
                 else x["fields"]["Field"],
-                self.airtable.get_multiple_records_by_formula(
-                    self.field_table,
-                    f'SEARCH("{searchtext}",{{{self.field_table_group_by}}})',
+                sorted(
+                    self.airtable.get_multiple_records_by_formula(
+                        self.field_table,
+                        f'SEARCH("{searchtext}",{{{self.field_table_group_by}}})',
+                    ),
+                    key=lambda x: x["fields"]["Canonical_Field_Order"]
+                    if "Canonical_Field_Order" in x["fields"]
+                    else x["fields"]["Model_Specific_Field_Order"],
                 ),
             )
         )
 
-        return list(
+        fields = list(
             filter(
                 lambda field: len(
                     field.get("fields", {}).get("Collection_Deployed", "")
@@ -114,6 +119,8 @@ class X3MLTransformer(Transformer):
                 ),
             )
         )
+
+        return sorted(fields, key=lambda x: model_fields_ids.index(x["id"]))
 
     def get_major_number_of_part(self, part: str) -> str:
         if "[" not in part:
@@ -299,7 +306,10 @@ class X3MLTransformer(Transformer):
             link.attrib["template"] = field.get("fields", {}).get("ID", "")
 
         path = ET.SubElement(link, "path")
-        ET.SubElement(path, "source_relation")
+
+        source_relation = ET.SubElement(path, "source_relation")
+        ET.SubElement(source_relation, "relation")
+
         target_relation = ET.SubElement(path, "target_relation")
         total_path = field.get("fields", {}).get("Ontological_Long_Path") or field.get(
             "fields", {}
