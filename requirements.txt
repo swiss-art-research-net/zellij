@@ -32,9 +32,10 @@ pyparsing==3.0.9
 python-dateutil==2.9.0.post0
 python-dotenv==0.21.0
 pytz==2024.2
+PyYAML==6.0.2
 rdflib==6.2.0
 requests==2.31.0
-ruff==0.6.8
+ruff==0.8.4
 six==1.16.0
 SQLAlchemy==2.0.25
 typing_extensions==4.9.0
