@@ -3,7 +3,7 @@ from typing import Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import OR, EQUAL, STR_VALUE
+from pyairtable.formulas import EQUAL, OR, STR_VALUE
 
 from website.exporters.Exporter import Exporter
 
@@ -211,9 +211,7 @@ class ModelExporter(Exporter):
                     semantic_context = ET.SubElement(root, "semantic_context")
 
                 if self._prefill_group.get(key, {}).get("name") == "Project":
-                    for record_id in val:
-                        record = self._airtable.get_record_by_id("Project", record_id)
-
+                    for record in self.get_records(val, "Project"):
                         semantic_pattern_space = ET.SubElement(
                             pattern_context, "semantic_pattern_space"
                         )
@@ -387,8 +385,7 @@ class ModelExporter(Exporter):
 
                 if self._prefill_group.get(key, {}).get("name") == "Authors":
                     creators = ET.SubElement(creation_data, "creators")
-                    for record_id in val:
-                        author = self._airtable.get_record_by_id("Actors", record_id)
+                    for author in self.get_records(val, "Actors"):
                         creator = ET.SubElement(creators, "creator")
 
                         creator_uri = ET.SubElement(creator, "uri")
@@ -402,17 +399,8 @@ class ModelExporter(Exporter):
                     self._prefill_group.get(key, {}).get("name") == "Funders"
                     or self._prefill_group.get(key, {}).get("name") == "Funder"
                 ):
-                    for record_id in val:
+                    for funder_record in self.get_records(val, "Institution"):
                         funder = ET.SubElement(funding, "funder")
-                        try:
-                            funder_record = self._airtable.get_record_by_id(
-                                "Institution", record_id
-                            )
-                        except:
-                            funder_record = self._airtable.get_record_by_id(
-                                "Actors", record_id
-                            )
-
                         funder_uri = ET.SubElement(funder, "uri")
                         funder_uri.text = funder_record.get("fields", {}).get("URI")
                         funder_label = ET.SubElement(funder, "label")
@@ -423,9 +411,8 @@ class ModelExporter(Exporter):
                             )
 
                 if self._prefill_group.get(key, {}).get("name") == "Funding_Project":
-                    for record_id in val:
+                    for project in self.get_records(val, "Project"):
                         funding_project = ET.SubElement(provenance, "funding_project")
-                        project = self._airtable.get_record_by_id("Project", record_id)
 
                         project_label = ET.SubElement(funding_project, "label")
                         project_label.text = project.get("fields", {}).get("UI_Name")

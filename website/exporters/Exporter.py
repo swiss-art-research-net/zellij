@@ -6,9 +6,9 @@ from pyairtable import Table
 from pyairtable.api.types import RecordDict
 from pyairtable.formulas import match
 
-from ZellijData.AirTableConnection import AirTableConnection
 from website.datasources import get_prefill
-from website.db import generate_airtable_schema, decrypt
+from website.db import decrypt, generate_airtable_schema
+from ZellijData.AirTableConnection import AirTableConnection
 
 
 class Exporter(ABC):
@@ -79,6 +79,9 @@ class Exporter(ABC):
         return self._schema
 
     def get_records(self, item: Union[str, List[str]], table: str) -> List[RecordDict]:
+        table_schema = self._airtable.airtable.table(
+            table_name=table, base_id=self._airtable.airTableBaseAPI
+        ).schema()
         records = []
         if isinstance(item, str):
             if "," in item:
@@ -87,14 +90,16 @@ class Exporter(ABC):
                 for record in items:
                     records.append(
                         self._airtable.get_record_by_formula(
-                            table, match({"ID": record})
+                            table, match({table_schema.primary_field_id: record})
                         )
                     )
             elif "rec" in item:
                 records.append(self._airtable.get_record_by_id(table, item))
             else:
                 records.append(
-                    self._airtable.get_record_by_formula(table, match({"ID": item}))
+                    self._airtable.get_record_by_formula(
+                        table, match({table_schema.primary_field_id: item})
+                    )
                 )
         else:
             for record in item:
