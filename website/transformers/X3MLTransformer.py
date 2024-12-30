@@ -1,5 +1,6 @@
 import io
 import xml.etree.ElementTree as ET
+from functools import lru_cache
 from itertools import chain
 from typing import Dict, List, Literal, Union
 from xml.dom import minidom
@@ -196,8 +197,12 @@ class X3MLTransformer(Transformer):
 
         return entity.split("[")[-1].split("]")[0]
 
+    @lru_cache
+    def _get_namespaces(self) -> List[RecordDict]:
+        return self.airtable.get_all_records_from_table("Ontology")
+
     def _populate_namespaces(self, root: ET.Element) -> None:
-        records = self.airtable.get_all_records_from_table("Ontology")
+        records = self._get_namespaces()
         namespaces = ET.SubElement(root, "namespaces")
 
         for record in records:
@@ -205,7 +210,57 @@ class X3MLTransformer(Transformer):
             namespace.attrib["prefix"] = record["fields"]["Prefix"]
             namespace.attrib["uri"] = record["fields"]["Namespace"]
 
-    def _get_collection_name(self, collection_id: str) -> str:
+    def _populate_info(self, root: ET.Element) -> None:
+        info = ET.SubElement(root, "info")
+        title = ET.SubElement(info, "title")
+        description = ET.SubElement(info, "description")
+
+        if self.model_id and self.model:
+            title.text = self.model.get("fields", {}).get("System_Name", "")
+            description.text = self.model.get("fields", {}).get("Description", "")
+        elif self.field_id and self.field:
+            collection_id = self.field.get("fields", {}).get("Collection_Deployed", "")
+
+            collection_name = self._get_collection_name(
+                collection_id,
+                "System_Name",
+            )
+            title.text = f"{collection_name}/{self.field.get('fields', {}).get('System_Name', '')}"
+            description.text = self._get_collection_name(collection_id, "Description")
+
+        source = ET.SubElement(info, "source")
+        source_info = ET.SubElement(source, "source_info")
+        ET.SubElement(source, "source_collection")
+        source_schema = ET.SubElement(source_info, "source_schema")
+        source_schema.attrib["type"] = ""
+        source_schema.attrib["version"] = ""
+        namespaces = ET.SubElement(source_info, "namespaces")
+        namespace = ET.SubElement(namespaces, "namespace")
+        namespace.attrib["prefix"] = ""
+        namespace.attrib["uri"] = ""
+
+        namespaces_records = self._get_namespaces()
+        target = ET.SubElement(info, "target")
+        for rec in namespaces_records:
+            target_info = ET.SubElement(target, "target_info")
+            target_schema = ET.SubElement(target_info, "target_schema")
+            target_schema.attrib["type"] = "rdfs"
+            target_schema.attrib["version"] = rec["fields"]["Version"]
+            target_schema.text = rec["fields"]["UI_Name"]
+
+            target_namespaces = ET.SubElement(target_info, "namespaces")
+            target_namespace = ET.SubElement(target_namespaces, "namespace")
+            target_namespace.attrib["prefix"] = rec["fields"]["Prefix"]
+            target_namespace.attrib["uri"] = rec["fields"]["Namespace"]
+
+        mapping_info = ET.SubElement(info, "mapping_info")
+        ET.SubElement(mapping_info, "mapping_created_by_org")
+        ET.SubElement(mapping_info, "mapping_created_by_person")
+        ET.SubElement(mapping_info, "in_collaboration_with")
+
+    def _get_collection_name(
+        self, collection_id: str, collection_field: str = "ID"
+    ) -> str:
         cache_collection_id = (
             collection_id[0] if isinstance(collection_id, list) else collection_id
         )
@@ -213,7 +268,7 @@ class X3MLTransformer(Transformer):
             return (
                 self.collection_cache[cache_collection_id]
                 .get("fields", {})
-                .get("ID", "")
+                .get(collection_field, "")
             )
 
         if self.scraper_definition and self.scraper_definition["collectionbase"]:
@@ -224,9 +279,10 @@ class X3MLTransformer(Transformer):
             )
         else:
             collection_fields = self.get_records(collection_id, "Collection")
+
         if len(collection_fields) == 1:
             self.collection_cache[cache_collection_id] = collection_fields[0]
-            return collection_fields[0].get("fields", {}).get("ID", "")
+            return collection_fields[0].get("fields", {}).get(collection_field, "")
 
         return ""
 
@@ -420,6 +476,7 @@ class X3MLTransformer(Transformer):
         if form != "a" and form != "b":
             raise ValueError("Form must be either 'a' or 'b'")
 
+        self._populate_info(root)
         self._populate_namespaces(root)
         self._populate_mappings(root, form)
 
