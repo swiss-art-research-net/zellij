@@ -72,8 +72,13 @@ class SparqlTransformer(Transformer):
             print("Error uploading Sparql: ", e)
             raise e
 
-    def transform(self):
-        query = SPARQLSelectQuery(limit=100)
+    def transform(self, count: bool = False):
+
+        if count:
+            query = SPARQLSelectQuery()
+            query.add_variables(["(COUNT(?value) as ?count)"])
+        else:
+            query = SPARQLSelectQuery(limit=100)
 
         namespaces: Dict[str, Union[Namespace, DefinedNamespaceMeta]] = {}
         namespaces_records: List[RecordDict] = []
