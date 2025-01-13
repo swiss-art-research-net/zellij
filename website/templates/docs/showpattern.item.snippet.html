@@ -554,9 +554,8 @@
                         </select>
                     </td>
                     {% endif %}
-                    <template x-if="qaMode" >
-                        <td x-init="console.log('test')">
-                            COUNT
+                    <template x-if="qaMode" x-data="{loading: true, count: 0}">
+                        <td x-init="count = (await (await fetch('/qa/{{apikey}}/{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}')).json()).count; loading=false" x-text="!loading ? count : 'Loading...'">
                         </td>
                     </template>
                 </tr>
