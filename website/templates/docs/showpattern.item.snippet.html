@@ -146,7 +146,7 @@
         <h1 id="{{ patternitem['Name'] }}">
             {{ patternitem["Name"] }}
         </h1>
-        <button x-text="qaMode ? 'Normal Mode' : 'QA Mode'" @click="qaMode = !qaMode;"></button>
+        <button x-text="qaMode ? 'Normal Mode' : 'QA Mode'" @click="qaMode = !qaMode; $dispatch('qa-mode-changed', qaMode)"></button>
     </div>
     <table class="toc model-generator">
         <tr>

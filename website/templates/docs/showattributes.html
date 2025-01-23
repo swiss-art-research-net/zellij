@@ -44,4 +44,19 @@
             {% endif %}
         {% endif %}
     {% endfor %}
+    
+    <div x-data="{ qaMode: false }" @qa-mode-changed.window="qaMode = $event.detail">
+        <tr x-show="qaMode">
+            <th>
+                <div>
+                    count
+                </div>
+            </th>
+            <td>
+                <div>
+                    0
+                </div>
+            </td>
+        </tr>
+    </div>
 </table>
