@@ -5,10 +5,12 @@ from website.db import get_scraper_definition, decrypt, generate_airtable_schema
 import requests
 from ZellijData.AirTableConnection import AirTableConnection
 from pyairtable.formulas import match
+import functools
 
 
 bp = Blueprint('qa', __name__, url_prefix='/qa')
 
+@functools.lru_cache
 @bp.route("/<api_key>/<field_id>", methods=["GET"])
 def execute_qa(api_key, field_id):
     scraper_definition = get_scraper_definition(api_key)
@@ -29,6 +31,7 @@ def execute_qa(api_key, field_id):
 
     return Response(json.dumps({"count": json_data['results']['bindings'][0]['count']['value']}), status=200, mimetype='application/json')
 
+@functools.lru_cache
 @bp.route("/count/<api_key>/<field_id>", methods=["GET"])
 def execute_count(api_key, field_id):
     scraper_definition = get_scraper_definition(api_key)
@@ -43,8 +46,6 @@ def execute_count(api_key, field_id):
     if record is None:
         return Response(json.dumps({"count": 0}), status=500, mimetype='application/json')
     
-
-    print("here is the airtable", record['fields']['SparQL_Count_Total'])
     query=record['fields']['SparQL_Count_Total']
 
     res = requests.post(scraper_definition["sparqlendpoint"], data={"query": query}, headers={"Accept": "application/json"})
