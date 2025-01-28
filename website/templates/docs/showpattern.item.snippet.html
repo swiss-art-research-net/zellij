@@ -590,18 +590,18 @@
           if (!response.ok) {
             throw new Error('Network response was not ok');
           }
-          return response.blob(); // Convert the response to a Blob
+          return response.blob();
         })
         .then(blob => {
-          // Create a link element
+          
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = 'output.csv'; // Set the filename for the download
+          a.download = 'output.csv';
           document.body.appendChild(a);
-          a.click(); // Trigger the download
-          document.body.removeChild(a); // Clean up
-          window.URL.revokeObjectURL(url); // Release the Blob URL
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
         })
         .catch(error => {
           console.error('Error downloading CSV:', error);
