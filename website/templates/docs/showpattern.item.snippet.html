@@ -147,6 +147,7 @@
             {{ patternitem["Name"] }}
         </h1>
         <button x-text="qaMode ? 'Normal Mode' : 'QA Mode'" @click="qaMode = !qaMode; $dispatch('qa-mode-changed', qaMode)"></button>
+        <button @click="downloadCSV()">QA Export</button>
     </div>
     <table class="toc model-generator">
         <tr>
@@ -582,7 +583,31 @@
     </div>
     {% endfor %}
 </div>
-
+<script>
+    function downloadCSV() {
+      fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.blob(); // Convert the response to a Blob
+        })
+        .then(blob => {
+          // Create a link element
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'output.csv'; // Set the filename for the download
+          document.body.appendChild(a);
+          a.click(); // Trigger the download
+          document.body.removeChild(a); // Clean up
+          window.URL.revokeObjectURL(url); // Release the Blob URL
+        })
+        .catch(error => {
+          console.error('Error downloading CSV:', error);
+        });
+    }
+</script>
 <script type="module" defer>
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 

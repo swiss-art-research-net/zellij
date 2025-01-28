@@ -6,32 +6,23 @@ import requests
 from ZellijData.AirTableConnection import AirTableConnection
 from pyairtable.formulas import match
 import functools
+import website.utils.utils as utils
+from pyairtable.formulas import EQUAL, OR, STR_VALUE
+from werkzeug.wsgi import FileWrapper
+import csv
+import io
 
 
 bp = Blueprint('qa', __name__, url_prefix='/qa')
 
-@functools.lru_cache
 @bp.route("/<api_key>/<field_id>", methods=["GET"])
-def execute_qa(api_key, field_id):
-    scraper_definition = get_scraper_definition(api_key)
+def return_execute_qa(api_key, field_id):
+    json_data, status = utils.execute_qa(api_key, field_id)
 
-    if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
-        return Response(json.dumps({"count": 0}), status=400, mimetype='application/json')
+    return Response(json_data, status=status, mimetype='application/json')
 
-    transformer = SparqlTransformer(api_key, field_id)
-    transformer.transform(count=True)
 
-    res = requests.post(scraper_definition["sparqlendpoint"], data={"query": transformer.sparql}, headers={"Accept": "application/json"})
-
-    if not res.ok:
-        print(res.text, transformer.sparql)
-        return Response(json.dumps({"count": 0}), status=500, mimetype='application/json')
-
-    json_data = res.json()
-
-    return Response(json.dumps({"count": json_data['results']['bindings'][0]['count']['value']}), status=200, mimetype='application/json')
-
-@functools.lru_cache
+@functools.lru_cache(maxsize=256)
 @bp.route("/count/<api_key>/<field_id>", methods=["GET"])
 def execute_count(api_key, field_id):
     scraper_definition = get_scraper_definition(api_key)
@@ -46,6 +37,9 @@ def execute_count(api_key, field_id):
     if record is None:
         return Response(json.dumps({"count": 0}), status=500, mimetype='application/json')
     
+    if 'SparQL_Count_Total' not in record['fields']:
+        return Response(json.dumps({"count": 0}), status=500, mimetype='application/json')
+    
     query=record['fields']['SparQL_Count_Total']
 
     res = requests.post(scraper_definition["sparqlendpoint"], data={"query": query}, headers={"Accept": "application/json"})
@@ -56,3 +50,91 @@ def execute_count(api_key, field_id):
 
     json_data = res.json()
     return Response(json.dumps({"count":json_data['results']['bindings'][0]['subject_count']['value']}), status=200, mimetype='application/json')
+
+@bp.route("/count/<api_key>/<item>/<table>", methods=["GET"])
+def execute_count_csv(api_key, item, table):
+    scraper_definition = get_scraper_definition(api_key)
+
+    if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
+        return Response(json.dumps({"count": 0}), status=400, mimetype='application/json')
+    schemas, secretkey = generate_airtable_schema(api_key)
+    schema = schemas[table]
+    for tablename, fieldlist in schema.items():
+        if not isinstance(fieldlist, dict):
+            continue
+        if "GroupBy" in fieldlist:
+            field_table = tablename
+            field_table_group_by = fieldlist["GroupBy"]
+        else:
+            pattern = tablename
+    airtable = AirTableConnection(decrypt(secretkey), api_key)
+    records = []
+    if isinstance(item, str):
+        if "," in item:
+            items = item.split(", ")
+
+            for record in items:
+                records.append(
+                    airtable.get_record_by_formula(
+                        table, match({"ID": record})
+                    )
+                )
+        elif "rec" in item:
+            records.append(airtable.get_record_by_id(table, item))
+        else:
+            records.append(
+                airtable.get_record_by_formula(table, match({"ID": item}))
+            )
+    else:
+        for record in item:
+            records.append(airtable.get_record_by_id(table, record))
+
+    model_fields_ids = list(
+        map(
+            lambda x: x["fields"]["Field"][0]
+            if len(x["fields"]["Field"][0]) > 0
+            else x["fields"]["Field"],
+            airtable.get_multiple_records_by_formula(
+                field_table,
+                f'SEARCH("{item}",{{{field_table_group_by}}})',
+            ),
+        )
+    )
+    all_fields = list(
+                filter(
+                    lambda field: len(
+                        field.get("fields", {}).get("Collection_Deployed", "")
+                    )
+                    > 0,
+                    airtable.get_multiple_records_by_formula(
+                        "Field",
+                        OR(
+                            *list(
+                                map(
+                                    lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                    model_fields_ids,
+                                )
+                            )
+                        ),
+                    ),
+                )
+            )
+    final_data = [[field["fields"]["UI_Name"], field["fields"]["System_Name"],json.loads(utils.execute_qa(api_key, field["id"])[0])["count"]] for field in all_fields]
+    final_data.insert(0, ["UI Name", "System Name", "Count"])
+    csv_file = io.StringIO()
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerows(final_data)
+
+    csv_file.seek(0)
+
+    file_wrapper = FileWrapper(csv_file)
+
+    response = Response(
+        file_wrapper,
+        mimetype='text/csv')
+    response.headers["Content-Disposition"] = f"attachment; filename={'output.csv'}"
+    response.headers["Content-Type"] = "text/csv"
+    
+
+    return response
+    
