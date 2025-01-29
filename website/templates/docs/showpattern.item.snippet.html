@@ -266,7 +266,7 @@
     {% endif %}
     <div class="table-wrapper">
         <div>
-            <table class="toc" id="table-{{ prefix }}">
+            <table class="toc" id="table-{{ prefix }}" x-data="batchProcessor({{values}})">
                 <thead>
                     {% if prefill == "default" %}
                     <tr>
@@ -555,8 +555,8 @@
                         </select>
                     </td>
                     {% endif %}
-                    <template x-if="qaMode" x-data="{loading: true, count: 0}">
-                        <td x-init="count = (await (await fetch('/qa/{{apikey}}/{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}')).json()).count; loading=false" x-text="!loading ? count : 'Loading...'">
+                    <template x-if="qaMode">
+                        <td x-text="counts['{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}'] ?? 'Loading...'">
                         </td>
                     </template>
                 </tr>
@@ -583,6 +583,30 @@
     </div>
     {% endfor %}
 </div>
+<script>
+    function batchProcessor(fields) {
+        return {
+            counts: {},
+            queue: fields.map(fld => typeof fld['Field'] === 'string' ? fld['Field'] : fld['Field'][0]),
+            batchSize: 3,
+            async processQueue() {
+                while (this.queue.length > 0) {
+                    let batch = this.queue.splice(0, this.batchSize);
+                    await Promise.all(batch.map(async (field) => {
+                        let response = await fetch(`/qa/{{apikey}}/${field}`);
+                        let data = await response.json();
+                        this.counts[field] = data.count;
+                    }));
+                }
+            },
+            init() {
+            this.$watch('qaMode', (value) => {
+                if (value) this.processQueue();
+            });
+        }
+        };
+    }
+</script>
 <script>
     function downloadCSV() {
       fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
