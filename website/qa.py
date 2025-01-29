@@ -119,8 +119,8 @@ def execute_count_csv(api_key, item, table):
                     ),
                 )
             )
-    final_data = [[field["fields"]["UI_Name"], field["fields"]["System_Name"],json.loads(utils.execute_qa(api_key, field["id"])[0])["count"]] for field in all_fields]
-    final_data.insert(0, ["UI Name", "System Name", "Count"])
+    final_data = [[field["fields"]["ID"],field["fields"]["UI_Name"], field["fields"]["System_Name"],json.loads(utils.execute_qa(api_key, field["id"])[0])["count"]] for field in all_fields]
+    final_data.insert(0, ["ID","UI Name", "System Name", "Count"])
     csv_file = io.StringIO()
     csv_writer = csv.writer(csv_file)
     csv_writer.writerows(final_data)
