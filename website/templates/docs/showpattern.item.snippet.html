@@ -257,42 +257,47 @@
 {% endfor %}
 {% set fields = ns.fields %}
 
-{% for prefix, values in patternitem.GroupedFields() %}
-{% if patternitem.GroupedFields()|length > 1 %}
-<h3 style="max-width: 1440px">{{ prefix }}</h3>
-{% endif %}
-<div class="table-wrapper">
-    <div>
-        <table class="toc" id="table-{{ prefix }}">
-            <thead>
-                {% if prefill == "default" %}
-                <tr>
-                    {% for field in fields %}
-                    {% if loop.index > 1 %}
-                    <th>
-                        {{ field }}
-                    </th>
+    {% for prefix, values in patternitem.GroupedFields() %}
+    {% if patternitem.GroupedFields()|length > 1 %}
+    <h3 style="max-width: 1440px">{{ prefix }}</h3>
+    {% endif %}
+    <div class="table-wrapper">
+        <div>
+            <table class="toc" id="table-{{ prefix }}" x-data="batchProcessor({{values}})">
+                <thead>
+                    {% if prefill == "default" %}
+                    <tr>
+                        {% for field in fields %}
+                        {% if loop.index > 1 %}
+                        <th>
+                            {{ field }}
+                        </th>
+                        {% endif %}
+                        {% endfor %}
+                        <template x-if="!qaMode">
+                            {% if 'Field' in values|list|first %}
+                            <th>Derivatives</th>
+                            {% endif %}
+                        </template>
+                        <template x-if="qaMode">
+                            <th>Count</th>
+                        </template>
+                    </tr>
+                    {% else %}
+                    {% set sortable_keys = [] %}
+                    {% set hideable_keys= [] %}
+                    {% set link_keys = [] %}
+                    {% for key, value in prefill.items() %}
+                    {% if value.sortable == True %}
+                    {% set _ = sortable_keys.append(key) %}
+                    {% endif %}
+                    {% if value.hideable == True %}
+                    {% set _ = hideable_keys.append(key) %}
+                    {% endif %}
+                    {% if value.groupable == True %} {# for the link checkbox #}
+                    {% set _ = link_keys.append(key) %}
                     {% endif %}
                     {% endfor %}
-                    {% if 'Field' in values|list|first %}
-                    <th>Derivatives</th>
-                    {% endif %}
-                </tr>
-                {% else %}
-                {% set sortable_keys = [] %}
-                {% set hideable_keys= [] %}
-                {% set link_keys = [] %}
-                {% for key, value in prefill.items() %}
-                {% if value.sortable == True %}
-                {% set _ = sortable_keys.append(key) %}
-                {% endif %}
-                {% if value.hideable == True %}
-                {% set _ = hideable_keys.append(key) %}
-                {% endif %}
-                {% if value.groupable == True %} {# for the link checkbox #}
-                {% set _ = link_keys.append(key) %}
-                {% endif %}
-                {% endfor %}
 
                 <tr>
                     {% for field in fields %}
@@ -363,204 +368,262 @@
             {% endif %}
             {% endfor %}
 
-            {% if sortable_keys|length > 1 %}
-            {% for fld in values| sort(attribute=sortable_keys[0]) |sort(attribute=sortable_keys[1]) %}
-            {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
-            {% set segments = base_url.rsplit('/', 1) %}
-            <tr>
-                {% for f in fields %}
-                {% if loop.index > 1 and f not in hideable_keys %}
-                {% if fld[f] is string %}
-                {% set fld_f_list = [fld[f]] %}
-                {% elif fld[f] is integer %}
-                {% set fld_f_list = [fld[f]|string] %}
-                {% elif fld[f] is mapping %}
-                {% set fld_f_list = [fld[f]] %}
-                {% else %}
-                {% set fld_f_list = fld[f] %}
-                {% endif %}
-                <td>
-                    {% for item in fld_f_list %}
-                    {% if item.id is defined %}
-                    {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
-                    + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
-                    <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
-                    {% if not loop.last %}, {% endif %}
+                {% if sortable_keys|length > 1 %}
+                {% for fld in values| sort(attribute=sortable_keys[0]) |sort(attribute=sortable_keys[1]) %}
+                {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                {% set segments = base_url.rsplit('/', 1) %}
+                <tr>
+                    {% for f in fields %}
+                    {% if loop.index > 1 and f not in hideable_keys %}
+                    {% if fld[f] is string %}
+                    {% set fld_f_list = [fld[f]] %}
+                    {% elif fld[f] is integer %}
+                    {% set fld_f_list = [fld[f]|string] %}
+                    {% elif fld[f] is mapping %}
+                    {% set fld_f_list = [fld[f]] %}
                     {% else %}
-                    {{ item }}{% if not loop.last %}, {% endif %}
+                    {% set fld_f_list = fld[f] %}
+                    {% endif %}
+                    <td>
+                        {% for item in fld_f_list %}
+                        {% if item.id is defined %}
+                        {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
+                        + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                        <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                        {% if not loop.last %}, {% endif %}
+                        {% else %}
+                        {{ item }}{% if not loop.last %}, {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </td>
                     {% endif %}
                     {% endfor %}
-                </td>
-                {% endif %}
+                    {% if 'Field' in fld %}
+                    <td x-show="!qaMode">
+                        <select
+                            style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content; "
+                            class="generate-select">
+                            <option value="" hidden aria-hidden="true">Generators</option>
+                            <optgroup label="Pattern Export">
+                                <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
+                                    Pattern XML
+                                </option>
+                            </optgroup>
+                            <optgroup label="Pattern Transform">
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate Turtle File
+                                </option>
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate Turtle For System
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Query
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate SPARQL Query For System
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form B)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form B)
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate ResearchSpace Definition
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate ResearchSpace Definition for System
+                                </option>
+                            </optgroup>
+                        </select>
+                    </td>
+                    {% endif %}
+                    <template x-if="qaMode" >
+                        <td x-init="console.log('test')">
+                            COUNT
+                        </td>
+                    </template>
+                </tr>
                 {% endfor %}
-                {% if 'Field' in fld %}
-                <td>
-                    <select
-                        style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content; "
-                        class="generate-select">
-                        <option value="" hidden aria-hidden="true">Generators</option>
-                        <optgroup label="Pattern Export">
-                            <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
-                                Pattern XML
-                            </option>
-                        </optgroup>
-                        <optgroup label="Pattern Transform">
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate Turtle File
-                            </option>
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate Turtle For System
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate SPARQL Query
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate SPARQL Query For System
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form B)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form B)
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate ResearchSpace Definition
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate ResearchSpace Definition for System
-                            </option>
-                        </optgroup>
-                    </select>
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-            {% else %}
-            {% for fld in values|sort(attribute=sortable_keys[0]) %}
-            {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
-            {% set segments = base_url.rsplit('/', 1) %}
-            <tr>
-                {% for f in fields %}
-                {% if loop.index > 1 and f not in hideable_keys %}
-                {% if fld[f] is string %}
-                {% set fld_f_list = [fld[f]] %}
-                {% elif fld[f] is integer %}
-                {% set fld_f_list = [fld[f]|string] %}
-                {% elif fld[f] is mapping %}
-                {% set fld_f_list = [fld[f]] %}
                 {% else %}
-                {% set fld_f_list = fld[f] %}
-                {% endif %}
-                <td>
-                    {% for item in fld_f_list %}
-                    {% if item.id is defined %}
-                    {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
-                    + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
-                    <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
-                    {% if not loop.last %}, {% endif %}
+                {% for fld in values|sort(attribute=sortable_keys[0]) %}
+                {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                {% set segments = base_url.rsplit('/', 1) %}
+                <tr>
+                    {% for f in fields %}
+                    {% if loop.index > 1 and f not in hideable_keys %}
+                    {% if fld[f] is string %}
+                    {% set fld_f_list = [fld[f]] %}
+                    {% elif fld[f] is integer %}
+                    {% set fld_f_list = [fld[f]|string] %}
+                    {% elif fld[f] is mapping %}
+                    {% set fld_f_list = [fld[f]] %}
                     {% else %}
-                    {{ item }}{% if not loop.last %}, {% endif %}
+                    {% set fld_f_list = fld[f] %}
+                    {% endif %}
+                    <td>
+                        {% for item in fld_f_list %}
+                        {% if item.id is defined %}
+                        {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
+                        + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                        <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                        {% if not loop.last %}, {% endif %}
+                        {% else %}
+                        {{ item }}{% if not loop.last %}, {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </td>
                     {% endif %}
                     {% endfor %}
-                </td>
-                {% endif %}
+                    {% if 'Field' in fld %}
+                    <td x-show="!qaMode">
+                        <select
+                            style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content; "
+                            class="generate-select">
+                            <option value="" hidden aria-hidden="true">Generators</option>
+                            <optgroup label="Pattern Export">
+                                <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
+                                    Pattern XML
+                                </option>
+                            </optgroup>
+                            <optgroup label="Pattern Transform">
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate Turtle File
+                                </option>
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate Turtle For System
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Query
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate SPARQL Query For System
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form B)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form B)
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate ResearchSpace Definition
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate ResearchSpace Definition for System
+                                </option>
+                            </optgroup>
+                        </select>
+                    </td>
+                    {% endif %}
+                    <template x-if="qaMode">
+                        <td x-text="counts['{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}'] ?? 'Loading...'">
+                        </td>
+                    </template>
+                </tr>
                 {% endfor %}
-                {% if 'Field' in fld %}
-                <td>
-                    <select
-                        style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;"
-                        class="generate-select">
-                        <option value="" hidden aria-hidden="true">Generators</option>
-                        <optgroup label="Pattern Export">
-                            <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
-                                Pattern XML
-                            </option>
-                        </optgroup>
-                        <optgroup label="Pattern Transform">
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate Turtle File
-                            </option>
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate Turtle For System
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate SPARQL Query
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate SPARQL Query For System
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form B)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form B)
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate ResearchSpace Definition
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate ResearchSpace Definition for System
-                            </option>
-                        </optgroup>
-                    </select>
-                </td>
                 {% endif %}
-            </tr>
-            {% endfor %}
-            {% endif %}
-            {% endif %}
-        </table>
+                {% endif %}
+            </table>
+        </div>
+        {% for key, options in prefill.items() %}
+        {% if options["function"] is defined %}
+        {% if options["function"] in functions %}
+        {% set value_list = [] %}
+        {% for value in values %}
+        {% if value[key] is defined %}
+        {% set _ = value_list.append(value[key]) %}
+        {% endif %}
+        {% endfor %}
+        <div>
+            {{ functions[options["function"]]["function"](prefix, value_list, patternitem)|safe }}
+        </div>
+        {% endif %}
+        {% endif %}
+        {% endfor %}
     </div>
-    {% for key, options in prefill.items() %}
-    {% if options["function"] is defined %}
-    {% if options["function"] in functions %}
-    {% set value_list = [] %}
-    {% for value in values %}
-    {% if value[key] is defined %}
-    {% set _ = value_list.append(value[key]) %}
-    {% endif %}
-    {% endfor %}
-    <div>
-        {{ functions[options["function"]]["function"](prefix, value_list, patternitem)|safe }}
-    </div>
-    {% endif %}
-    {% endif %}
     {% endfor %}
 </div>
-{% endfor %}
-
+<script>
+    function batchProcessor(fields) {
+        return {
+            counts: {},
+            queue: fields.map(fld => typeof fld['Field'] === 'string' ? fld['Field'] : fld['Field'][0]),
+            batchSize: 3,
+            async processQueue() {
+                while (this.queue.length > 0) {
+                    let batch = this.queue.splice(0, this.batchSize);
+                    await Promise.all(batch.map(async (field) => {
+                        let response = await fetch(`/qa/{{apikey}}/${field}`);
+                        let data = await response.json();
+                        this.counts[field] = data.count;
+                    }));
+                }
+            },
+            init() {
+            this.$watch('qaMode', (value) => {
+                if (value) this.processQueue();
+            });
+        }
+        };
+    }
+</script>
+<script>
+    function downloadCSV() {
+      fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'output.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+          console.error('Error downloading CSV:', error);
+        });
+    }
+</script>
 <script type="module" defer>
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 
