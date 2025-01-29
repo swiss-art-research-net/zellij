@@ -265,7 +265,7 @@
     {% endif %}
     <div class="table-wrapper">
         <div>
-            <table class="toc" id="table-{{ prefix }}">
+            <table class="toc" id="table-{{ prefix }}" x-data="batchProcessor({{values}})">
                 <thead>
                     {% if prefill == "default" %}
                     <tr>
@@ -554,8 +554,8 @@
                         </select>
                     </td>
                     {% endif %}
-                    <template x-if="qaMode" x-data="{loading: true, count: 0}">
-                        <td x-init="count = (await (await fetch('/qa/{{apikey}}/{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}')).json()).count; loading=false" x-text="!loading ? count : 'Loading...'">
+                    <template x-if="qaMode">
+                        <td x-text="counts['{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}'] ?? 'Loading...'">
                         </td>
                     </template>
                 </tr>
@@ -582,7 +582,55 @@
     </div>
     {% endfor %}
 </div>
-
+<script>
+    function batchProcessor(fields) {
+        return {
+            counts: {},
+            queue: fields.map(fld => typeof fld['Field'] === 'string' ? fld['Field'] : fld['Field'][0]),
+            batchSize: 3,
+            async processQueue() {
+                while (this.queue.length > 0) {
+                    let batch = this.queue.splice(0, this.batchSize);
+                    await Promise.all(batch.map(async (field) => {
+                        let response = await fetch(`/qa/{{apikey}}/${field}`);
+                        let data = await response.json();
+                        this.counts[field] = data.count;
+                    }));
+                }
+            },
+            init() {
+            this.$watch('qaMode', (value) => {
+                if (value) this.processQueue();
+            });
+        }
+        };
+    }
+</script>
+<script>
+    function downloadCSV() {
+      fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'output.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+          console.error('Error downloading CSV:', error);
+        });
+    }
+</script>
 <script type="module" defer>
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 
