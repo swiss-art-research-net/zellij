@@ -9,6 +9,7 @@ from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.Transformer import Transformer
 from ZellijData.AirTableConnection import AirTableConnection
+import re
 
 
 class ResearchSpaceTransformer(Transformer):
@@ -197,11 +198,30 @@ class ResearchSpaceTransformer(Transformer):
 
         self._populate_namespaces(data)
         self._populate_fields(data)
+        def str_presenter(dumper, data):
+            """Force PyYAML to use single quotes for strings"""
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data)  # Use single quotes
+        
+        for field in data['fields']:
+            description = field["description"].encode().decode("unicode_escape").strip()
+            field["description"] = description
+            for query in field['queries']:
+                query['select'] = query['select'].encode().decode("unicode_escape")
+                query['select'] = query['select'].replace("\n", " ##placeholder## ")
+                match = re.search(r"\bSELECT\b", query['select'], re.IGNORECASE)
 
+                if match:
+                    final_query = query['select'][match.start():].strip()
+                    query['select'] = final_query
+        print(data['fields'][0]['queries'][0]['select'])
+        print(data["fields"][0]["description"])
+        yaml.add_representer(str, str_presenter)
         self.content = yaml.safe_dump(
             data,
             default_flow_style=False,
             sort_keys=False,
+            allow_unicode=True,
+            width=1000,
         )
 
         return self._create_export_file(self.content)
