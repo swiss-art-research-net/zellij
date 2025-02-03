@@ -195,31 +195,40 @@ class ResearchSpaceTransformer(Transformer):
 
     def transform(self) -> io.BytesIO:
         data = {"prefix": "", "container": ""}
+        def max_line_length(s):
+            """Returns the length of the longest line in the given multi-line string."""
+            return max(len(line) for line in s.split("\n"))
 
         self._populate_namespaces(data)
         self._populate_fields(data)
-        def str_presenter(dumper, data):
-            """Force PyYAML to use single quotes for strings"""
-            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="'")  # Use single quotes
-        
+        width = 0
         for field in data['fields']:
             description = field["description"].encode().decode("unicode_escape").strip()
+            if len(description) > width:
+                width = len(description)
             field["description"] = description
             for query in field['queries']:
                 query['select'] = query['select'].encode().decode("unicode_escape")
-                query['select'] = query['select'].replace("\n", " ")
                 match = re.search(r"\bSELECT\b", query['select'], re.IGNORECASE)
 
                 if match:
-                    final_query = query['select'][match.start():].strip()
+                    final_query = query['select'][match.start():].encode().decode("unicode_escape").strip()
+                    max_length = max_line_length(final_query)
+                    if max_length > width:
+                        width = max_length
                     query['select'] = final_query
-        yaml.add_representer(str, str_presenter)
+
+        for field in data['fields']:
+            for query in field['queries']:
+                # query['select'] = pad_lines_to_width(query['select'], width)
+                query["select"] = query["select"].replace("\n", " ")
         self.content = yaml.safe_dump(
             data,
             default_flow_style=False,
             sort_keys=False,
             allow_unicode=True,
-            width=200,
+            width=width,
+            default_style="'",
         )
 
         return self._create_export_file(self.content)
