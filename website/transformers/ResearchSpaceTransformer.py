@@ -9,6 +9,7 @@ from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.Transformer import Transformer
 from ZellijData.AirTableConnection import AirTableConnection
+import re
 
 
 class ResearchSpaceTransformer(Transformer):
@@ -197,11 +198,37 @@ class ResearchSpaceTransformer(Transformer):
 
         self._populate_namespaces(data)
         self._populate_fields(data)
+        width = 0
+        for field in data['fields']:
+            description = field["description"].encode().decode("unicode_escape").strip()
+            if len(description) > width:
+                width = len(description)
+            field["description"] = description
+            for query in field['queries']:
+                query['select'] = query['select'].encode().decode("unicode_escape")
+                match = re.search(r"\bSELECT\b", query['select'], re.IGNORECASE)
 
+                if match:
+                    final_query = query['select'][match.start():].encode().decode("unicode_escape").strip()
+                    query['select'] = final_query
+
+        def str_presenter(dumper, data):
+            if "\n" in data:  # if the string contains newlines
+                # The literal block style (|) is used for better readability.
+                return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="'")
+
+        yaml.add_representer(str, str_presenter, Dumper=yaml.SafeDumper)
+        print(width)
         self.content = yaml.safe_dump(
             data,
             default_flow_style=False,
             sort_keys=False,
+            allow_unicode=True,
+            width=10000,
         )
+        self.content = self.content.replace("\\\n", " ")
+        self.content = self.content.replace("\\n", "\n\t\t")
+        self.content = self.content.replace("\\", " ")
 
         return self._create_export_file(self.content)
