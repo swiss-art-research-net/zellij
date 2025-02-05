@@ -1,4 +1,3 @@
-from os import confstr
 from typing import Union
 from xml.dom import minidom
 
