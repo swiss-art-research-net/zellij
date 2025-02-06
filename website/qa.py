@@ -137,4 +137,12 @@ def execute_count_csv(api_key, item, table):
     
 
     return response
+
+@bp.route("/sparqlendpoint/<api_key>", methods=["GET"])
+def find_sparqlendpoint(api_key):
+    scraper_definition = get_scraper_definition(api_key)
+
+    if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
+        return Response(json.dumps({"sparqlendpoint": False}), status=400, mimetype='application/json')
+    return Response(json.dumps({"sparqlendpoint": True}), status=200, mimetype='application/json')
     

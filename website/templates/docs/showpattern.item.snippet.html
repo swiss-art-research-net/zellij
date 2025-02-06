@@ -141,12 +141,13 @@
         return select.options[select.selectedIndex];
     }
 </script>
-<div x-data="{qaMode: false}">
-    <div style="display: flex; flex-direction: row; gap: 15px;">
+<div x-data="{qaMode: false, hasendpoint: false, async fetchEndpoint() { 
+    this.hasendpoint = (await (await fetch('/qa/sparqlendpoint/{{apikey}}')).json()).sparqlendpoint; await this.$nextTick();}}">
+    <div style="display: flex; flex-direction: row; gap: 15px;" x-init="fetchEndpoint()">
         <h1 id="{{ patternitem['Name'] }}">
             {{ patternitem["Name"] }}
         </h1>
-        <button x-text="qaMode ? 'Normal Mode' : 'QA Mode'" @click="qaMode = !qaMode; $dispatch('qa-mode-changed', qaMode)"></button>
+        <button x-show="hasendpoint" x-text="qaMode ? 'Normal Mode' : 'QA Mode'" @click="qaMode = !qaMode; $dispatch('qa-mode-changed', qaMode)"></button>
         <button x-show="qaMode" @click="downloadCSV()">QA Export</button>
     </div>
     <table class="toc model-generator">
