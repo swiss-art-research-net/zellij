@@ -1,12 +1,11 @@
+import xml.etree.ElementTree as ET
 from typing import Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import OR, EQUAL, STR_VALUE, match
+from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
 from website.exporters.Exporter import Exporter
-
-import xml.etree.ElementTree as ET
 
 
 class FieldExporter(Exporter):
@@ -162,8 +161,8 @@ class FieldExporter(Exporter):
             semantic_path = ET.SubElement(definition, "semantic_path")
             semantic_path.text = fields.get("Ontological_Path")
 
-            ontological_long_path = ET.SubElement(definition, "ontological_long_path")
-            ontological_long_path.text = fields.get("Ontological_Long_Path")
+            semantic_long_path = ET.SubElement(definition, "semantic_long_path")
+            semantic_long_path.text = fields.get("Ontological_Long_Path")
 
             semantic_path_total = ET.SubElement(definition, "semantic_path_total")
             semantic_path_total.text = (
