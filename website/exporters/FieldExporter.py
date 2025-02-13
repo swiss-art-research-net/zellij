@@ -162,6 +162,9 @@ class FieldExporter(Exporter):
             semantic_path = ET.SubElement(definition, "semantic_path")
             semantic_path.text = fields.get("Ontological_Path")
 
+            ontological_long_path = ET.SubElement(definition, "ontological_long_path")
+            ontological_long_path.text = fields.get("Ontological_Long_Path")
+
             semantic_path_total = ET.SubElement(definition, "semantic_path_total")
             semantic_path_total.text = (
                 fields.get("Total_Ontological_Path")
