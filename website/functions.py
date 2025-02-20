@@ -4,6 +4,7 @@ from rdflib.plugins.parsers.notation3 import BadSyntax
 from CRITERIA import criteria
 from ZellijData.RDFCodeBlock import RDFCodeBlock
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
+from pyairtable.formulas import EQUAL, OR, STR_VALUE
 
 
 bp = Blueprint("functions", __name__, url_prefix="/functions")
@@ -40,10 +41,23 @@ def generate_json_ld():
         return str(e)
 
 
-def display_graph(prefix, input, item):
+def display_graph(prefix, input, item, airtable):
     graphs = {}
     allturtle = "\n".join(input)
-
+    identifiers = []
+    for i in range(len(item.GroupedFields()[0][1])):
+        identifiers.append(item.GroupedFields()[0][1][i]['Identifier'][0])
+    fields = airtable.get_multiple_records_by_formula("Field",
+    OR(
+                            *list(
+                                map(
+                                    lambda x: EQUAL(STR_VALUE(x), "Identifer"),
+                                    identifiers,
+                                )
+                            )
+                        ),
+    )
+    print (len(fields))
     TurtlePrefix = ""
     if "Turtle RDF" in item.ExtraFields:
         turtle_prefix = TurtleCodeBlock(item.ExtraFields["Turtle RDF"])

@@ -65,7 +65,7 @@
     }
     {% endautoescape %}
 </script>
-<div class="tabset">
+<div class="tabset" x-data="{ qaMode: false }" @qa-mode-changed.window="qaMode = $event.detail">
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_ontgraph" hidden aria-hidden="true"
            checked>
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_instgraph" hidden aria-hidden="true">
@@ -74,8 +74,11 @@
         <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_rdfwarn" hidden aria-hidden="true">
     {% endif %}
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_jsonld" hidden aria-hidden="true">
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_names" hidden aria-hidden="true">
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_identifiers" hidden aria-hidden="true">
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_exactMatch" hidden aria-hidden="true">
     <ul hidden aria-hidden="true">
-        <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
+        <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph </label>
         </li>
         <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
         <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
@@ -89,6 +92,9 @@
             <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
                 Error</label></li>
         {% endif %}
+        <li x-show="qaMode"><label for="tabset_{{ prefix }}_names"> Names</label></li>
+        <li x-show="qaMode"><label for="tabset_{{ prefix }}_identifiers"> Identifiers</label></li>
+        <li x-show="qaMode"><label for="tabset_{{ prefix }}_exactMatch"> Exact Match</label></li>
     </ul>
     <div>
         <section id="ontologyGraph">
@@ -128,5 +134,19 @@
                 </div>
             </section>
         {% endif %}
+        <section id="names">
+            <h2>Names</h2>
+            <textarea rows="32" readonly="readonly">
+                    Names
+                </textarea>
+            <br/>
+        </section>
+        <section id="identifiers">
+            <h2>identifiers</h2>
+            <textarea rows="32" readonly="readonly">
+                    Identifiers
+                </textarea>
+            <br/>
+        </section>
     </div>
 </div>
