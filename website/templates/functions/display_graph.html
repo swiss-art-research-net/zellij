@@ -74,9 +74,9 @@
         <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_rdfwarn" hidden aria-hidden="true">
     {% endif %}
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_jsonld" hidden aria-hidden="true">
-    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_names" hidden aria-hidden="true">
-    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_identifiers" hidden aria-hidden="true">
-    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_exactMatch" hidden aria-hidden="true">
+    {% for name in categories %}
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}" hidden aria-hidden="true">
+    {% endfor %}
     <ul hidden aria-hidden="true">
         <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph </label>
         </li>
@@ -92,9 +92,11 @@
             <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
                 Error</label></li>
         {% endif %}
-        <li x-show="qaMode"><label for="tabset_{{ prefix }}_names"> Names</label></li>
-        <li x-show="qaMode"><label for="tabset_{{ prefix }}_identifiers"> Identifiers</label></li>
-        <li x-show="qaMode"><label for="tabset_{{ prefix }}_exactMatch"> Exact Match</label></li>
+        {% for name in categories %}
+            <li x-show="qaMode">
+                <label for="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}"><i class="fas fa-stream"></i>{{ name }}</label>
+            </li>
+        {% endfor %}
     </ul>
     <div>
         <section id="ontologyGraph">
@@ -134,19 +136,13 @@
                 </div>
             </section>
         {% endif %}
-        <section id="names">
-            <h2>Names</h2>
-            <textarea rows="32" readonly="readonly">
-                    Names
-                </textarea>
-            <br/>
+        {% for name in categories %}
+        <section>
+            <h2 class="error">RDF Error</h2>
+            <div>
+                test
+            </div>
         </section>
-        <section id="identifiers">
-            <h2>identifiers</h2>
-            <textarea rows="32" readonly="readonly">
-                    Identifiers
-                </textarea>
-            <br/>
-        </section>
+        {% endfor %}
     </div>
 </div>

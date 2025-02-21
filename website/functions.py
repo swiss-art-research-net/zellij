@@ -4,7 +4,7 @@ from rdflib.plugins.parsers.notation3 import BadSyntax
 from CRITERIA import criteria
 from ZellijData.RDFCodeBlock import RDFCodeBlock
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
-from pyairtable.formulas import EQUAL, OR, STR_VALUE
+from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
 
 bp = Blueprint("functions", __name__, url_prefix="/functions")
@@ -45,19 +45,37 @@ def display_graph(prefix, input, item, airtable):
     graphs = {}
     allturtle = "\n".join(input)
     identifiers = []
-    for i in range(len(item.GroupedFields()[0][1])):
-        identifiers.append(item.GroupedFields()[0][1][i]['Identifier'][0])
+    matching_group = next((obj for obj in item.GroupedFields() if obj[0] == prefix), None)
+    for i in range(len(matching_group[1])):
+        identifiers.append(matching_group[1][i]['Field'][0])
     fields = airtable.get_multiple_records_by_formula("Field",
     OR(
                             *list(
                                 map(
-                                    lambda x: EQUAL(STR_VALUE(x), "Identifer"),
+                                    lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
                                     identifiers,
                                 )
                             )
                         ),
     )
-    print (len(fields))
+    unique_names = set()
+    categories = []
+
+    for field in fields:
+        field_data = field.get('fields', {})
+        
+        if 'Collection_Deployed' in field_data:
+            name = field_data['Collection_Deployed'][0]
+            if(name[:3] == "rec"):
+                name = airtable.get_record_by_id("Collection", name)['fields']['ID']
+        else:
+            name = field_data.get('UI_Name')
+
+        if name:
+            if name not in unique_names:
+                unique_names.add(name)
+                categories.append(name)
+
     TurtlePrefix = ""
     if "Turtle RDF" in item.ExtraFields:
         turtle_prefix = TurtleCodeBlock(item.ExtraFields["Turtle RDF"])
@@ -82,7 +100,7 @@ def display_graph(prefix, input, item, airtable):
     graphs["generateInstance"] = generate_instance_graph
     graphs["generateJsonLD"] = generate_json_ld
 
-    return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs)
+    return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs, categories=categories)
 
 
 # each function should have a label and a function
