@@ -20,6 +20,49 @@ from website.transformers.Transformer import Transformer
 class SparqlTransformer(Transformer):
     def __init__(self, api_key: str, field_id: str):
         super().__init__(api_key, field_id)
+        total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
+        discriminator = "-->" if "-->" in total_path else "->"
+        self.parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
+        self.uris = {
+            -1: (self.crm_class or {})
+            .get("fields", {})
+            .get("Class_Ur_Instance", "")
+            .strip("<>")
+        }
+        self.populate_uris()
+    
+    def populate_uris(self):
+        self.self_uri = self.get_field_or_default("ID").replace(".", "_")
+        for idx, part in enumerate(self.parts):
+            if idx % 2 == 0:
+                continue
+
+            if part == "rdf:literal":
+                self.uris[idx] = part
+                continue
+
+            if part.startswith("xsl"):
+                self.uris[idx] = self.self_uri
+                continue
+
+            if idx > 2 and self.get_major_number_of_part(
+                self.parts[idx - 2]
+            ) == self.get_major_number_of_part(part):
+                self.uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
+                continue
+
+            collection = self.get_field_or_default("Collection_Deployed")
+
+            collection_field = self.get_records(collection, "Collection")
+            if len(collection_field) == 1:
+                self.uris[idx] = (
+                    collection_field[0]
+                    .get("fields", {})
+                    .get("ID", "")
+                    .replace(".", "_")
+                )
+            else:
+                self.uris[idx] = self.self_uri
 
     def get_field_or_default(self, field_name: str) -> str:
         return self.field.get("fields", {}).get(field_name, "")
@@ -71,6 +114,89 @@ class SparqlTransformer(Transformer):
         except Exception as e:
             print("Error uploading Sparql: ", e)
             raise e
+        
+    def create_where_pattern(self, optional=False):
+        where_pattern = SPARQLGraphPattern(optional=optional)
+        for idx in range(len(self.parts)):
+            current_part = self.parts[idx]
+            namespace = current_part.split(":")[0] if ":" in current_part else "crm"
+            ns_class = (
+                current_part.split(":")[1] if ":" in current_part else current_part
+            ).strip()
+
+            if idx % 2 == 0:
+                if self.parts[idx + 1] == "rdf:literal":
+                    where_pattern.add_triples(
+                        [
+                            Triple(
+                                subject=f"?{self.uris[idx - 1]}",
+                                predicate=f"{namespace}:{ns_class}",
+                                object=f"?{self.self_uri}",
+                            )
+                        ]
+                    )
+                    continue
+
+                if idx == 0:
+                    where_pattern.add_triples(
+                        [
+                            Triple(
+                                subject="?subject",
+                                predicate=f"{namespace}:{ns_class}",
+                                object=f"?{self.uris[idx + 1]}",
+                            )
+                        ]
+                    )
+                else:
+                    where_pattern.add_triples(
+                        [
+                            Triple(
+                                subject=f"?{self.uris[idx - 1]}",
+                                predicate=f"{namespace}:{ns_class}",
+                                object=f"?{self.uris[idx + 1]}"
+                                if "<" not in self.uris[idx + 1]
+                                else self.uris[idx + 1],
+                            )
+                        ]
+                    )
+            else:
+                if current_part == "rdf:literal" or "<" in self.uris[idx]:
+                    continue
+
+                where_pattern.add_triples(
+                    [
+                        Triple(
+                            subject=f"?{self.uris[idx]}",
+                            predicate="a",
+                            object=f"{namespace}:{ns_class.split('[')[0]}",
+                        )
+                    ]
+                )
+
+        if self.self_uri not in self.uris.values() and "rdf:literal" not in self.uris.values():
+            where_pattern.add_binding(Binding(f"?{self.uris[1]}", f"?{self.self_uri}"))
+
+        where_pattern.add_binding(Binding(f"?{self.self_uri}", "?value"))
+
+        expected_value_type = self.get_field_or_default("Expected_Value_Type")
+        if "rdf:literal" not in self.parts and expected_value_type not in [
+            "Date",
+            "Integer",
+        ]:
+            optional_label = SPARQLGraphPattern(optional=True)
+            optional_label.add_triples(
+                [
+                    Triple(
+                        subject=f"?{self.self_uri}",
+                        predicate="rdfs:label",
+                        object=f"?{self.self_uri}_label",
+                    )
+                ]
+            )
+
+            where_pattern.add_nested_graph_pattern(optional_label)
+        return where_pattern
+            
 
     def transform(self, count: bool = False):
 
@@ -112,128 +238,50 @@ class SparqlTransformer(Transformer):
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
 
-        total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
+        # total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
 
-        discriminator = "-->" if "-->" in total_path else "->"
-        parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
-        uris = {
-            -1: (self.crm_class or {})
-            .get("fields", {})
-            .get("Class_Ur_Instance", "")
-            .strip("<>")
-        }
+        # discriminator = "-->" if "-->" in total_path else "->"
+        # parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
+        # uris = {
+        #     -1: (self.crm_class or {})
+        #     .get("fields", {})
+        #     .get("Class_Ur_Instance", "")
+        #     .strip("<>")
+        # }
 
-        self_uri = self.get_field_or_default("ID").replace(".", "_")
-        for idx, part in enumerate(parts):
-            if idx % 2 == 0:
-                continue
+        # self_uri = self.get_field_or_default("ID").replace(".", "_")
+        # for idx, part in enumerate(self.parts):
+        #     if idx % 2 == 0:
+        #         continue
 
-            if part == "rdf:literal":
-                uris[idx] = part
-                continue
+        #     if part == "rdf:literal":
+        #         self.uris[idx] = part
+        #         continue
 
-            if part.startswith("xsl"):
-                uris[idx] = self_uri
-                continue
+        #     if part.startswith("xsl"):
+        #         self.uris[idx] = self_uri
+        #         continue
 
-            if idx > 2 and self.get_major_number_of_part(
-                parts[idx - 2]
-            ) == self.get_major_number_of_part(part):
-                uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
-                continue
+        #     if idx > 2 and self.get_major_number_of_part(
+        #         self.parts[idx - 2]
+        #     ) == self.get_major_number_of_part(part):
+        #         self.uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
+        #         continue
 
-            collection = self.get_field_or_default("Collection_Deployed")
+        #     collection = self.get_field_or_default("Collection_Deployed")
 
-            collection_field = self.get_records(collection, "Collection")
-            if len(collection_field) == 1:
-                uris[idx] = (
-                    collection_field[0]
-                    .get("fields", {})
-                    .get("ID", "")
-                    .replace(".", "_")
-                )
-            else:
-                uris[idx] = self_uri
+        #     collection_field = self.get_records(collection, "Collection")
+        #     if len(collection_field) == 1:
+        #         self.uris[idx] = (
+        #             collection_field[0]
+        #             .get("fields", {})
+        #             .get("ID", "")
+        #             .replace(".", "_")
+        #         )
+        #     else:
+        #         self.uris[idx] = self_uri
 
-        where_pattern = SPARQLGraphPattern()
-        for idx in range(len(parts)):
-            current_part = parts[idx]
-            namespace = current_part.split(":")[0] if ":" in current_part else "crm"
-            ns_class = (
-                current_part.split(":")[1] if ":" in current_part else current_part
-            ).strip()
-
-            if idx % 2 == 0:
-                if parts[idx + 1] == "rdf:literal":
-                    where_pattern.add_triples(
-                        [
-                            Triple(
-                                subject=f"?{uris[idx - 1]}",
-                                predicate=f"{namespace}:{ns_class}",
-                                object=f"?{self_uri}",
-                            )
-                        ]
-                    )
-                    continue
-
-                if idx == 0:
-                    where_pattern.add_triples(
-                        [
-                            Triple(
-                                subject="?subject",
-                                predicate=f"{namespace}:{ns_class}",
-                                object=f"?{uris[idx + 1]}",
-                            )
-                        ]
-                    )
-                else:
-                    where_pattern.add_triples(
-                        [
-                            Triple(
-                                subject=f"?{uris[idx - 1]}",
-                                predicate=f"{namespace}:{ns_class}",
-                                object=f"?{uris[idx + 1]}"
-                                if "<" not in uris[idx + 1]
-                                else uris[idx + 1],
-                            )
-                        ]
-                    )
-            else:
-                if current_part == "rdf:literal" or "<" in uris[idx]:
-                    continue
-
-                where_pattern.add_triples(
-                    [
-                        Triple(
-                            subject=f"?{uris[idx]}",
-                            predicate="a",
-                            object=f"{namespace}:{ns_class.split('[')[0]}",
-                        )
-                    ]
-                )
-
-        if self_uri not in uris.values() and "rdf:literal" not in uris.values():
-            where_pattern.add_binding(Binding(f"?{uris[1]}", f"?{self_uri}"))
-
-        where_pattern.add_binding(Binding(f"?{self_uri}", "?value"))
-
-        expected_value_type = self.get_field_or_default("Expected_Value_Type")
-        if "rdf:literal" not in parts and expected_value_type not in [
-            "Date",
-            "Integer",
-        ]:
-            optional_label = SPARQLGraphPattern(optional=True)
-            optional_label.add_triples(
-                [
-                    Triple(
-                        subject=f"?{self_uri}",
-                        predicate="rdfs:label",
-                        object=f"?{self_uri}_label",
-                    )
-                ]
-            )
-
-            where_pattern.add_nested_graph_pattern(optional_label)
+        where_pattern = self.create_where_pattern()
 
         query.set_where_pattern(where_pattern)
 
