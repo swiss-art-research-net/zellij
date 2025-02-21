@@ -576,7 +576,7 @@
         {% endif %}
         {% endfor %}
         <div>
-            {{ functions[options["function"]]["function"](prefix, value_list, patternitem, airtable)|safe }}
+            {{ functions[options["function"]]["function"](prefix, value_list, patternitem, airtable, apikey)|safe }}
         </div>
         {% endif %}
         {% endif %}

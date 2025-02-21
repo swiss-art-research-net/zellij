@@ -21,6 +21,12 @@ def return_execute_qa(api_key, field_id):
 
     return Response(json_data, status=status, mimetype='application/json')
 
+@bp.route("/collection/count/<api_key>/<field_ids>", methods=["GET"])
+def return_collection_count(api_key, field_ids):
+    json_data, status = utils.count_collection(api_key, field_ids)
+
+    return Response(json_data, status=status, mimetype='application/json')
+
 
 @functools.lru_cache(maxsize=256)
 @bp.route("/count/<api_key>/<field_id>", methods=["GET"])

@@ -41,7 +41,7 @@ def generate_json_ld():
         return str(e)
 
 
-def display_graph(prefix, input, item, airtable):
+def display_graph(prefix, input, item, airtable, apikey):
     graphs = {}
     allturtle = "\n".join(input)
     identifiers = []
@@ -106,7 +106,7 @@ def display_graph(prefix, input, item, airtable):
     graphs["generateInstance"] = generate_instance_graph
     graphs["generateJsonLD"] = generate_json_ld
 
-    return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs, categories=categories)
+    return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs, categories=categories, apikey=apikey)
 
 
 # each function should have a label and a function
