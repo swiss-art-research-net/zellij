@@ -65,7 +65,10 @@ def display_graph(prefix, input, item, airtable):
         field_data = field.get('fields', {})
         
         if 'Collection_Deployed' in field_data:
-            name = field_data['Collection_Deployed'][0]
+            if isinstance(field_data['Collection_Deployed'], str):
+                name = field_data['Collection_Deployed']
+            else:
+                name = field_data['Collection_Deployed'][0]
             if(name[:3] == "rec"):
                 name = airtable.get_record_by_id("Collection", name)['fields']['ID']
         else:
