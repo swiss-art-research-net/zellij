@@ -58,8 +58,7 @@ def display_graph(prefix, input, item, airtable):
                             )
                         ),
     )
-    unique_names = set()
-    categories = []
+    categories = {}
 
     for field in fields:
         field_data = field.get('fields', {})
@@ -69,15 +68,19 @@ def display_graph(prefix, input, item, airtable):
                 name = field_data['Collection_Deployed']
             else:
                 name = field_data['Collection_Deployed'][0]
-            if(name[:3] == "rec"):
+            
+            if name[:3] == "rec":
                 name = airtable.get_record_by_id("Collection", name)['fields']['ID']
         else:
             name = field_data.get('UI_Name')
 
         if name:
-            if name not in unique_names:
-                unique_names.add(name)
-                categories.append(name)
+            field_id = field.get('id', '')  
+            
+            if name not in categories:
+                categories[name] = []
+            
+            categories[name].append(field_id)
 
     TurtlePrefix = ""
     if "Turtle RDF" in item.ExtraFields:

@@ -65,11 +65,7 @@
     }
     {% endautoescape %}
 </script>
-<div class="tabset" @qa-mode-changed.window="qaMode = $event.detail"  x-data="{
-    qaMode: false,
-    counts: JSON.parse(localStorage.getItem('counts') || '{}')
-  }"
-  x-init="$watch('counts', (val) => localStorage.setItem('counts', JSON.stringify(val)))">
+<div class="tabset" @qa-mode-changed.window="qaMode = $event.detail"  x-data="{qaMode: false}">
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_ontgraph" hidden aria-hidden="true"
            checked>
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_instgraph" hidden aria-hidden="true">
@@ -96,9 +92,11 @@
             <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
                 Error</label></li>
         {% endif %}
-        {% for name in categories %}
+        {% for name, ids in categories.items() %}
             <li x-show="qaMode">
-                <label for="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}"><i class="fas fa-stream"></i>{{ name }}</label>
+                <label for="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}">
+                    {{ name }}
+                </label>
             </li>
         {% endfor %}
     </ul>
@@ -140,10 +138,11 @@
                 </div>
             </section>
         {% endif %}
-        {% for name in categories %}
+        {% for name, ids in categories.items() %}
             <section>
                 <h2 class="error">RDF Error</h2>
-                <div x-text="counts['rec9KLVboQMY9DcGr'] ?? 'Loading...'">
+                <div>
+                    Test
                 </div>
             </section>
         {% endfor %}
