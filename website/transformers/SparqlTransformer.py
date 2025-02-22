@@ -196,19 +196,10 @@ class SparqlTransformer(Transformer):
 
             where_pattern.add_nested_graph_pattern(optional_label)
         return where_pattern
-            
-
-    def transform(self, count: bool = False):
-
-        if count:
-            query = SPARQLSelectQuery()
-            query.add_variables(["(COUNT(?value) as ?count)"])
-        else:
-            query = SPARQLSelectQuery(limit=100)
-
+    
+    def add_prefixes(self, query: SPARQLSelectQuery):
         namespaces: Dict[str, Union[Namespace, DefinedNamespaceMeta]] = {}
         namespaces_records: List[RecordDict] = []
-
         try:
             namespaces_records.extend(
                 self.airtable.get_all_records_from_table("NameSpaces")
@@ -237,49 +228,16 @@ class SparqlTransformer(Transformer):
 
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
+            
 
-        # total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
+    def transform(self, count: bool = False):
 
-        # discriminator = "-->" if "-->" in total_path else "->"
-        # parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
-        # uris = {
-        #     -1: (self.crm_class or {})
-        #     .get("fields", {})
-        #     .get("Class_Ur_Instance", "")
-        #     .strip("<>")
-        # }
-
-        # self_uri = self.get_field_or_default("ID").replace(".", "_")
-        # for idx, part in enumerate(self.parts):
-        #     if idx % 2 == 0:
-        #         continue
-
-        #     if part == "rdf:literal":
-        #         self.uris[idx] = part
-        #         continue
-
-        #     if part.startswith("xsl"):
-        #         self.uris[idx] = self_uri
-        #         continue
-
-        #     if idx > 2 and self.get_major_number_of_part(
-        #         self.parts[idx - 2]
-        #     ) == self.get_major_number_of_part(part):
-        #         self.uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
-        #         continue
-
-        #     collection = self.get_field_or_default("Collection_Deployed")
-
-        #     collection_field = self.get_records(collection, "Collection")
-        #     if len(collection_field) == 1:
-        #         self.uris[idx] = (
-        #             collection_field[0]
-        #             .get("fields", {})
-        #             .get("ID", "")
-        #             .replace(".", "_")
-        #         )
-        #     else:
-        #         self.uris[idx] = self_uri
+        if count:
+            query = SPARQLSelectQuery()
+            query.add_variables(["(COUNT(?value) as ?count)"])
+        else:
+            query = SPARQLSelectQuery(limit=100)
+        self.add_prefixes(query)
 
         where_pattern = self.create_where_pattern()
 
