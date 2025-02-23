@@ -139,11 +139,17 @@
             </section>
         {% endif %}
         {% for name, ids in categories.items() %}
-            <section x-data="{loading: true, count: 0}">
-                <h2 class="error">RDF Error</h2>
-                <div x-init="count = (await (await fetch('/qa/collection/count/{{apikey}}/{{ ids | join('_') }}')).json()).count; loading=false" x-text="!loading ? count : 'Loading...'">
-                </div>
-            </section>
+        <section x-data="{loading: true, count: 0}" x-show="qaMode" x-init="
+            $watch('qaMode', async (value) => {
+                if (value) {
+                    count = (await (await fetch('/qa/collection/count/{{apikey}}/{{ ids | join('_') }}')).json()).count;
+                    loading = false;
+                }
+            })
+        ">
+            <h2 class="error">RDF Error</h2>
+            <div x-text="!loading ? count : 'Loading...'"></div>
+        </section>
         {% endfor %}
     </div>
 </div>
