@@ -77,29 +77,49 @@
     {% for name in categories %}
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}" hidden aria-hidden="true">
     {% endfor %}
-    <ul hidden aria-hidden="true">
-        <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph </label>
-        </li>
-        <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
-        <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
-        {% if graphs.error is defined %}
-            <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
-                warnings</label></li>
-        {% endif %}
-        {% if graphs.error is undefined %}
-            <li onclick="generateJsonLD('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
-        {% else %}
-            <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
-                Error</label></li>
-        {% endif %}
-        {% for name, ids in categories.items() %}
-            <li x-show="qaMode">
-                <label for="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}">
-                    {{ name }}
-                </label>
+    <template x-if="!qaMode">
+        <ul hidden aria-hidden="true">
+            <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph </label>
             </li>
-        {% endfor %}
-    </ul>
+            <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if graphs.error is defined %}
+                <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            {% if graphs.error is undefined %}
+                <li onclick="generateJsonLD('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+            {% else %}
+                <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
+                    Error</label></li>
+            {% endif %}
+        </ul>
+    </template>
+    <template x-if="qaMode">
+        <ul hidden aria-hidden="true">
+            <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph </label>
+            </li>
+            <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if graphs.error is defined %}
+                <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            {% if graphs.error is undefined %}
+                <li onclick="generateJsonLD('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+            {% else %}
+                <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
+                    Error</label></li>
+            {% endif %}
+            {% for name, ids in categories.items() %}
+                <li x-show="qaMode">
+                    <label for="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}">
+                        {{ name }}
+                    </label>
+                </li>
+            {% endfor %}
+        </ul>
+    </template>
     <div>
         <section id="ontologyGraph">
             <h2>Ontology Graph</h2>
@@ -147,7 +167,7 @@
                 }
             })
         ">
-            <h2 class="error">RDF Error</h2>
+            <h2>Collection</h2>
             <div x-text="!loading ? count : 'Loading...'"></div>
         </section>
         {% endfor %}
