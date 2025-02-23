@@ -15,14 +15,14 @@ from SPARQLBurger.SPARQLQueryBuilder import (
 )
 from website.db import dict_gen_one, get_db
 from website.transformers.Transformer import Transformer
+from itertools import chain
 
 
 class SparqlTransformer(Transformer):
     def __init__(self, api_key: str, field_id: str):
         super().__init__(api_key, field_id)
         total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
-        discriminator = "-->" if "-->" in total_path else "->"
-        self.parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
+        self.parts: List[str] = self._parse_ontological_path(total_path)
         self.uris = {
             -1: (self.crm_class or {})
             .get("fields", {})
@@ -30,6 +30,16 @@ class SparqlTransformer(Transformer):
             .strip("<>")
         }
         self.populate_uris()
+
+    def _parse_ontological_path(self, path: str) -> List[str]:
+        long_discriminator = "-->"
+        short_discriminator = "->"
+        stripped_path = path.strip(short_discriminator).strip(long_discriminator)
+
+        parts = stripped_path.split(long_discriminator)
+        parts = list(map(lambda x: x.split(short_discriminator), parts))
+
+        return list(chain.from_iterable(parts))
     
     def populate_uris(self):
         self.self_uri = self.get_field_or_default("ID").replace(".", "_")
