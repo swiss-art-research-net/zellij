@@ -168,7 +168,7 @@
             })
         ">
             <h2>Collection</h2>
-            <div x-text="!loading ? count : 'Loading...'"></div>
+            <div x-text="!loading ? `count: ${count}` : 'Loading...'"></div>
         </section>
         {% endfor %}
     </div>
