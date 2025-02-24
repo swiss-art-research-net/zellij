@@ -586,30 +586,42 @@
 </div>
 <script>
     function batchProcessor(fields) {
-        return {
-            counts: {},
-            queue: fields.map(fld => typeof fld['Field'] === 'string' ? fld['Field'] : fld['Field'][0]),
-            batchSize: 3,
-            async processQueue() {
-                while (this.queue.length > 0) {
-                    let batch = this.queue.splice(0, this.batchSize);
-                    await Promise.all(batch.map(async (field) => {
+    return {
+        counts: {},
+        queue: fields.map(fld => typeof fld['Field'] === 'string' ? fld['Field'] : fld['Field'][0]),
+        batchSize: 3,
+        active: false,
+        async processQueue(qaMode) {
+            this.active = qaMode;  // Update flag
+
+            if (!qaMode) return;  // Stop execution if qaMode is false
+
+            while (this.queue.length > 0 && this.active) {
+                let batch = this.queue.splice(0, this.batchSize);
+
+  
+                await Promise.all(batch.map(async (field) => {
+                    try {
                         let response = await fetch(`/qa/{{apikey}}/${field}`);
                         let data = await response.json();
                         this.counts[field] = data.count;
-                    }));
-                }
-                // localStorage.setItem('counts', JSON.stringify(this.counts));  // Store locally
-                // window.dispatchEvent(new Event("countsUpdated"));
-                
-            },
-            init() {
+                    } catch (error) {
+                        console.error(`Error fetching ${field}:`, error);
+                    }
+                }));
+            }
+        },
+        init() {
             this.$watch('qaMode', (value) => {
-                if (value) this.processQueue();
+                if (!value) {
+                    this.active = false;  // Stop execution when qaMode is turned off
+                } else {
+                    this.processQueue(value);  // Restart processing when qaMode is turned on
+                }
             });
         }
-        };
-    }
+    };
+}
 </script>
 <script>
     function downloadCSV() {

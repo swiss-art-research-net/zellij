@@ -171,9 +171,9 @@
                 <table border="1" style="margin-bottom: 15px;">
                     <tr>
                         {% for item in items %}
-                            <td>{{ item.ui_name }}</td>
+                            <td style="padding: 5px 5px;">{{ item.ui_name }}</td>
                         {% endfor %}
-                        <td style="font-weight: bold; padding-left: 10px;" x-text="!loading ? count : 'Loading...'"></td>
+                        <td style="font-weight: bold; padding: 5px 5px;" x-text="!loading ? count : 'Loading...'"></td>
                     </tr>
                 </table>
             </section>
