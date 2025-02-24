@@ -27,6 +27,7 @@ def execute_qa(api_key, field_id):
 
     return [json.dumps({"count": json_data['results']['bindings'][0]['count']['value']}), 200]
 
+@functools.lru_cache(maxsize=512)
 def count_collection(api_key,ids):
     ids = ids.split("_")
     query = SPARQLSelectQuery()

@@ -125,8 +125,37 @@ def execute_count_csv(api_key, item, table):
                     ),
                 )
             )
-    final_data = [[field["fields"]["ID"],field["fields"]["UI_Name"], field["fields"]["System_Name"],json.loads(utils.execute_qa(api_key, field["id"])[0])["count"]] for field in all_fields]
-    final_data.insert(0, ["ID","UI Name", "System Name", "Count"])
+    categories = {}
+    field_collection = {}
+    for field in all_fields:
+        field_data = field.get('fields', {})
+        
+        if 'Collection_Deployed' in field_data:
+            if isinstance(field_data['Collection_Deployed'], str):
+                name = field_data['Collection_Deployed']
+            else:
+                name = field_data['Collection_Deployed'][0]
+            
+            if name[:3] == "rec":
+                name = airtable.get_record_by_id("Collection", name)['fields']['UI_Name']
+        else:
+            name = field_data.get('UI_Name') + ":Sample"
+
+        if name:
+            field_id = field.get('id', '')
+            
+            if name not in categories:
+                categories[name] = []  # Change to a list of dicts
+            
+            categories[name].append(field_id)
+        field_collection[field_id] = {"name":name}
+
+    for field in all_fields:
+        field_id = field.get('id', '')
+        field_collection[field_id]['count'] = json.loads(utils.count_collection(api_key, "_".join(categories[field_collection[field_id]['name']]))[0])["count"]
+
+    final_data = [[field["fields"]["ID"],field["fields"]["UI_Name"], field["fields"]["System_Name"],json.loads(utils.execute_qa(api_key, field["id"])[0])["count"],field_collection[field.get('id', '')]['name'],field_collection[field.get('id', '')]['count']] for field in all_fields]
+    final_data.insert(0, ["ID","UI Name", "System Name", "Count", "Collection", "Total Count"])
     csv_file = io.StringIO()
     csv_writer = csv.writer(csv_file)
     csv_writer.writerows(final_data)
