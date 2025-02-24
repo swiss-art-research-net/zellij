@@ -626,7 +626,7 @@
 <script>
     function downloadCSV() {
         document.body.style.cursor = 'wait';
-        
+
       fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
         .then(response => {
           if (!response.ok) {
@@ -644,11 +644,11 @@
           a.click();
           document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
-          document.body.style.cursor = 'pointer';
+          document.body.style.cursor = 'default';
         })
         .catch(error => {
           console.error('Error downloading CSV:', error);
-          document.body.style.cursor = 'pointer';
+          document.body.style.cursor = 'default';
         });
     }
 </script>
