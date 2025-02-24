@@ -158,18 +158,25 @@
                 </div>
             </section>
         {% endif %}
-        {% for name, ids in categories.items() %}
-        <section x-data="{loading: true, count: 0}" x-show="qaMode" x-init="
-            $watch('qaMode', async (value) => {
-                if (value) {
-                    count = (await (await fetch('/qa/collection/count/{{apikey}}/{{ ids | join('_') }}')).json()).count;
-                    loading = false;
-                }
-            })
-        ">
-            <h2>Collection</h2>
-            <div x-text="!loading ? `count: ${count}` : 'Loading...'"></div>
-        </section>
+        {% for name, items in categories.items() %}
+            <section x-data="{loading: true, count: 0}" x-show="qaMode" x-init="
+                $watch('qaMode', async (value) => {
+                    if (value) {
+                        count = (await (await fetch('/qa/collection/count/{{apikey}}/{{ items | map(attribute='id') | join('_') }}')).json()).count;
+                        loading = false;
+                    }
+                })
+            ">
+                <h2>{{ name }}</h2>
+                <table border="1" style="margin-bottom: 15px;">
+                    <tr>
+                        {% for item in items %}
+                            <td>{{ item.ui_name }}</td>
+                        {% endfor %}
+                        <td style="font-weight: bold; padding-left: 10px;" x-text="!loading ? count : 'Loading...'"></td>
+                    </tr>
+                </table>
+            </section>
         {% endfor %}
     </div>
 </div>

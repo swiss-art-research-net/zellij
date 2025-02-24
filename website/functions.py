@@ -70,17 +70,18 @@ def display_graph(prefix, input, item, airtable, apikey):
                 name = field_data['Collection_Deployed'][0]
             
             if name[:3] == "rec":
-                name = airtable.get_record_by_id("Collection", name)['fields']['ID']
+                name = airtable.get_record_by_id("Collection", name)['fields']['UI_Name'] + ":Sample"
         else:
-            name = field_data.get('UI_Name')
+            name = field_data.get('UI_Name') + ":Sample"
 
         if name:
             field_id = field.get('id', '')  
+            field_ui_name = field_data.get('UI_Name', '')  # Get UI name or default to ""
             
             if name not in categories:
-                categories[name] = []
+                categories[name] = []  # Change to a list of dicts
             
-            categories[name].append(field_id)
+            categories[name].append({"id": field_id, "ui_name": field_ui_name})
 
     TurtlePrefix = ""
     if "Turtle RDF" in item.ExtraFields:
