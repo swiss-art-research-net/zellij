@@ -123,6 +123,17 @@ def get_base_name(apikey):
 
     return row.get('dbasename') if row else None
 
+def get_scraper_definition(api_key: str):
+    database = get_db()
+    c = database.cursor()
+    c.execute(
+        "SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (api_key,)
+    )
+
+    data = dict_gen_one(c)
+    c.close()
+
+    return data
 
 def generate_airtable_schema(apikey, db=None):
     if not db:

@@ -652,6 +652,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
         field_base = request.form["fieldbase"]
         collection_base = request.form["collectionbase"]
         project_base = request.form["projectbase"]
+        sparql_endpoint = request.form["sparqlendpoint"]
 
         if not name:
             error = "A descriptive name is required."
@@ -668,7 +669,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
         if error is None:
             if dbaseid:
                 c.execute(
-                    "UPDATE AirTableDatabases SET dbasename=%s, dbaseapikey=%s, githubrepo=%s, githubtoken=%s, githuborganization=%s, fieldbase=%s, collectionbase=%s, projectbase=%s "
+                    "UPDATE AirTableDatabases SET dbasename=%s, dbaseapikey=%s, githubrepo=%s, githubtoken=%s, githuborganization=%s, fieldbase=%s, collectionbase=%s, projectbase=%s, sparqlendpoint=%s"
                     + " WHERE dbaseid=%s",
                     (
                         name,
@@ -679,13 +680,14 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
                         field_base,
                         collection_base,
                         project_base,
+                        sparql_endpoint,
                         dbaseid,
                     ),
                 )
             else:
                 c.execute(
-                    "INSERT INTO AirTableDatabases (airtableaccountkey, dbasename, dbaseapikey, githubrepo, githubtoken, githuborganization, fieldbase, collectionbase, projectbase)"
-                    + " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    "INSERT INTO AirTableDatabases (airtableaccountkey, dbasename, dbaseapikey, githubrepo, githubtoken, githuborganization, fieldbase, collectionbase, projectbase, sparqlendpoint)"
+                    + " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     (
                         accountid,
                         name,
@@ -696,6 +698,7 @@ def airTableDatabaseCreateEdit(accountid=None, dbaseid=None):
                         field_base,
                         collection_base,
                         project_base,
+                        sparql_endpoint,
                     ),
                 )
 

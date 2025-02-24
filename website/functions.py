@@ -4,6 +4,7 @@ from rdflib.plugins.parsers.notation3 import BadSyntax
 from CRITERIA import criteria
 from ZellijData.RDFCodeBlock import RDFCodeBlock
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
+from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
 
 bp = Blueprint("functions", __name__, url_prefix="/functions")
@@ -40,9 +41,47 @@ def generate_json_ld():
         return str(e)
 
 
-def display_graph(prefix, input, item):
+def display_graph(prefix, input, item, airtable, apikey):
     graphs = {}
     allturtle = "\n".join(input)
+    identifiers = []
+    matching_group = next((obj for obj in item.GroupedFields() if obj[0] == prefix), None)
+    for i in range(len(matching_group[1])):
+        identifiers.append(matching_group[1][i]['Field'][0])
+    fields = airtable.get_multiple_records_by_formula("Field",
+    OR(
+                            *list(
+                                map(
+                                    lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                    identifiers,
+                                )
+                            )
+                        ),
+    )
+    categories = {}
+
+    for field in fields:
+        field_data = field.get('fields', {})
+        
+        if 'Collection_Deployed' in field_data:
+            if isinstance(field_data['Collection_Deployed'], str):
+                name = field_data['Collection_Deployed']
+            else:
+                name = field_data['Collection_Deployed'][0]
+            
+            if name[:3] == "rec":
+                name = airtable.get_record_by_id("Collection", name)['fields']['UI_Name'] + ":Sample"
+        else:
+            name = field_data.get('UI_Name') + ":Sample"
+
+        if name:
+            field_id = field.get('id', '')  
+            field_ui_name = field_data.get('UI_Name', '')  # Get UI name or default to ""
+            
+            if name not in categories:
+                categories[name] = []  # Change to a list of dicts
+            
+            categories[name].append({"id": field_id, "ui_name": field_ui_name})
 
     TurtlePrefix = ""
     if "Turtle RDF" in item.ExtraFields:
@@ -68,7 +107,7 @@ def display_graph(prefix, input, item):
     graphs["generateInstance"] = generate_instance_graph
     graphs["generateJsonLD"] = generate_json_ld
 
-    return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs)
+    return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs, categories=categories, apikey=apikey)
 
 
 # each function should have a label and a function
