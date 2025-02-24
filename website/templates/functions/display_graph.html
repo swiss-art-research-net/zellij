@@ -120,7 +120,7 @@
             {% endfor %}
         </ul>
     </template>
-    <div>
+    <div x-data="batchProcessors({{categories}})">
         <section id="ontologyGraph">
             <h2>Ontology Graph</h2>
             <div id="{{ prefix|replace(' ', '_')|replace('.', '_')|replace('&', '_')|replace('?', '_')|replace('[', '')|replace(']', '') }}-ontology-graph" data-turtle="{{ graphs['turtle_text'] }}"></div>
@@ -159,24 +159,62 @@
             </section>
         {% endif %}
         {% for name, items in categories.items() %}
-            <section x-data="{loading: true, count: 0}" x-show="qaMode" x-init="
-                $watch('qaMode', async (value) => {
-                    if (value) {
-                        count = (await (await fetch('/qa/collection/count/{{apikey}}/{{ items | map(attribute='id') | join('_') }}')).json()).count;
-                        loading = false;
-                    }
-                })
-            ">
+            <section x-show="qaMode">
                 <h2>{{ name }}</h2>
                 <table border="1" style="margin-bottom: 15px;">
                     <tr>
                         {% for item in items %}
                             <td style="padding: 5px 5px;">{{ item.ui_name }}</td>
                         {% endfor %}
-                        <td style="font-weight: bold; padding: 5px 5px;" x-text="!loading ? count : 'Loading...'"></td>
+                        <td style="font-weight: bold; padding: 5px 5px;" 
+                            x-text="counts['{{ name }}'] ?? 'Loading...'">
+                        </td>
                     </tr>
                 </table>
             </section>
         {% endfor %}
     </div>
 </div>
+<script>
+    function batchProcessors(categories) {
+    return {
+        counts: {},
+        queue: Object.entries(categories).map(([name, items]) => ({
+            name,
+            ids: items.map(item => item.id).join('_')
+        })),
+        batchSize: 1,
+        active: false,
+
+        async processQueue(qaMode) {
+            this.active = qaMode;
+            if (!qaMode) return;
+
+            while (this.queue.length > 0 && this.active) {
+                let batch = this.queue.splice(0, this.batchSize);
+                console.log(`Processing batch: ${batch.length}`);
+                
+                await Promise.all(batch.map(async ({ name, ids }) => {
+                    try {
+                        let response = await fetch(`/qa/collection/count/{{apikey}}/${ids}`);
+                        let data = await response.json();
+                        this.counts[name] = data.count;
+                    } catch (error) {
+                        console.error(`Error fetching ${name}:`, error);
+                    }
+                }));
+            }
+        },
+
+        init() {
+            this.$watch('qaMode', (value) => {
+                if (!value) {
+                    this.active = false;
+                } else {
+                    this.processQueue(value);
+                }
+            });
+        }
+    };
+}
+</script>
