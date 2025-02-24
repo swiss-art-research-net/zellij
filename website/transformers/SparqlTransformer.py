@@ -1,4 +1,5 @@
 import io
+from itertools import chain
 from typing import Dict, List, Union
 
 from pyairtable.api.types import RecordDict
@@ -15,7 +16,6 @@ from SPARQLBurger.SPARQLQueryBuilder import (
 )
 from website.db import dict_gen_one, get_db
 from website.transformers.Transformer import Transformer
-from itertools import chain
 
 
 class SparqlTransformer(Transformer):
@@ -23,12 +23,7 @@ class SparqlTransformer(Transformer):
         super().__init__(api_key, field_id)
         total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
         self.parts: List[str] = self._parse_ontological_path(total_path)
-        self.uris = {
-            -1: (self.crm_class or {})
-            .get("fields", {})
-            .get("Class_Ur_Instance", "")
-            .strip("<>")
-        }
+        self.uris = {-1: "subject"}
         self.populate_uris()
 
     def _parse_ontological_path(self, path: str) -> List[str]:
@@ -40,7 +35,7 @@ class SparqlTransformer(Transformer):
         parts = list(map(lambda x: x.split(short_discriminator), parts))
 
         return list(chain.from_iterable(parts))
-    
+
     def populate_uris(self):
         self.self_uri = self.get_field_or_default("ID").replace(".", "_")
         for idx, part in enumerate(self.parts):
@@ -124,7 +119,7 @@ class SparqlTransformer(Transformer):
         except Exception as e:
             print("Error uploading Sparql: ", e)
             raise e
-        
+
     def create_where_pattern(self, optional=False):
         where_pattern = SPARQLGraphPattern(optional=optional)
         for idx in range(len(self.parts)):
@@ -183,7 +178,10 @@ class SparqlTransformer(Transformer):
                     ]
                 )
 
-        if self.self_uri not in self.uris.values() and "rdf:literal" not in self.uris.values():
+        if (
+            self.self_uri not in self.uris.values()
+            and "rdf:literal" not in self.uris.values()
+        ):
             where_pattern.add_binding(Binding(f"?{self.uris[1]}", f"?{self.self_uri}"))
 
         where_pattern.add_binding(Binding(f"?{self.self_uri}", "?value"))
@@ -206,7 +204,7 @@ class SparqlTransformer(Transformer):
 
             where_pattern.add_nested_graph_pattern(optional_label)
         return where_pattern
-    
+
     def add_prefixes(self, query: SPARQLSelectQuery):
         namespaces: Dict[str, Union[Namespace, DefinedNamespaceMeta]] = {}
         namespaces_records: List[RecordDict] = []
@@ -238,10 +236,8 @@ class SparqlTransformer(Transformer):
 
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
-            
 
     def transform(self, count: bool = False):
-
         if count:
             query = SPARQLSelectQuery()
             query.add_variables(["(COUNT(?value) as ?count)"])
