@@ -23,6 +23,8 @@
             <input name="collectionbase" id="collectionbase" value="{{ existing["collectionbase"] or "" }}">
             <label for="projectbase">Project Base ID</label>
             <input name="projectbase" id="projectbase" value="{{ existing["projectbase"] or "" }}">
+            <label for="sparqlendpoint">SPARQL Endpoint</label>
+            <input name="sparqlendpoint" id="sparqlendpoint" value="{{ existing["sparqlendpoint"] or "" }}">
 
             <button type="submit">{{ "Update" if existing else "Create" }} Database</button>
             {% if existing %}

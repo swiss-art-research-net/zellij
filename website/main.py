@@ -65,6 +65,10 @@ def create_app(test_config=None):
     app.register_blueprint(pages.bp)
     app.add_url_rule("/", endpoint="index")
 
+    from website import qa
+
+    app.register_blueprint(qa.bp)
+
     from website import error
 
     app.register_blueprint(error.bp)

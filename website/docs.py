@@ -576,4 +576,5 @@ def patternitemdisplay(apikey, pattern):
         prefill_group=prefill_group,
         functions=functions,
         group_sort=group_sort,
+        airtable = airtable,
     )

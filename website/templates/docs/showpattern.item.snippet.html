@@ -141,426 +141,517 @@
         return select.options[select.selectedIndex];
     }
 </script>
-
-<h1 id="{{ patternitem['Name'] }}">
-    {{ patternitem["Name"] }}
-</h1>
-
-<table class="toc model-generator">
-    <tr>
-        <th style="width: 90%;">Derivative Generators</th>
-        <td>
-            <select style="background: transparent; border: 1px solid lightgray; outline: unset;"
-                id="generate-field-select">
-                <option value="" hidden aria-hidden="true">Generators</option>
-                <optgroup label="Pattern Export">
-                    <option value="composite" class="export-field" id="export-model-btn">
-                        Composite Semantic Pattern XML
-                    </option>
-                    <option value="total-composite" id="total-export-model-btn">
-                        Total Composite Semantic Pattern XML
-                    </option>
-                </optgroup>
-                <optgroup label="Pattern Transform">
-                    <option class="export-x3ml-form-a" data-upload="false">Generate X3ML Mappings (Form A)</option>
-                    <option class="export-x3ml-form-a" data-upload="true">Generate X3ML Mappings For System (Form A)</option>
-                    <option class="export-x3ml-form-b" data-upload="false">Generate X3ML Mappings (Form B)</option>
-                    <option class="export-x3ml-form-b" data-upload="true">Generate X3ML Mappings For System (Form B)</option>
-                    <option class="export-rs" data-upload="false">Generate ResearchSpace Definition</option>
-                    <option class="export-rs" data-upload="true">Generate ResearchSpace Definition For System</option>
-                </optgroup>
-            </select>
-        </td>
-    </tr>
-</table>
-
-<h2 style="max-width: 1440px;">Attributes</h2>
-{% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
-{% include 'docs/showattributes.html' %}
-{% endwith %}
-
-{% if patternitem.GroupedFields()|length > 1 %}
-<div class="table-wrapper tabset">
-    <input type="radio" name="tabset_max" id="tabset_max_ontgraph" hidden aria-hidden="true" checked>
-    <input type="radio" name="tabset_max" id="tabset_max_instgraph" hidden aria-hidden="true">
-    <input type="radio" name="tabset_max" id="tabset_max_turtle" hidden aria-hidden="true">
-    {% if patternitem.rdf_warnings() %}
-    <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
-    {% endif %}
-    <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
-    <ul hidden aira-hidden="true">
-        <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
-        </li>
-        <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label
-                for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
-        <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
-        {% if patternitem.rdf_warnings() %}
-        <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
-                warnings</label></li>
-        {% endif %}
-        <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
-                    class="fas fa-stream"></i> JSON-LD</label></li>
-    </ul>
-    <div>
-        <section id="ontologyGraph">
-            <h2>Ontology Graph</h2>
-            <div id="aggregated-ontology-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
-        </section>
-        <section id="instanceGraph">
-            <h2>Instance Graph</h2>
-            <div id="aggregated-instance-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
-        </section>
-        <section id="turtleRDF">
-            <h2>Turtle RDF</h2>
-            <textarea rows="32" readonly="readonly">
-                        {{ patternitem.turtle() }}
-                </textarea>
-            <br />
-        </section>
-        {% if patternitem.rdf_warnings() %}
-        <section>
-            <h2>RDF Warnings</h2>
-            <div class="rdfwarning">
-                {{ patternitem.rdf_warnings()|safe }}
-            </div>
-            <br />
-        </section>
-        {% endif %}
-        {% if patternitem.is_jsonld() %}
-        <section id="jsonLD">
-            <h2>JSON-LD</h2>
-            <textarea rows="32" readonly="readonly" id="aggregated-json-ld"></textarea>
-        </section>
-        {% else %}
-        <section>
-            <h2 class="error">RDF Error</h2>
-            <div class="errormessage">
-                {{ patternitem.jsonld_error()|safe }}
-            </div>
-        </section>
-        {% endif %}
+<div x-data="{qaMode: false, hasendpoint: false, async fetchEndpoint() { 
+    this.hasendpoint = (await (await fetch('/qa/sparqlendpoint/{{apikey}}')).json()).sparqlendpoint; await this.$nextTick();}}">
+    <div style="display: flex; flex-direction: row; gap: 15px;" x-init="fetchEndpoint()">
+        <h1 id="{{ patternitem['Name'] }}">
+            {{ patternitem["Name"] }}
+        </h1>
+        <button x-show="hasendpoint" x-text="qaMode ? 'Normal Mode' : 'QA Mode'" @click="qaMode = !qaMode; $dispatch('qa-mode-changed', qaMode)"></button>
+        <button x-show="qaMode" @click="downloadCSV()">QA Export</button>
     </div>
-</div>
-{% endif %}
+    <table class="toc model-generator">
+        <tr>
+            <th style="width: 90%;">Derivative Generators</th>
+            <td>
+                <select style="background: transparent; border: 1px solid lightgray; outline: unset;"
+                    id="generate-field-select">
+                    <option value="" hidden aria-hidden="true">Generators</option>
+                    <optgroup label="Pattern Export">
+                        <option value="composite" class="export-field" id="export-model-btn">
+                            Composite Semantic Pattern XML
+                        </option>
+                        <option value="total-composite" id="total-export-model-btn">
+                            Total Composite Semantic Pattern XML
+                        </option>
+                    </optgroup>
+                    <optgroup label="Pattern Transform">
+                        <option class="export-x3ml-form-a" data-upload="false">Generate X3ML Mappings (Form A)</option>
+                        <option class="export-x3ml-form-a" data-upload="true">Generate X3ML Mappings For System (Form A)</option>
+                        <option class="export-x3ml-form-b" data-upload="false">Generate X3ML Mappings (Form B)</option>
+                        <option class="export-x3ml-form-b" data-upload="true">Generate X3ML Mappings For System (Form B)</option>
+                        <option class="export-rs" data-upload="false">Generate ResearchSpace Definition</option>
+                        <option class="export-rs" data-upload="true">Generate ResearchSpace Definition For System</option>
+                    </optgroup>
+                </select>
+            </td>
+        </tr>
+    </table>
 
-<h2 style="max-width: 1440px;">Fields</h2>
+    <h2 style="max-width: 1440px;">Attributes</h2>
+    {% with data = patternitem.ExtraFields, prefill_group=prefill_group %}
+    {% include 'docs/showattributes.html' %}
+    {% endwith %}
 
-{% set ns = namespace(fields=[]) %}
-{% for prefix, values in patternitem.GroupedFields() %}
-{% for entry in values %}
-{% for field in entry.keys() %}
-{% if field not in ns.fields %}
-{% set _ = ns.fields.append(field) %}
-{% endif %}
-{% endfor %}
-{% endfor %}
-{% endfor %}
-{% set fields = ns.fields %}
+    {% if patternitem.GroupedFields()|length > 1 %}
+    <div class="table-wrapper tabset">
+        <input type="radio" name="tabset_max" id="tabset_max_ontgraph" hidden aria-hidden="true" checked>
+        <input type="radio" name="tabset_max" id="tabset_max_instgraph" hidden aria-hidden="true">
+        <input type="radio" name="tabset_max" id="tabset_max_turtle" hidden aria-hidden="true">
+        {% if patternitem.rdf_warnings() %}
+        <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
+        {% endif %}
+        <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
+        <ul hidden aira-hidden="true">
+            <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
+            </li>
+            <li onclick="generateInstanceGraph('aggregated', `{{ patternitem.turtle() }}`)"><label
+                    for="tabset_max_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_max_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if patternitem.rdf_warnings() %}
+            <li><label for="tabset_max_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
+                        class="fas fa-stream"></i> JSON-LD</label></li>
+        </ul>
+        <div>
+            <section id="ontologyGraph">
+                <h2>Ontology Graph</h2>
+                <div id="aggregated-ontology-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
+            </section>
+            <section id="instanceGraph">
+                <h2>Instance Graph</h2>
+                <div id="aggregated-instance-graph" data-turtle="{{ patternitem.turtle() }}" class="mermaid"></div>
+            </section>
+            <section id="turtleRDF">
+                <h2>Turtle RDF</h2>
+                <textarea rows="32" readonly="readonly">
+                            {{ patternitem.turtle() }}
+                    </textarea>
+                <br />
+            </section>
+            {% if patternitem.rdf_warnings() %}
+            <section>
+                <h2>RDF Warnings</h2>
+                <div class="rdfwarning">
+                    {{ patternitem.rdf_warnings()|safe }}
+                </div>
+                <br />
+            </section>
+            {% endif %}
+            {% if patternitem.is_jsonld() %}
+            <section id="jsonLD">
+                <h2>JSON-LD</h2>
+                <textarea rows="32" readonly="readonly" id="aggregated-json-ld"></textarea>
+            </section>
+            {% else %}
+            <section>
+                <h2 class="error">RDF Error</h2>
+                <div class="errormessage">
+                    {{ patternitem.jsonld_error()|safe }}
+                </div>
+            </section>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
-{% for prefix, values in patternitem.GroupedFields() %}
-{% if patternitem.GroupedFields()|length > 1 %}
-<h3 style="max-width: 1440px">{{ prefix }}</h3>
-{% endif %}
-<div class="table-wrapper">
-    <div>
-        <table class="toc" id="table-{{ prefix }}">
-            <thead>
-                {% if prefill == "default" %}
-                <tr>
-                    {% for field in fields %}
-                    {% if loop.index > 1 %}
-                    <th>
-                        {{ field }}
-                    </th>
+    <h2 style="max-width: 1440px;">Fields</h2>
+
+    {% set ns = namespace(fields=[]) %}
+    {% for prefix, values in patternitem.GroupedFields() %}
+    {% for entry in values %}
+    {% for field in entry.keys() %}
+    {% if field not in ns.fields %}
+    {% set _ = ns.fields.append(field) %}
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+    {% endfor %}
+    {% set fields = ns.fields %}
+
+    {% for prefix, values in patternitem.GroupedFields() %}
+    {% if patternitem.GroupedFields()|length > 1 %}
+    <h3 style="max-width: 1440px">{{ prefix }}</h3>
+    {% endif %}
+    <div class="table-wrapper">
+        <div>
+            <table class="toc" id="table-{{ prefix }}" x-data="batchProcessor({{values}})">
+                <thead>
+                    {% if prefill == "default" %}
+                    <tr>
+                        {% for field in fields %}
+                        {% if loop.index > 1 %}
+                        <th>
+                            {{ field }}
+                        </th>
+                        {% endif %}
+                        {% endfor %}
+                        <template x-if="!qaMode">
+                            {% if 'Field' in values|list|first %}
+                            <th>Derivatives</th>
+                            {% endif %}
+                        </template>
+                        <template x-if="qaMode">
+                            <th>Count</th>
+                        </template>
+                    </tr>
+                    {% else %}
+                    {% set sortable_keys = [] %}
+                    {% set hideable_keys= [] %}
+                    {% set link_keys = [] %}
+                    {% for key, value in prefill.items() %}
+                    {% if value.sortable == True %}
+                    {% set _ = sortable_keys.append(key) %}
+                    {% endif %}
+                    {% if value.hideable == True %}
+                    {% set _ = hideable_keys.append(key) %}
+                    {% endif %}
+                    {% if value.groupable == True %} {# for the link checkbox #}
+                    {% set _ = link_keys.append(key) %}
                     {% endif %}
                     {% endfor %}
-                    {% if 'Field' in values|list|first %}
-                    <th>Derivatives</th>
+
+                    <tr>
+                        {% for field in fields %}
+                        {% if loop.index > 1 %}
+                        {% if field == sortable_keys[0] and field not in hideable_keys %}
+                        <th>
+                            {{ field }}
+                            <i class="fa fa-sort-amount-asc sort-asc"></i>
+                        </th>
+                        {% elif field not in hideable_keys %}
+                        <th>
+                            {{ field }}
+                        </th>
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                        <template x-if="!qaMode">
+                            {% if 'Field' in values|list|first %}
+                            <th>Derivatives</th>
+                            {% endif %}
+                        </template>
+                        <template x-if="qaMode">
+                            <th>Count</th>
+                        </template>
+                    </tr>
                     {% endif %}
+                </thead>
+
+                {% if prefill == "default" %}
+                {% for fld in values|sort(attribute='Identifier') %}
+                {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                {% set segments = base_url.rsplit('/', 1) %}
+                <tr>
+                    {% for f in fields %}
+                    {% if loop.index > 1 and f not in hideable_keys %}
+                    {% if fld[f] is string %}
+                    {% set fld_f_list = [fld[f]] %}
+                    {% elif fld[f] is integer %}
+                    {% set fld_f_list = [fld[f]|string] %}
+                    {% elif fld[f] is mapping %}
+                    {% set fld_f_list = [fld[f]] %}
+                    {% else %}
+                    {% set fld_f_list = fld[f] %}
+                    {% endif %}
+                    <td>
+                        {% for item in fld_f_list %}
+                        {% if item.id is defined %}
+                        {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
+                        + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                        <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                        {% if not loop.last %}, {% endif %}
+                        {% else %}
+                        {{ item }}{% if not loop.last %}, {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </td>
+                    {% endif %}
+                    {% endfor %}
                 </tr>
-                {% else %}
+                {% endfor %}
+                {% endif %}
+
+                {# after select checkbox for sorting index and click save #}
+
+                {% if prefill != "default" %}
                 {% set sortable_keys = [] %}
-                {% set hideable_keys= [] %}
-                {% set link_keys = [] %}
                 {% for key, value in prefill.items() %}
                 {% if value.sortable == True %}
                 {% set _ = sortable_keys.append(key) %}
-                {% endif %}
-                {% if value.hideable == True %}
-                {% set _ = hideable_keys.append(key) %}
                 {% endif %}
                 {% if value.groupable == True %} {# for the link checkbox #}
                 {% set _ = link_keys.append(key) %}
                 {% endif %}
                 {% endfor %}
 
+                {% if sortable_keys|length > 1 %}
+                {% for fld in values| sort(attribute=sortable_keys[0]) |sort(attribute=sortable_keys[1]) %}
+                {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                {% set segments = base_url.rsplit('/', 1) %}
                 <tr>
-                    {% for field in fields %}
-                    {% if loop.index > 1 %}
-                    {% if field == sortable_keys[0] and field not in hideable_keys %}
-                    <th>
-                        {{ field }}
-                        <i class="fa fa-sort-amount-asc sort-asc"></i>
-                    </th>
-                    {% elif field not in hideable_keys %}
-                    <th>
-                        {{ field }}
-                    </th>
+                    {% for f in fields %}
+                    {% if loop.index > 1 and f not in hideable_keys %}
+                    {% if fld[f] is string %}
+                    {% set fld_f_list = [fld[f]] %}
+                    {% elif fld[f] is integer %}
+                    {% set fld_f_list = [fld[f]|string] %}
+                    {% elif fld[f] is mapping %}
+                    {% set fld_f_list = [fld[f]] %}
+                    {% else %}
+                    {% set fld_f_list = fld[f] %}
                     {% endif %}
+                    <td>
+                        {% for item in fld_f_list %}
+                        {% if item.id is defined %}
+                        {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
+                        + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                        <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                        {% if not loop.last %}, {% endif %}
+                        {% else %}
+                        {{ item }}{% if not loop.last %}, {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </td>
                     {% endif %}
                     {% endfor %}
-                    {% if 'Field' in values|list|first %}
-                    <th>Derivatives</th>
+                    {% if 'Field' in fld %}
+                    <td x-show="!qaMode">
+                        <select
+                            style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content; "
+                            class="generate-select">
+                            <option value="" hidden aria-hidden="true">Generators</option>
+                            <optgroup label="Pattern Export">
+                                <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
+                                    Pattern XML
+                                </option>
+                            </optgroup>
+                            <optgroup label="Pattern Transform">
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate Turtle File
+                                </option>
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate Turtle For System
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Query
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate SPARQL Query For System
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form B)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form B)
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate ResearchSpace Definition
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate ResearchSpace Definition for System
+                                </option>
+                            </optgroup>
+                        </select>
+                    </td>
                     {% endif %}
+                    <template x-if="qaMode" >
+                        <td x-init="console.log('test')">
+                            COUNT
+                        </td>
+                    </template>
                 </tr>
-                {% endif %}
-            </thead>
-
-            {% if prefill == "default" %}
-            {% for fld in values|sort(attribute='Identifier') %}
-            {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
-            {% set segments = base_url.rsplit('/', 1) %}
-            <tr>
-                {% for f in fields %}
-                {% if loop.index > 1 and f not in hideable_keys %}
-                {% if fld[f] is string %}
-                {% set fld_f_list = [fld[f]] %}
-                {% elif fld[f] is integer %}
-                {% set fld_f_list = [fld[f]|string] %}
-                {% elif fld[f] is mapping %}
-                {% set fld_f_list = [fld[f]] %}
+                {% endfor %}
                 {% else %}
-                {% set fld_f_list = fld[f] %}
-                {% endif %}
-                <td>
-                    {% for item in fld_f_list %}
-                    {% if item.id is defined %}
-                    {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
-                    + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
-                    <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
-                    {% if not loop.last %}, {% endif %}
+                {% for fld in values|sort(attribute=sortable_keys[0]) %}
+                {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
+                {% set segments = base_url.rsplit('/', 1) %}
+                <tr>
+                    {% for f in fields %}
+                    {% if loop.index > 1 and f not in hideable_keys %}
+                    {% if fld[f] is string %}
+                    {% set fld_f_list = [fld[f]] %}
+                    {% elif fld[f] is integer %}
+                    {% set fld_f_list = [fld[f]|string] %}
+                    {% elif fld[f] is mapping %}
+                    {% set fld_f_list = [fld[f]] %}
                     {% else %}
-                    {{ item }}{% if not loop.last %}, {% endif %}
+                    {% set fld_f_list = fld[f] %}
+                    {% endif %}
+                    <td>
+                        {% for item in fld_f_list %}
+                        {% if item.id is defined %}
+                        {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
+                        + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
+                        <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
+                        {% if not loop.last %}, {% endif %}
+                        {% else %}
+                        {{ item }}{% if not loop.last %}, {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </td>
                     {% endif %}
                     {% endfor %}
-                </td>
-                {% endif %}
-                {% endfor %}
-            </tr>
-            {% endfor %}
-            {% endif %}
-
-            {# after select checkbox for sorting index and click save #}
-
-            {% if prefill != "default" %}
-            {% set sortable_keys = [] %}
-            {% for key, value in prefill.items() %}
-            {% if value.sortable == True %}
-            {% set _ = sortable_keys.append(key) %}
-            {% endif %}
-            {% if value.groupable == True %} {# for the link checkbox #}
-            {% set _ = link_keys.append(key) %}
-            {% endif %}
-            {% endfor %}
-
-            {% if sortable_keys|length > 1 %}
-            {% for fld in values| sort(attribute=sortable_keys[0]) |sort(attribute=sortable_keys[1]) %}
-            {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
-            {% set segments = base_url.rsplit('/', 1) %}
-            <tr>
-                {% for f in fields %}
-                {% if loop.index > 1 and f not in hideable_keys %}
-                {% if fld[f] is string %}
-                {% set fld_f_list = [fld[f]] %}
-                {% elif fld[f] is integer %}
-                {% set fld_f_list = [fld[f]|string] %}
-                {% elif fld[f] is mapping %}
-                {% set fld_f_list = [fld[f]] %}
-                {% else %}
-                {% set fld_f_list = fld[f] %}
-                {% endif %}
-                <td>
-                    {% for item in fld_f_list %}
-                    {% if item.id is defined %}
-                    {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
-                    + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
-                    <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
-                    {% if not loop.last %}, {% endif %}
-                    {% else %}
-                    {{ item }}{% if not loop.last %}, {% endif %}
+                    {% if 'Field' in fld %}
+                    <td x-show="!qaMode">
+                        <select
+                            style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content; "
+                            class="generate-select">
+                            <option value="" hidden aria-hidden="true">Generators</option>
+                            <optgroup label="Pattern Export">
+                                <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
+                                    Pattern XML
+                                </option>
+                            </optgroup>
+                            <optgroup label="Pattern Transform">
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate Turtle File
+                                </option>
+                                <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate Turtle For System
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Query
+                                </option>
+                                <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate SPARQL Query For System
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form A)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate X3ML Mappings (Form B)
+                                </option>
+                                <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate X3ML Mappings For System (Form B)
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate ResearchSpace Definition
+                                </option>
+                                <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="true">
+                                    Generate ResearchSpace Definition for System
+                                </option>
+                            </optgroup>
+                        </select>
+                    </td>
                     {% endif %}
-                    {% endfor %}
-                </td>
-                {% endif %}
+                    <template x-if="qaMode">
+                        <td x-text="counts['{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}'] ?? 'Loading...'">
+                        </td>
+                    </template>
+                </tr>
                 {% endfor %}
-                {% if 'Field' in fld %}
-                <td>
-                    <select
-                        style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content; "
-                        class="generate-select">
-                        <option value="" hidden aria-hidden="true">Generators</option>
-                        <optgroup label="Pattern Export">
-                            <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
-                                Pattern XML
-                            </option>
-                        </optgroup>
-                        <optgroup label="Pattern Transform">
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate Turtle File
-                            </option>
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate Turtle For System
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate SPARQL Query
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate SPARQL Query For System
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form B)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form B)
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate ResearchSpace Definition
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate ResearchSpace Definition for System
-                            </option>
-                        </optgroup>
-                    </select>
-                </td>
                 {% endif %}
-            </tr>
-            {% endfor %}
-            {% else %}
-            {% for fld in values|sort(attribute=sortable_keys[0]) %}
-            {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
-            {% set segments = base_url.rsplit('/', 1) %}
-            <tr>
-                {% for f in fields %}
-                {% if loop.index > 1 and f not in hideable_keys %}
-                {% if fld[f] is string %}
-                {% set fld_f_list = [fld[f]] %}
-                {% elif fld[f] is integer %}
-                {% set fld_f_list = [fld[f]|string] %}
-                {% elif fld[f] is mapping %}
-                {% set fld_f_list = [fld[f]] %}
-                {% else %}
-                {% set fld_f_list = fld[f] %}
                 {% endif %}
-                <td>
-                    {% for item in fld_f_list %}
-                    {% if item.id is defined %}
-                    {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
-                    + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
-                    <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
-                    {% if not loop.last %}, {% endif %}
-                    {% else %}
-                    {{ item }}{% if not loop.last %}, {% endif %}
-                    {% endif %}
-                    {% endfor %}
-                </td>
-                {% endif %}
-                {% endfor %}
-                {% if 'Field' in fld %}
-                <td>
-                    <select
-                        style="background: transparent; border: 1px solid lightgray; outline: unset; width: fit-content;"
-                        class="generate-select">
-                        <option value="" hidden aria-hidden="true">Generators</option>
-                        <optgroup label="Pattern Export">
-                            <option value="composite" class="export-field" data-id="{{ fld['KeyField'] }}">Basic Atomic
-                                Pattern XML
-                            </option>
-                        </optgroup>
-                        <optgroup label="Pattern Transform">
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate Turtle File
-                            </option>
-                            <option value="composite" class="generate-turtle" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate Turtle For System
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate SPARQL Query
-                            </option>
-                            <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate SPARQL Query For System
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form A)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate X3ML Mappings (Form B)
-                            </option>
-                            <option value="composite" class="generate-x3ml" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate X3ML Mappings For System (Form B)
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="false">
-                                Generate ResearchSpace Definition
-                            </option>
-                            <option value="composite" class="generate-rs" data-form="b" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
-                                data-upload="true">
-                                Generate ResearchSpace Definition for System
-                            </option>
-                        </optgroup>
-                    </select>
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-            {% endif %}
-            {% endif %}
-        </table>
+            </table>
+        </div>
+        {% for key, options in prefill.items() %}
+        {% if options["function"] is defined %}
+        {% if options["function"] in functions %}
+        {% set value_list = [] %}
+        {% for value in values %}
+        {% if value[key] is defined %}
+        {% set _ = value_list.append(value[key]) %}
+        {% endif %}
+        {% endfor %}
+        <div>
+            {{ functions[options["function"]]["function"](prefix, value_list, patternitem, airtable, apikey)|safe }}
+        </div>
+        {% endif %}
+        {% endif %}
+        {% endfor %}
     </div>
-    {% for key, options in prefill.items() %}
-    {% if options["function"] is defined %}
-    {% if options["function"] in functions %}
-    {% set value_list = [] %}
-    {% for value in values %}
-    {% if value[key] is defined %}
-    {% set _ = value_list.append(value[key]) %}
-    {% endif %}
-    {% endfor %}
-    <div>
-        {{ functions[options["function"]]["function"](prefix, value_list, patternitem)|safe }}
-    </div>
-    {% endif %}
-    {% endif %}
     {% endfor %}
 </div>
-{% endfor %}
+<script>
+    function batchProcessor(fields) {
+    return {
+        counts: {},
+        queue: fields.map(fld => typeof fld['Field'] === 'string' ? fld['Field'] : fld['Field'][0]),
+        batchSize: 3,
+        active: false,
+        async processQueue(qaMode) {
+            this.active = qaMode;  // Update flag
 
+            if (!qaMode) return;  // Stop execution if qaMode is false
+
+            while (this.queue.length > 0 && this.active) {
+                let batch = this.queue.splice(0, this.batchSize);
+
+  
+                await Promise.all(batch.map(async (field) => {
+                    try {
+                        let response = await fetch(`/qa/{{apikey}}/${field}`);
+                        let data = await response.json();
+                        this.counts[field] = data.count;
+                    } catch (error) {
+                        console.error(`Error fetching ${field}:`, error);
+                    }
+                }));
+            }
+        },
+        init() {
+            this.$watch('qaMode', (value) => {
+                if (!value) {
+                    this.active = false;  // Stop execution when qaMode is turned off
+                } else {
+                    this.processQueue(value);  // Restart processing when qaMode is turned on
+                }
+            });
+        }
+    };
+}
+</script>
+<script>
+    function downloadCSV() {
+        document.body.style.cursor = 'wait';
+
+      fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'output.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          document.body.style.cursor = 'default';
+        })
+        .catch(error => {
+          console.error('Error downloading CSV:', error);
+          document.body.style.cursor = 'default';
+        });
+    }
+</script>
 <script type="module" defer>
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 

@@ -65,7 +65,7 @@
     }
     {% endautoescape %}
 </script>
-<div class="tabset">
+<div class="tabset" @qa-mode-changed.window="qaMode = $event.detail"  x-data="{qaMode: false}">
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_ontgraph" hidden aria-hidden="true"
            checked>
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_instgraph" hidden aria-hidden="true">
@@ -74,22 +74,52 @@
         <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_rdfwarn" hidden aria-hidden="true">
     {% endif %}
     <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_jsonld" hidden aria-hidden="true">
-    <ul hidden aria-hidden="true">
-        <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
-        </li>
-        <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
-        <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
-        {% if graphs.error is defined %}
-            <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
-                warnings</label></li>
-        {% endif %}
-        {% if graphs.error is undefined %}
-            <li onclick="generateJsonLD('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
-        {% else %}
-            <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
-                Error</label></li>
-        {% endif %}
-    </ul>
+    {% for name in categories %}
+    <input type="radio" name="tabset_{{ prefix }}" id="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}" hidden aria-hidden="true">
+    {% endfor %}
+    <template x-if="!qaMode">
+        <ul hidden aria-hidden="true">
+            <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph </label>
+            </li>
+            <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if graphs.error is defined %}
+                <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            {% if graphs.error is undefined %}
+                <li onclick="generateJsonLD('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+            {% else %}
+                <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
+                    Error</label></li>
+            {% endif %}
+        </ul>
+    </template>
+    <template x-if="qaMode">
+        <ul hidden aria-hidden="true">
+            <li><label for="tabset_{{ prefix }}_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph </label>
+            </li>
+            <li onclick="generateInstanceGraph('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_instgraph"><i class="fas fa-sitemap"></i> Instance Graph</label></li>
+            <li><label for="tabset_{{ prefix }}_turtle"><i class="fas fa-code"></i> Turtle RDF</label></li>
+            {% if graphs.error is defined %}
+                <li><label for="tabset_{{ prefix }}_rdfwarn"><i class="fas fa-exclamation-triangle"></i> RDF
+                    warnings</label></li>
+            {% endif %}
+            {% if graphs.error is undefined %}
+                <li onclick="generateJsonLD('{{ prefix }}', `{{ graphs['turtle_text'] }}`)"><label for="tabset_{{ prefix }}_jsonld"><i class="fas fa-stream"></i> JSON-LD</label></li>
+            {% else %}
+                <li><label for="tabset_{{ prefix }}_jsonld" class="error"><i class="fas fa-exclamation-circle"></i> RDF
+                    Error</label></li>
+            {% endif %}
+            {% for name, ids in categories.items() %}
+                <li x-show="qaMode">
+                    <label for="tabset_{{ prefix }}_{{ name | replace(' ', '_') }}">
+                        {{ name }}
+                    </label>
+                </li>
+            {% endfor %}
+        </ul>
+    </template>
     <div>
         <section id="ontologyGraph">
             <h2>Ontology Graph</h2>
@@ -128,5 +158,25 @@
                 </div>
             </section>
         {% endif %}
+        {% for name, items in categories.items() %}
+            <section x-data="{loading: true, count: 0}" x-show="qaMode" x-init="
+                $watch('qaMode', async (value) => {
+                    if (value) {
+                        count = (await (await fetch('/qa/collection/count/{{apikey}}/{{ items | map(attribute='id') | join('_') }}')).json()).count;
+                        loading = false;
+                    }
+                })
+            ">
+                <h2>{{ name }}</h2>
+                <table border="1" style="margin-bottom: 15px;">
+                    <tr>
+                        {% for item in items %}
+                            <td style="padding: 5px 5px;">{{ item.ui_name }}</td>
+                        {% endfor %}
+                        <td style="font-weight: bold; padding: 5px 5px;" x-text="!loading ? count : 'Loading...'"></td>
+                    </tr>
+                </table>
+            </section>
+        {% endfor %}
     </div>
 </div>
