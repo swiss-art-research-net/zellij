@@ -639,6 +639,17 @@
             this.controllers = [];
         },
 
+        listenForNavigation() {
+            const onUnload = () => {
+                this.active = false;
+                this.abortRequests();
+            };
+
+            window.addEventListener('beforeunload', onUnload);
+
+            window.addEventListener('popstate', onUnload);
+        },
+
         init() {
             this.$watch('qaMode', (value) => {
                 if (!value) {
@@ -648,6 +659,7 @@
                     this.processQueue(value);
                 }
             });
+            this.listenForNavigation();
         }
     };
 }
