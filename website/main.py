@@ -93,6 +93,6 @@ if __name__ == "__main__":
         from website import testpages
 
         app.register_blueprint(testpages.bp)
-        app.run()
+        app.run(options={"threaded": False, "processes": 3})
     else:
         app = create_app()
