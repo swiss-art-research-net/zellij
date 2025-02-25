@@ -33,6 +33,7 @@ from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.TurtleTransformer import TurtleTransformer
 from website.transformers.X3MLTransformer import X3MLTransformer
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
+from pyairtable.formulas import EQUAL, OR, STR_VALUE
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
@@ -566,6 +567,52 @@ def patternitemdisplay(apikey, pattern):
                 ):
                     for x in items.values():
                         x[key] = int(x[key])
+        
+    #### Fetch Collection Categories ####
+
+    categories = {}
+    prefix_categories = {}
+    for obj in item.GroupedFields():
+        identifiers = []
+        for i in range(len(obj[1])):
+            identifiers.append(obj[1][i]['Field'][0])
+        fields = airtable.get_multiple_records_by_formula("Field",
+        OR(
+                                *list(
+                                    map(
+                                        lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                        identifiers,
+                                    )
+                                )
+                            ),
+        )
+        prefix_cat = {}
+
+        for field in fields:
+            field_data = field.get('fields', {})
+            
+            if 'Collection_Deployed' in field_data:
+                if isinstance(field_data['Collection_Deployed'], str):
+                    name = field_data['Collection_Deployed']
+                else:
+                    name = field_data['Collection_Deployed'][0]
+                
+                if name[:3] == "rec":
+                    name = airtable.get_record_by_id("Collection", name)['fields']['UI_Name'] + ":Sample"
+            else:
+                name = field_data.get('UI_Name') + ":Sample"
+
+            if name:
+                field_id = field.get('id', '')  
+                field_ui_name = field_data.get('UI_Name', '')  # Get UI name or default to ""
+                
+                if name not in categories:
+                    categories[name] = []  # Change to a list of dicts
+                    prefix_cat[name] = []
+
+                categories[name].append({"id": field_id, "ui_name": field_ui_name})
+                prefix_cat[name].append({"id": field_id, "ui_name": field_ui_name})
+        prefix_categories[obj[0]] = prefix_cat
 
     return render_template(
         "docs/showitem.html",
@@ -577,4 +624,5 @@ def patternitemdisplay(apikey, pattern):
         functions=functions,
         group_sort=group_sort,
         airtable = airtable,
+        categories=[categories, prefix_categories],
     )
