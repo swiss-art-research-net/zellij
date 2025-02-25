@@ -143,7 +143,7 @@
 </script>
 <div x-data="{qaMode: false, hasendpoint: false, async fetchEndpoint() { 
     this.hasendpoint = (await (await fetch('/qa/sparqlendpoint/{{apikey}}')).json()).sparqlendpoint; await this.$nextTick();},
-    ...batchProcessor({{ patternitem.GroupedFields() }})}">
+    ...batchProcessor({{ patternitem.GroupedFields() }}), ...batchProcessors({{categories[0]}})}">
     <div style="display: flex; flex-direction: row; gap: 15px;" x-init="fetchEndpoint()">
         <h1 id="{{ patternitem['Name'] }}">
             {{ patternitem["Name"] }}
@@ -577,7 +577,7 @@
         {% endif %}
         {% endfor %}
         <div>
-            {{ functions[options["function"]]["function"](prefix, value_list, patternitem, airtable, apikey)|safe }}
+            {{ functions[options["function"]]["function"](prefix, value_list, patternitem, categories[1])|safe }}
         </div>
         {% endif %}
         {% endif %}
@@ -585,6 +585,90 @@
     </div>
     {% endfor %}
 </div>
+<script>
+    function batchProcessors(categories) {
+    return {
+        counts_col: {},
+        queue_col: Object.entries(categories).map(([name, items]) => ({
+            name,
+            ids: items.map(item => item.id).join('_')
+        })),
+        batchSize_col: 1,
+        active_col: false,
+        controllers_col: [],
+        abortedQueue_col: [],
+
+        async processQueueCol(qaMode) {
+            this.active_col = qaMode;
+            if (!qaMode) return;
+
+            if (this.abortedQueue_col.length > 0) {
+                this.queue_col.unshift(...this.abortedQueue_col);
+                this.abortedQueue_col = [];
+            }
+
+            while (this.queue_col.length > 0 && this.active_col) {
+                let batch = this.queue_col.splice(0, this.batchSize_col);
+                console.log(`Processing batch: ${batch.length}`);
+                
+                this.controllers_col = [];
+
+                await Promise.all(batch.map(async ({ name, ids }) => {
+                    const controller = new AbortController();
+                    this.controllers_col.push(controller);
+                    const signal = controller.signal;
+
+                    try {
+                        let response = await fetch(`/qa/collection/count/{{apikey}}/${ids}`, { signal });
+                        let data = await response.json();
+                        this.counts_col[name] = data.count;
+                    } catch (error) {
+                        if (error.name === 'AbortError') {
+                            console.warn(`Fetch aborted for ${name}`);
+                            this.abortedQueue_col.push({ name, ids });
+                        } else {
+                            console.error(`Error fetching ${name}:`, error);
+                        }
+                    }
+                }));
+            }
+        },
+
+        abortRequestsCol() {
+            this.controllers_col.forEach(controller => controller.abort());
+            this.controllers_col = [];
+        },
+
+        listenForNavigationCol() {
+            const onUnload = () => {
+                this.active_col = false;
+                this.active = false;
+                this.abortRequestsCol();
+                this.abortRequests();
+            };
+
+            window.addEventListener('beforeunload', onUnload);
+
+            window.addEventListener('popstate', onUnload);
+        },
+
+        init() {
+            this.$watch('qaMode', (value) => {
+                if (!value) {
+                    this.active = false;
+                    this.active_col = false;
+                    this.abortRequestsCol();
+                    this.abortRequests();
+                } else {
+                    this.processQueueCol(value);
+                    this.processQueue(value);
+                }
+            });
+            this.listenForNavigationCol();
+        }
+    };
+}
+</script>
 <script>
     function batchProcessor(groupedFields) {
     return {
@@ -639,28 +723,6 @@
             this.controllers = [];
         },
 
-        listenForNavigation() {
-            const onUnload = () => {
-                this.active = false;
-                this.abortRequests();
-            };
-
-            window.addEventListener('beforeunload', onUnload);
-
-            window.addEventListener('popstate', onUnload);
-        },
-
-        init() {
-            this.$watch('qaMode', (value) => {
-                if (!value) {
-                    this.active = false;
-                    this.abortRequests();
-                } else {
-                    this.processQueue(value);
-                }
-            });
-            this.listenForNavigation();
-        }
     };
 }
 
