@@ -142,7 +142,8 @@
     }
 </script>
 <div x-data="{qaMode: false, hasendpoint: false, async fetchEndpoint() { 
-    this.hasendpoint = (await (await fetch('/qa/sparqlendpoint/{{apikey}}')).json()).sparqlendpoint; await this.$nextTick();}}">
+    this.hasendpoint = (await (await fetch('/qa/sparqlendpoint/{{apikey}}')).json()).sparqlendpoint; await this.$nextTick();},
+    ...batchProcessor({{ patternitem.GroupedFields() }})}">
     <div style="display: flex; flex-direction: row; gap: 15px;" x-init="fetchEndpoint()">
         <h1 id="{{ patternitem['Name'] }}">
             {{ patternitem["Name"] }}
@@ -267,7 +268,7 @@
     {% endif %}
     <div class="table-wrapper">
         <div>
-            <table class="toc" id="table-{{ prefix }}" x-data="batchProcessor({{values}})">
+            <table class="toc" id="table-{{ prefix }}">
                 <thead>
                     {% if prefill == "default" %}
                     <tr>
@@ -585,10 +586,15 @@
     {% endfor %}
 </div>
 <script>
-    function batchProcessor(fields) {
+    function batchProcessor(groupedFields) {
     return {
         counts: {},
-        queue: fields.map(fld => typeof fld['Field'] === 'string' ? fld['Field'] : fld['Field'][0]),
+        queue: Object.entries(groupedFields).flatMap(([prefix, values]) =>
+            values.map(value => ({
+                prefix,
+                field: typeof value['Field'] === 'string' ? value['Field'] : value['Field'][0]
+            }))
+        ),
         batchSize: 1,
         active: false,
         controllers: [],
@@ -607,7 +613,7 @@
                 let batch = this.queue.splice(0, this.batchSize);
                 this.controllers = [];
 
-                await Promise.all(batch.map(async (field) => {
+                await Promise.all(batch.map(async ({ prefix, field }) => {
                     const controller = new AbortController();
                     this.controllers.push(controller);
                     const signal = controller.signal;
@@ -619,7 +625,7 @@
                     } catch (error) {
                         if (error.name === 'AbortError') {
                             console.warn(`Fetch aborted for ${field}`);
-                            this.abortedQueue.push(field);
+                            this.abortedQueue.push({ prefix, field });
                         } else {
                             console.error(`Error fetching ${field}:`, error);
                         }
@@ -630,7 +636,7 @@
 
         abortRequests() {
             this.controllers.forEach(controller => controller.abort());
-            this.controllers = [];  // Clear controllers
+            this.controllers = [];
         },
 
         init() {
@@ -645,6 +651,7 @@
         }
     };
 }
+
 </script>
 <script>
     function downloadCSV() {
