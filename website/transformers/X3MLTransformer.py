@@ -213,7 +213,7 @@ class X3MLTransformer(Transformer):
     def _populate_info(self, root: ET.Element) -> None:
         info = ET.SubElement(root, "info")
         title = ET.SubElement(info, "title")
-        description = ET.SubElement(info, "description")
+        description = ET.SubElement(info, "general_description")
 
         if self.model_id and self.model:
             title.text = self.model.get("fields", {}).get("System_Name", "")
@@ -257,6 +257,14 @@ class X3MLTransformer(Transformer):
         ET.SubElement(mapping_info, "mapping_created_by_org")
         ET.SubElement(mapping_info, "mapping_created_by_person")
         ET.SubElement(mapping_info, "in_collaboration_with")
+
+        example_data_info = ET.SubElement(info, "example_data_info")
+        ET.SubElement(example_data_info, "example_data_from")
+        ET.SubElement(example_data_info, "example_data_contact_person")
+        ET.SubElement(example_data_info, "example_data_source_record")
+        ET.SubElement(example_data_info, "generator_policy_info")
+        ET.SubElement(example_data_info, "example_data_target_record")
+        ET.SubElement(example_data_info, "thesaurus_info")
 
     def _get_collection_name(
         self, collection_id: str, collection_field: str = "ID"
@@ -471,7 +479,14 @@ class X3MLTransformer(Transformer):
                     self._add_field(model_mapping, field, form, False)
 
     def transform(self, form: Union[Literal["a"], Literal["b"]]) -> io.BytesIO:
-        root = ET.Element("x3ml")
+        attributes = {
+            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "editor": "3MEditor v3.3",
+            "source_type": "xpath",
+            "version": "1.0",
+            "xsi:noNamespaceSchemaLocation": "x3ml_v1.5.xsd"
+        }
+        root = ET.Element("x3ml", attrib=attributes)
 
         if form != "a" and form != "b":
             raise ValueError("Form must be either 'a' or 'b'")
