@@ -472,7 +472,12 @@
                 </tr>
                 {% endfor %}
                 {% else %}
-                {% for fld in values|selectattr(sortable_keys[0])|sort(attribute=sortable_keys[0]) %}
+                    {% if sortable_keys[0] %}
+                        {% set sorted_values = values|selectattr(sortable_keys[0])|sort(attribute=sortable_keys[0]) %}
+                    {% else %}
+                        {% set sorted_values = values %}
+                    {% endif %}
+                {% for fld in sorted_values %}
                 {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                 {% set segments = base_url.rsplit('/', 1) %}
                 <tr>
