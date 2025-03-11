@@ -141,7 +141,7 @@
         return select.options[select.selectedIndex];
     }
 </script>
-<div x-data="{qaMode: false, hasendpoint: false, async fetchEndpoint() { 
+<div x-data="{qaMode: false, hasendpoint: false, async fetchEndpoint() {
     this.hasendpoint = (await (await fetch('/qa/sparqlendpoint/{{apikey}}')).json()).sparqlendpoint; await this.$nextTick();},
     ...batchProcessor({{ patternitem.GroupedFields() }}), ...batchProcessors({{categories[0]}})}">
     <div style="display: flex; flex-direction: row; gap: 15px;" x-init="fetchEndpoint()">
@@ -472,7 +472,7 @@
                 </tr>
                 {% endfor %}
                 {% else %}
-                {% for fld in values|sort(attribute=sortable_keys[0]) %}
+                {% for fld in values|selectattr(sortable_keys[0])|sort(attribute=sortable_keys[0]) %}
                 {% set base_url = url_for(request.endpoint, **request.view_args).replace('/display/', '/list/') %}
                 {% set segments = base_url.rsplit('/', 1) %}
                 <tr>
@@ -610,7 +610,7 @@
             while (this.queue_col.length > 0 && this.active_col) {
                 let batch = this.queue_col.splice(0, this.batchSize_col);
                 console.log(`Processing batch: ${batch.length}`);
-                
+
                 this.controllers_col = [];
 
                 await Promise.all(batch.map(async ({ name, ids }) => {
@@ -739,7 +739,7 @@
           return response.blob();
         })
         .then(blob => {
-          
+
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
