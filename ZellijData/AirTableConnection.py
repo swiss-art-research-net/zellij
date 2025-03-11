@@ -220,7 +220,7 @@ class AirTableConnection(object):
 
     def groupFields(self, item, field=None, group_sort=None):
         if field is None:
-            item._GroupedFields["default"] = item._GroupedData.values()
+            item._GroupedFields["default"] = list(item._GroupedData.values())
             item._GroupedFields = item._GroupedFields.items()
             return
 
