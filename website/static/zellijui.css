@@ -405,7 +405,15 @@ button:focus {
 .tabset > input:nth-child(5):focus ~ ul li:nth-child(5) label,
 .tabset > input:nth-child(6):focus ~ ul li:nth-child(6) label,
 .tabset > input:nth-child(7):focus ~ ul li:nth-child(7) label,
-.tabset > input:nth-child(8):focus ~ ul li:nth-child(8) label {
+.tabset > input:nth-child(8):focus ~ ul li:nth-child(8) label,
+.tabset > input:nth-child(9):focus ~ ul li:nth-child(9) label,
+.tabset > input:nth-child(10):focus ~ ul li:nth-child(10) label,
+.tabset > input:nth-child(11):focus ~ ul li:nth-child(11) label,
+.tabset > input:nth-child(12):focus ~ ul li:nth-child(12) label,
+.tabset > input:nth-child(13):focus ~ ul li:nth-child(13) label,
+.tabset > input:nth-child(14):focus ~ ul li:nth-child(14) label,
+.tabset > input:nth-child(15):focus ~ ul li:nth-child(15) label,
+.tabset > input:nth-child(16):focus ~ ul li:nth-child(16) label {
     text-decoration: underline;
 }
 
@@ -416,7 +424,15 @@ button:focus {
 .tabset > input:nth-child(5):checked ~ ul li:nth-child(5) label,
 .tabset > input:nth-child(6):checked ~ ul li:nth-child(6) label,
 .tabset > input:nth-child(7):checked ~ ul li:nth-child(7) label,
-.tabset > input:nth-child(8):checked ~ ul li:nth-child(8) label {
+.tabset > input:nth-child(8):checked ~ ul li:nth-child(8) label,
+.tabset > input:nth-child(9):checked ~ ul li:nth-child(9) label,
+.tabset > input:nth-child(10):checked ~ ul li:nth-child(10) label,
+.tabset > input:nth-child(11):checked ~ ul li:nth-child(11) label,
+.tabset > input:nth-child(12):checked ~ ul li:nth-child(12) label,
+.tabset > input:nth-child(13):checked ~ ul li:nth-child(13) label,
+.tabset > input:nth-child(14):checked ~ ul li:nth-child(14) label,
+.tabset > input:nth-child(15):checked ~ ul li:nth-child(15) label,
+.tabset > input:nth-child(16):checked ~ ul li:nth-child(16) label {
     background: hsl(220, 100%, 98%);
     border-bottom-color: hsl(220, 100%, 98%);
 }
@@ -438,7 +454,15 @@ button:focus {
 .tabset > input:nth-child(5):checked ~ div > section:nth-child(5),
 .tabset > input:nth-child(6):checked ~ div > section:nth-child(6),
 .tabset > input:nth-child(7):checked ~ div > section:nth-child(7),
-.tabset > input:nth-child(8):checked ~ div > section:nth-child(8) {
+.tabset > input:nth-child(8):checked ~ div > section:nth-child(8),
+.tabset > input:nth-child(9):checked ~ div > section:nth-child(9),
+.tabset > input:nth-child(10):checked ~ div > section:nth-child(10),
+.tabset > input:nth-child(11):checked ~ div > section:nth-child(11),
+.tabset > input:nth-child(12):checked ~ div > section:nth-child(12),
+.tabset > input:nth-child(13):checked ~ div > section:nth-child(13),
+.tabset > input:nth-child(14):checked ~ div > section:nth-child(14),
+.tabset > input:nth-child(15):checked ~ div > section:nth-child(15),
+.tabset > input:nth-child(16):checked ~ div > section:nth-child(16) {
     position: static;
 }
 
