@@ -183,7 +183,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="item in sample_col['{{ name }}']" :key="JSON.stringify(item)">
+                        <template x-for="(item, index) in sample_col['{{ name }}']" :key="index">
                             <tr>
                                 <template x-for="header in headers" :key="header">
                                     <td style="padding: 5px 5px;">

@@ -240,7 +240,7 @@ class SparqlTransformer(Transformer):
     def transform(self, count: bool = False):
         if count:
             query = SPARQLSelectQuery()
-            query.add_variables(["(COUNT(?value) as ?count)"])
+            query.add_variables(["(COUNT(Distinct ?value) as ?count)"])
         else:
             query = SPARQLSelectQuery(limit=100)
         self.add_prefixes(query)

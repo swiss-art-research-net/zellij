@@ -31,7 +31,7 @@ def execute_qa(api_key, field_id):
 def count_collection(api_key,ids):
     ids = ids.split("_")
     query = SPARQLSelectQuery()
-    query.add_variables(["(COUNT(?value) as ?count)"])
+    query.add_variables(["(COUNT(Distinct ?value) as ?count)"])
     transformer = SparqlTransformer(api_key, ids[0]) #use first id to get prefixes
     transformer.add_prefixes(query)
     where_pattern = SPARQLGraphPattern()
@@ -58,14 +58,14 @@ def count_collection(api_key,ids):
 @functools.lru_cache(maxsize=512)
 def sample_collection(api_key,ids):
     ids = ids.split("_")
-    query = SPARQLSelectQuery(limit=5)
-    query.add_variables(["*"])
+    query = SPARQLSelectQuery(distinct=True, limit=5)
+    # query.add_variables(["?value"])
     transformer = SparqlTransformer(api_key, ids[0]) #use first id to get prefixes
     transformer.add_prefixes(query)
     where_pattern = SPARQLGraphPattern()
     for id in ids:
         transformer_loop = SparqlTransformer(api_key, id)
-        # query.add_variables(["?" + transformer_loop.self_uri])
+        query.add_variables(["?" + transformer_loop.self_uri])
         where = transformer_loop.create_where_pattern(optional=True)
         where_pattern.add_nested_graph_pattern(where)
     query.set_where_pattern(where_pattern)
