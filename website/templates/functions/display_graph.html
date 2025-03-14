@@ -171,6 +171,30 @@
                         </td>
                     </tr>
                 </table>
+                <template x-if="sample_col['{{ name }}'] && sample_col['{{ name }}'].length > 0" x-data="{get headers() {
+                    return Object.keys(this.sample_col['{{ name }}'][0]);
+                }}">
+                <table border="1" style="margin-bottom: 15px;">
+                    <thead>
+                        <tr>
+                            <template x-for="header in headers" :key="header">
+                                <th style="padding: 5px 5px;" x-text="header"></th>
+                            </template>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="item in sample_col['{{ name }}']" :key="JSON.stringify(item)">
+                            <tr>
+                                <template x-for="header in headers" :key="header">
+                                    <td style="padding: 5px 5px;">
+                                        <span x-text="item[header]?.value ?? 'N/A'"></span>
+                                    </td>
+                                </template>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                </template>
             </section>
         {% endfor %}
     </div>

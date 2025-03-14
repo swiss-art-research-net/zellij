@@ -594,6 +594,7 @@
     function batchProcessors(categories) {
     return {
         counts_col: {},
+        sample_col: {},
         queue_col: Object.entries(categories).map(([name, items]) => ({
             name,
             ids: items.map(item => item.id).join('_')
@@ -627,6 +628,9 @@
                         let response = await fetch(`/qa/collection/count/{{apikey}}/${ids}`, { signal });
                         let data = await response.json();
                         this.counts_col[name] = data.count;
+                        let sample = await fetch(`/qa/collection/sample/{{apikey}}/${ids}`, { signal });
+                        let sample_data = await sample.json();
+                        this.sample_col[name] = sample_data;
                     } catch (error) {
                         if (error.name === 'AbortError') {
                             console.warn(`Fetch aborted for ${name}`);

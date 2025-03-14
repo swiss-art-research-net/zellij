@@ -27,6 +27,11 @@ def return_collection_count(api_key, field_ids):
 
     return Response(json_data, status=status, mimetype='application/json')
 
+@bp.route("/collection/sample/<api_key>/<field_ids>", methods=["GET"])
+def return_collection_sample(api_key, field_ids):
+    json_data, status = utils.sample_collection(api_key, field_ids)
+
+    return Response(json_data, status=status, mimetype='application/json')
 
 @functools.lru_cache(maxsize=256)
 @bp.route("/count/<api_key>/<field_id>", methods=["GET"])

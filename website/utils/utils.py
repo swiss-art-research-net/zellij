@@ -54,3 +54,32 @@ def count_collection(api_key,ids):
     json_data = res.json()
 
     return [json.dumps({"count": json_data['results']['bindings'][0]['count']['value']}), 200]
+
+@functools.lru_cache(maxsize=512)
+def sample_collection(api_key,ids):
+    ids = ids.split("_")
+    query = SPARQLSelectQuery(limit=5)
+    query.add_variables(["*"])
+    transformer = SparqlTransformer(api_key, ids[0]) #use first id to get prefixes
+    transformer.add_prefixes(query)
+    where_pattern = SPARQLGraphPattern()
+    for id in ids:
+        transformer_loop = SparqlTransformer(api_key, id)
+        # query.add_variables(["?" + transformer_loop.self_uri])
+        where = transformer_loop.create_where_pattern(optional=True)
+        where_pattern.add_nested_graph_pattern(where)
+    query.set_where_pattern(where_pattern)
+    scraper_definition = get_scraper_definition(api_key)
+
+    if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
+        return [json.dumps([]), 400]
+    text_query = query.get_text()
+    res = requests.post(scraper_definition["sparqlendpoint"], data={"query": text_query}, headers={"Accept": "application/json"})
+
+    if not res.ok:
+        print(res.text, text_query)
+        return [json.dumps([]), 500]
+
+    json_data = res.json()
+
+    return [json.dumps(json_data['results']['bindings']), 200]
