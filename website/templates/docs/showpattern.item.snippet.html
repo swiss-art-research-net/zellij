@@ -141,9 +141,18 @@
         return select.options[select.selectedIndex];
     }
 </script>
-<div x-data="{qaMode: false, hasendpoint: false, async fetchEndpoint() {
-    this.hasendpoint = (await (await fetch('/qa/sparqlendpoint/{{apikey}}')).json()).sparqlendpoint; await this.$nextTick();},
-    ...batchProcessor({{ patternitem.GroupedFields() }}), ...batchProcessors({{categories[0]}})}">
+<div x-data="{
+    qaMode: false,
+    hasendpoint: false,
+    async fetchEndpoint() {
+        fetch('/qa/sparqlendpoint/{{apikey}}')
+            .then(res => res.json())
+            .then(body => { this.hasendpoint = body.sparqlendpoint })
+            .finally(() => this.$nextTick())
+    },
+    ...batchProcessor({{ patternitem.GroupedFields() }}),
+    ...batchProcessors({{ categories[0] }}),
+    }">
     <div style="display: flex; flex-direction: row; gap: 15px;" x-init="fetchEndpoint()">
         <h1 id="{{ patternitem['Name'] }}">
             {{ patternitem["Name"] }}
@@ -625,7 +634,7 @@
                     const signal = controller.signal;
 
                     try {
-                        let response = await fetch(`/qa/collection/count/{{apikey}}/${ids}`, { signal });
+                        let response = await fetch(`/qa/collection/count/{{apikey}}/{{model_table}}/{{model_id}}/${ids}`, { signal });
                         let data = await response.json();
                         this.counts_col[name] = data.count;
                         let sample = await fetch(`/qa/collection/sample/{{apikey}}/${ids}`, { signal });
@@ -675,7 +684,7 @@
             });
             this.listenForNavigationCol();
         }
-    };
+    }
 }
 </script>
 <script>
@@ -712,7 +721,7 @@
                     const signal = controller.signal;
 
                     try {
-                        let response = await fetch(`/qa/{{apikey}}/${field}`, { signal });
+                        let response = await fetch(`/qa/{{apikey}}/{{model_table}}/{{model_id}}/${field}`, { signal });
                         let data = await response.json();
                         this.counts[field] = data.count;
                     } catch (error) {
@@ -726,15 +735,12 @@
                 }));
             }
         },
-
         abortRequests() {
             this.controllers.forEach(controller => controller.abort());
             this.controllers = [];
         },
-
-    };
+    }
 }
-
 </script>
 <script>
     function downloadCSV() {

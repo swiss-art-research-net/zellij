@@ -534,7 +534,7 @@ def patternitemdisplay(apikey, pattern):
     if pattern not in schemas:
         abort(404)
 
-    schema = schemas[pattern]
+    schema: dict = schemas[pattern]
     prefill_data, prefill_group, group_sort = get_prefill(apikey, schema.get("id"))
     item = airtable.getSingleGroupedItem(
         groupref, schema, prefill_data=prefill_data, group_sort=group_sort
@@ -546,6 +546,16 @@ def patternitemdisplay(apikey, pattern):
         or isinstance(prefill_data, str)
     ):
         return render_template("error/airtableerror_simple.html", error=item)
+
+    model_id = item.ID
+    model_table = None
+    for key, value in schema.items():
+        if not isinstance(value, dict):
+            continue
+
+        if "GroupBy" not in value:
+            model_table = key
+            break
 
     fields_to_group = [
         key for key, value in prefill_data.items() if value.get("groupable", False)
@@ -574,8 +584,10 @@ def patternitemdisplay(apikey, pattern):
     prefix_categories = {}
     for obj in item.GroupedFields():
         identifiers = []
-        for i in range(len(obj[1])):
-            identifiers.append(obj[1][i]['Field'][0])
+        for el in obj[1]:
+            if 'Field' not in el:
+                continue
+            identifiers.append(el['Field'][0])
 
         fields = airtable.get_multiple_records_by_formula("Field",
             OR(
@@ -634,4 +646,6 @@ def patternitemdisplay(apikey, pattern):
         group_sort=group_sort,
         airtable = airtable,
         categories=[categories, prefix_categories],
+        model_id=model_id,
+        model_table=model_table,
     )

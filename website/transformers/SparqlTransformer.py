@@ -59,7 +59,10 @@ class SparqlTransformer(Transformer):
             collection = self.get_field_or_default("Collection_Deployed")
 
             collection_field = self.get_records(collection, "Collection")
-            if len(collection_field) == 1:
+
+            if len(collection_field) == 0 and idx == 1:
+                self.uris[idx] = self.self_uri + "_collection"
+            elif len(collection_field) == 1 and idx == 1:
                 self.uris[idx] = (
                     collection_field[0]
                     .get("fields", {})
@@ -120,8 +123,29 @@ class SparqlTransformer(Transformer):
             print("Error uploading Sparql: ", e)
             raise e
 
-    def create_where_pattern(self, optional=False):
+    def get_class_uri(self, model: str, model_id: str):
+        records = self.get_records(model_id, model)
+
+        if not records:
+            print(f"Could not find CRM Class with ID {model_id}")
+            return None
+
+        record = records[0].get("fields")
+        if "Ontology_Scope" in record:
+            classes = self.get_records(record["Ontology_Scope"], "CRM Class")
+            return classes[0].get("fields").get("Subject")
+        elif "Ontological_Scope" in record:
+            classes = self.get_records(record["Ontological_Scope"], "Ontology_Class")
+            return classes[0].get("fields").get("URI")
+
+    def create_where_pattern(self, model: Union[str, None] = None, model_id: Union[str, None] = None, optional=False):
         where_pattern = SPARQLGraphPattern(optional=optional)
+
+        if model_id and model:
+            class_uri = self.get_class_uri(model, model_id)
+            if class_uri:
+                where_pattern.add_triples([Triple(subject="?subject", predicate="a", object=f"<{class_uri}>")])
+
         for idx in range(len(self.parts)):
             current_part = self.parts[idx]
             namespace = current_part.split(":")[0] if ":" in current_part else "crm"
@@ -187,7 +211,7 @@ class SparqlTransformer(Transformer):
         where_pattern.add_binding(Binding(f"?{self.self_uri}", "?value"))
 
         expected_value_type = self.get_field_or_default("Expected_Value_Type")
-        if "rdf:literal" not in self.parts and expected_value_type not in [
+        if not model_id and not model and "rdf:literal" not in self.parts and expected_value_type not in [
             "Date",
             "Integer",
         ]:
@@ -237,7 +261,7 @@ class SparqlTransformer(Transformer):
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
 
-    def transform(self, count: bool = False):
+    def transform(self, count: bool = False, model: Union[str, None] = None, model_id: Union[str, None] = None):
         if count:
             query = SPARQLSelectQuery()
             query.add_variables(["(COUNT(Distinct ?value) as ?count)"])
@@ -245,7 +269,7 @@ class SparqlTransformer(Transformer):
             query = SPARQLSelectQuery(limit=100)
         self.add_prefixes(query)
 
-        where_pattern = self.create_where_pattern()
+        where_pattern = self.create_where_pattern(model=model, model_id=model_id)
 
         query.set_where_pattern(where_pattern)
 

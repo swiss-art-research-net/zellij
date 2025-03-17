@@ -1,5 +1,4 @@
 from flask import Blueprint, Response
-from website.transformers.SparqlTransformer import SparqlTransformer
 import json
 from website.db import get_scraper_definition, decrypt, generate_airtable_schema
 import requests
@@ -15,15 +14,15 @@ import io
 
 bp = Blueprint('qa', __name__, url_prefix='/qa')
 
-@bp.route("/<api_key>/<field_id>", methods=["GET"])
-def return_execute_qa(api_key, field_id):
-    json_data, status = utils.execute_qa(api_key, field_id)
+@bp.route("/<api_key>/<model>/<model_id>/<field_id>", methods=["GET"])
+def return_execute_qa(api_key, model, model_id, field_id):
+    json_data, status = utils.execute_qa(api_key, model, model_id, field_id)
 
     return Response(json_data, status=status, mimetype='application/json')
 
-@bp.route("/collection/count/<api_key>/<field_ids>", methods=["GET"])
-def return_collection_count(api_key, field_ids):
-    json_data, status = utils.count_collection(api_key, field_ids)
+@bp.route("/collection/count/<api_key>/<model>/<model_id>/<field_ids>", methods=["GET"])
+def return_collection_count(api_key, model, model_id, field_ids):
+    json_data, status = utils.count_collection(api_key, model, model_id, field_ids)
 
     return Response(json_data, status=status, mimetype='application/json')
 
@@ -47,10 +46,10 @@ def execute_count(api_key, field_id):
 
     if record is None:
         return Response(json.dumps({"count": 0}), status=500, mimetype='application/json')
-    
+
     if 'SparQL_Count_Total' not in record['fields']:
         return Response(json.dumps({"count": 0}), status=500, mimetype='application/json')
-    
+
     query=record['fields']['SparQL_Count_Total']
 
     res = requests.post(scraper_definition["sparqlendpoint"], data={"query": query}, headers={"Accept": "application/json"})
@@ -134,24 +133,24 @@ def execute_count_csv(api_key, item, table):
     field_collection = {}
     for field in all_fields:
         field_data = field.get('fields', {})
-        
+
         if 'Collection_Deployed' in field_data:
             if isinstance(field_data['Collection_Deployed'], str):
                 name = field_data['Collection_Deployed']
             else:
                 name = field_data['Collection_Deployed'][0]
-            
+
             if name[:3] == "rec":
                 name = airtable.get_record_by_id("Collection", name)['fields']['UI_Name']
         else:
-            name = field_data.get('UI_Name') + ":Sample"
+            name = field_data.get('UI_Name', '') + ": Sample"
 
         if name:
             field_id = field.get('id', '')
-            
+
             if name not in categories:
                 categories[name] = []  # Change to a list of dicts
-            
+
             categories[name].append(field_id)
         field_collection[field_id] = {"name":name}
 
@@ -174,7 +173,7 @@ def execute_count_csv(api_key, item, table):
         mimetype='text/csv')
     response.headers["Content-Disposition"] = f"attachment; filename={'output.csv'}"
     response.headers["Content-Type"] = "text/csv"
-    
+
 
     return response
 
@@ -183,6 +182,5 @@ def find_sparqlendpoint(api_key):
     scraper_definition = get_scraper_definition(api_key)
 
     if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
-        return Response(json.dumps({"sparqlendpoint": False}), status=400, mimetype='application/json')
+        return Response(json.dumps({"sparqlendpoint": False}), status=200, mimetype='application/json')
     return Response(json.dumps({"sparqlendpoint": True}), status=200, mimetype='application/json')
-    

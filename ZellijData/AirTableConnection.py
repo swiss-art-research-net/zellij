@@ -172,6 +172,8 @@ class AirTableConnection(object):
         )
 
         for rec in low_records:
+            if 'Field' not in rec['fields']:
+                continue
             remapped = {}
             for mykey, theirkey in low_remapper.items():
                 if theirkey not in rec["fields"]:
@@ -221,7 +223,7 @@ class AirTableConnection(object):
     def groupFields(self, item, field=None, group_sort=None):
         if field is None:
             item._GroupedFields["default"] = list(item._GroupedData.values())
-            item._GroupedFields = item._GroupedFields.items()
+            item._GroupedFields = list(item._GroupedFields.items())
             return
 
         for values in item._GroupedData.values():
@@ -233,7 +235,7 @@ class AirTableConnection(object):
                 item._GroupedFields[prefix] = []
             item._GroupedFields[prefix].append(values)
 
-        item._GroupedFields = item._GroupedFields.items()
+        item._GroupedFields = list(item._GroupedFields.items())
         try:
             if group_sort:
                 item._GroupedFields = sorted(
