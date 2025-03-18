@@ -198,4 +198,62 @@
             </section>
         {% endfor %}
     </div>
+    <style>
+        .tabset > ul li label {
+            padding: 10px;
+            border: 1px solid;
+            cursor: pointer;
+        }
+    
+        .active {
+            background: hsl(220, 100%, 98%);
+            border-bottom-color: hsl(220, 100%, 98%);
+        }
+    
+        .section-active{
+            position: static;
+        }
+    
+        input[type="radio"] {
+            display: none;
+        }
+    </style>
+    <script>
+        document.querySelectorAll('.tabset').forEach((tabset) => {
+            // const labels = tabset.querySelectorAll('ul li label');
+            const inputs = tabset.querySelectorAll('input[type="radio"]');
+            const sections = tabset.querySelectorAll('section');
+    
+            function updateActiveTab() {
+                sections.forEach((section) => section.style.position = 'absolute');
+    
+                inputs.forEach((input, index) => {
+                    if (input.checked) {
+                        selected_label = tabset.querySelector(`label[for="${input.id}"]`)
+                        if (selected_label){
+                            grandparent = selected_label.parentElement.parentElement;
+                            all_labels = grandparent.querySelectorAll('label');
+                            all_labels.forEach((label) =>  {
+                            label.style.textDecoration = ""; // Remove underline
+                            label.style.backgroundColor = ""; // Reset background color
+                });
+                        }
+                        if (sections[index]) {
+                            sections[index].style.position = 'static';
+                        }
+                        if(selected_label) {
+                            selected_label.style.textDecoration = 'underline';
+                            selected_label.style.backgroundColor = 'hsl(220, 100%, 98%)';
+                        }
+                    }
+                });
+            }
+    
+            inputs.forEach((input) => {
+                input.addEventListener('change', updateActiveTab);
+            });
+    
+            updateActiveTab(); // Initialize on page load
+        });
+    </script>
 </div>
