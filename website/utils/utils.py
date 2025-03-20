@@ -59,7 +59,6 @@ def count_collection(api_key,ids):
 def sample_collection(api_key,ids):
     ids = ids.split("_")
     query = SPARQLSelectQuery(distinct=True, limit=5)
-    # query.add_variables(["?value"])
     transformer = SparqlTransformer(api_key, ids[0]) #use first id to get prefixes
     transformer.add_prefixes(query)
     where_pattern = SPARQLGraphPattern()
