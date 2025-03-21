@@ -8,8 +8,10 @@ import os
 import dotenv
 from socket import gethostname
 from flask import Flask
+import logging
 
 dotenv.load_dotenv()
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 def create_app(test_config=None):

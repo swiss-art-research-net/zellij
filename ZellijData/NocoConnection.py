@@ -100,16 +100,16 @@ class NocoConnection(object):
 
         url = self._getUrl(hightable, highfields, formula=idsearchterm)
         highresponse = requests.get(url, headers=self.headers)
-        logging.debug(
-            "%s*****getSingleGroupedItem-list-response*******", highresponse.json()
-        )
+        # logging.debug(
+        #     "%s*****getSingleGroupedItem-list-response*******", highresponse.json()
+        # )
         # parse response here
         if len(highresponse.json()["list"]) == 0:
             return None
         # groupid = highresponse.json()["list"][0]["id"]
         # logging.debug('%s*****groupid*******', groupid)
         searchtext = highresponse.json()["list"][0]["Identifier"]
-        logging.debug("%s*****searchtext*******", searchtext)
+        # logging.debug("%s*****searchtext*******", searchtext)
         highout = {"Identifier": searchtext}
         for mykey, theirkey in highremapper.items():
             highout[mykey] = (

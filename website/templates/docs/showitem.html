@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-    {% with patternitem = item, pattern=pattern, apikey=apikey, prefill=prefill, prefill_group=prefill_group, unique = "", functions=functions, group_sort=group_sort, airtable=airtable, categories=categories %}
+    {% with patternitem = item, pattern=pattern, apikey=apikey, prefill=prefill, prefill_group=prefill_group, unique = "", functions=functions, group_sort=group_sort, airtable=airtable, categories=categories, model_id=model_id, model_table=model_table %}
         {% include 'docs/showpattern.item.snippet.html' %}
     {% endwith %}
 
