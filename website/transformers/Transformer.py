@@ -33,16 +33,16 @@ class Transformer(ABC):
             self.crm_class = self.airtable.get_record_by_formula(
                 "Ontology_Class", match({"ID": ontology_scope})
             )
-        except Exception as e:
-            print("Error getting Ontology Class: ", e)
+        except Exception:
+            pass
 
         try:
             if self.crm_class is None:
                 self.crm_class = self.airtable.get_record_by_id(
                     "CRM Class", ontology_scope
                 )
-        except Exception as e:
-            print("Error getting Ontology Class: ", e)
+        except Exception:
+            pass
 
         if self.crm_class is None:
             raise ValueError(f"Could not find CRM Class with ID {ontology_scope}")

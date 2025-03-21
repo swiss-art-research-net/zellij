@@ -37,7 +37,7 @@ class SparqlTransformer(Transformer):
         return list(chain.from_iterable(parts))
 
     def populate_uris(self):
-        self.self_uri = self.get_field_or_default("ID").replace(".", "_")
+        self.self_uri = self.get_field_or_default("ID").replace(".", "_").replace("-", "_")
         for idx, part in enumerate(self.parts):
             if idx % 2 == 0:
                 continue
@@ -71,6 +71,9 @@ class SparqlTransformer(Transformer):
                 )
             else:
                 self.uris[idx] = self.self_uri
+
+        for key, value in self.uris.items():
+            self.uris[key] = value.replace(".", "_").replace("-", "_")
 
     def get_field_or_default(self, field_name: str) -> str:
         return self.field.get("fields", {}).get(field_name, "")
@@ -131,9 +134,8 @@ class SparqlTransformer(Transformer):
             return None
 
         record = records[0].get("fields")
-        if "Ontology_Scope" in record:
-            classes = self.get_records(record["Ontology_Scope"], "CRM Class")
-            return classes[0].get("fields").get("Subject")
+        if "Ontological_Scope_URI" in record:
+            return record.get("Ontological_Scope_URI")
         elif "Ontological_Scope" in record:
             classes = self.get_records(record["Ontological_Scope"], "Ontology_Class")
             return classes[0].get("fields").get("URI")
@@ -264,7 +266,7 @@ class SparqlTransformer(Transformer):
     def transform(self, count: bool = False, model: Union[str, None] = None, model_id: Union[str, None] = None):
         if count:
             query = SPARQLSelectQuery()
-            query.add_variables(["(COUNT(Distinct ?value) as ?count)"])
+            query.add_variables(["(COUNT(DISTINCT ?value) as ?count)"])
         else:
             query = SPARQLSelectQuery(limit=100)
         self.add_prefixes(query)
@@ -276,7 +278,7 @@ class SparqlTransformer(Transformer):
         self.sparql = query.get_text()
         file = io.BytesIO()
         file.name = (
-            f"{self.get_field_or_default('System_Name').replace(' ', '_')}.sparql"
+            f"{self.get_field_or_default('System_Name').replace(' ', '_')}.rq"
         )
         file.write(self.sparql.encode("utf-8"))
         file.seek(0)

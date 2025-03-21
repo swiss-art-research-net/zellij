@@ -17,7 +17,7 @@ def execute_qa(api_key, model, model_id, field_id):
     transformer = SparqlTransformer(api_key, field_id)
     transformer.transform(count=True, model=model, model_id=model_id)
 
-    res = requests.post(scraper_definition["sparqlendpoint"], data={"query": transformer.sparql}, headers={"Accept": "application/json"})
+    res = requests.post(scraper_definition["sparqlendpoint"], data=transformer.sparql, headers={"Accept": "application/json", "Content-Type": "application/sparql-query"})
 
     if not res.ok:
         return [json.dumps({"count": 0}), 500]
