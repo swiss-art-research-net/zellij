@@ -135,10 +135,12 @@ class SparqlTransformer(Transformer):
 
         record = records[0].get("fields")
         if "Ontological_Scope_URI" in record:
-            return record.get("Ontological_Scope_URI")
+            uris = record.get("Ontological_Scope_URI")
+            return uris[0] if isinstance(uris, list) else uris
         elif "Ontological_Scope" in record:
             classes = self.get_records(record["Ontological_Scope"], "Ontology_Class")
-            return classes[0].get("fields").get("URI")
+            uris = classes[0].get("fields").get("URI")
+            return uris[0] if isinstance(uris, list) else uris
 
     def create_where_pattern(self, model: Union[str, None] = None, model_id: Union[str, None] = None, optional=False):
         where_pattern = SPARQLGraphPattern(optional=optional)
