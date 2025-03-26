@@ -17,7 +17,11 @@ def execute_qa(api_key, model, model_id, field_id):
     transformer = SparqlTransformer(api_key, field_id)
     transformer.transform(count=True, model=model, model_id=model_id)
 
-    res = requests.post(scraper_definition["sparqlendpoint"], data={"query": transformer.sparql}, headers={"Accept": "application/json"})
+    sparql_endpoint = scraper_definition["sparqlendpoint"]
+    if "sparql" in sparql_endpoint:
+        res = requests.post(sparql_endpoint, data={"query": transformer.sparql}, headers={"Accept": "application/json"})
+    else:
+        res = requests.post(sparql_endpoint, data=transformer.sparql, headers={"Accept": "application/json", "Content-Type": "application/sparql-query"})
 
     if not res.ok:
         return [json.dumps({"count": 0}), 500]
@@ -44,7 +48,11 @@ def count_collection(api_key, model, model_id, ids):
     if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
         return [json.dumps({"count": 0}), 400]
     text_query = query.get_text()
-    res = requests.post(scraper_definition["sparqlendpoint"], data={"query": text_query}, headers={"Accept": "application/json"})
+    sparql_endpoint = scraper_definition["sparqlendpoint"]
+    if "sparql" in sparql_endpoint:
+        res = requests.post(sparql_endpoint, data={"query": text_query}, headers={"Accept": "application/json"})
+    else:
+        res = requests.post(sparql_endpoint, data=text_query, headers={"Accept": "application/json", "Content-Type": "application/sparql-query"})
 
     if not res.ok:
         return [json.dumps({"count": 0}), 500]
@@ -71,7 +79,12 @@ def sample_collection(api_key,ids):
     if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
         return [json.dumps([]), 400]
     text_query = query.get_text()
-    res = requests.post(scraper_definition["sparqlendpoint"], data={"query": text_query}, headers={"Accept": "application/json"})
+
+    sparql_endpoint = scraper_definition["sparqlendpoint"]
+    if "sparql" in sparql_endpoint:
+        res = requests.post(sparql_endpoint, data={"query": text_query}, headers={"Accept": "application/json"})
+    else:
+        res = requests.post(sparql_endpoint, data=text_query, headers={"Accept": "application/json", "Content-Type": "application/sparql-query"})
 
     if not res.ok:
         print(res.text, text_query)
