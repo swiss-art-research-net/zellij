@@ -37,7 +37,9 @@ class SparqlTransformer(Transformer):
         return list(chain.from_iterable(parts))
 
     def populate_uris(self):
-        self.self_uri = self.get_field_or_default("ID").replace(".", "_").replace("-", "_")
+        self.self_uri = (
+            self.get_field_or_default("ID").replace(".", "_").replace("-", "_")
+        )
         for idx, part in enumerate(self.parts):
             if idx % 2 == 0:
                 continue
@@ -50,9 +52,12 @@ class SparqlTransformer(Transformer):
                 self.uris[idx] = self.self_uri
                 continue
 
-            if idx > 2 and self.get_major_number_of_part(
-                self.parts[idx - 2]
-            ) == self.get_major_number_of_part(part):
+            if (
+                idx > 2
+                and self.get_major_number_of_part(self.parts[idx - 2])
+                == self.get_major_number_of_part(part)
+                and self.get_field_or_default("Set_Value")
+            ):
                 self.uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
                 continue
 
@@ -142,13 +147,34 @@ class SparqlTransformer(Transformer):
             uris = classes[0].get("fields").get("URI")
             return uris[0] if isinstance(uris, list) else uris
 
-    def create_where_pattern(self, model: Union[str, None] = None, model_id: Union[str, None] = None, optional=False):
-        where_pattern = SPARQLGraphPattern(optional=optional)
+    def create_model_where(
+        self, model: Union[str, None] = None, model_id: Union[str, None] = None
+    ):
+        where_pattern = SPARQLGraphPattern()
 
         if model_id and model:
             class_uri = self.get_class_uri(model, model_id)
             if class_uri:
-                where_pattern.add_triples([Triple(subject="?subject", predicate="a", object=f"<{class_uri}>")])
+                where_pattern.add_triples(
+                    [Triple(subject="?subject", predicate="a", object=f"<{class_uri}>")]
+                )
+
+        return where_pattern
+
+    def create_where_pattern(
+        self,
+        model: Union[str, None] = None,
+        model_id: Union[str, None] = None,
+        union=False,
+    ):
+        where_pattern = SPARQLGraphPattern(union=union)
+
+        if model_id and model:
+            class_uri = self.get_class_uri(model, model_id)
+            if class_uri:
+                where_pattern.add_triples(
+                    [Triple(subject="?subject", predicate="a", object=f"<{class_uri}>")]
+                )
 
         for idx in range(len(self.parts)):
             current_part = self.parts[idx]
@@ -215,10 +241,16 @@ class SparqlTransformer(Transformer):
         where_pattern.add_binding(Binding(f"?{self.self_uri}", "?value"))
 
         expected_value_type = self.get_field_or_default("Expected_Value_Type")
-        if not model_id and not model and "rdf:literal" not in self.parts and expected_value_type not in [
-            "Date",
-            "Integer",
-        ]:
+        if (
+            not model_id
+            and not model
+            and "rdf:literal" not in self.parts
+            and expected_value_type
+            not in [
+                "Date",
+                "Integer",
+            ]
+        ):
             optional_label = SPARQLGraphPattern(optional=True)
             optional_label.add_triples(
                 [
@@ -265,9 +297,14 @@ class SparqlTransformer(Transformer):
         namespaces["rdf"] = RDF
         query.add_prefix(prefix=Prefix(prefix="rdf", namespace=RDF))
 
-    def transform(self, count: bool = False, model: Union[str, None] = None, model_id: Union[str, None] = None):
+    def transform(
+        self,
+        count: bool = False,
+        model: Union[str, None] = None,
+        model_id: Union[str, None] = None,
+    ):
         if count:
-            query = SPARQLSelectQuery()
+            query = SPARQLSelectQuery(limit=1)
             query.add_variables(["(COUNT(DISTINCT ?value) as ?count)"])
         else:
             query = SPARQLSelectQuery(limit=100)
@@ -279,9 +316,7 @@ class SparqlTransformer(Transformer):
 
         self.sparql = query.get_text()
         file = io.BytesIO()
-        file.name = (
-            f"{self.get_field_or_default('System_Name').replace(' ', '_')}.rq"
-        )
+        file.name = f"{self.get_field_or_default('System_Name').replace(' ', '_')}.rq"
         file.write(self.sparql.encode("utf-8"))
         file.seek(0)
 
