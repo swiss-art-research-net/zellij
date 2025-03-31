@@ -97,7 +97,7 @@ def count_collection(api_key, model, model_id, ids):
 
 
 @functools.lru_cache(maxsize=512)
-def sample_collection(api_key, model, model_id, ids):
+def sample_collection(api_key, model, model_id, ids, skip=False):
     scraper_definition = get_scraper_definition(api_key)
 
     if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
@@ -109,9 +109,15 @@ def sample_collection(api_key, model, model_id, ids):
 
     samples = {}
     for i, id in enumerate(ids):
+
         query = SPARQLSelectQuery(distinct=True, limit=5)
         transformer_loop = SparqlTransformer(api_key, id)
         transformer_loop.add_prefixes(query)
+
+        if skip:
+            samples[transformer_loop.get_field_or_default("UI_Name")] = {"id": transformer_loop.field.get("id"), "samples": []}
+            continue
+
         query.add_variables(["?" + transformer_loop.self_uri])
         where = transformer_loop.create_where_pattern(
             model=model, model_id=model_id, union=False
@@ -119,7 +125,6 @@ def sample_collection(api_key, model, model_id, ids):
         query.set_where_pattern(where)
 
         text_query = query.get_text()
-        print(text_query)
 
         if "sparql" in sparql_endpoint:
             res = requests.post(sparql_endpoint, data={"query": text_query}, headers={"Accept": "application/json"})
@@ -127,12 +132,14 @@ def sample_collection(api_key, model, model_id, ids):
             res = requests.post(sparql_endpoint, data=text_query, headers={"Accept": "application/json", "Content-Type": "application/sparql-query"})
 
         if not res.ok:
+            samples[transformer_loop.get_field_or_default("UI_Name")] = {"id": transformer_loop.field.get("id"), "samples": []}
             continue
 
         bindings = res.json()['results']['bindings']
         if len(bindings) == 0:
+            samples[transformer_loop.get_field_or_default("UI_Name")] = {"id": transformer_loop.field.get("id"), "samples": []}
             continue
 
-        samples[transformer_loop.self_uri] = list(map(lambda x: x[transformer_loop.self_uri]['value'], bindings))
+        samples[transformer_loop.get_field_or_default("UI_Name")] = {"id": transformer_loop.field.get("id"), "samples": list(map(lambda x: x[transformer_loop.self_uri]['value'], bindings))}
 
     return [json.dumps(samples), 200]

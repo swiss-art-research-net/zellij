@@ -161,28 +161,40 @@
         {% for name, items in categories.items() %}
             <section x-show="qaMode">
                 <h2>{{ name }}</h2>
+                <div style="font-size: 16px; font-weight: bold;">
+                    Total Count: <span x-text="counts_col['{{ name }}'] ?? 'Loading...'"></span>
+                </div>
                 <table border="1" style="margin-bottom: 15px;">
-                    <tr>
-                        {% for item in items %}
-                            <td style="padding: 5px 5px;">{{ item.ui_name }}</td>
-                        {% endfor %}
-                        <td style="font-weight: bold; padding: 5px 5px;"
-                            x-text="counts_col['{{ name }}'] ?? 'Loading...'">
-                        </td>
-                    </tr>
-                </table>
-                <table :border="Object.keys(sample_col['{{ name }}'] ?? {}).length > 0 ? 1 : 0" style="margin-bottom: 15px;">
                     <thead>
-                        <template x-for="header in Object.keys(sample_col['{{ name }}'] ?? {})">
-                            <th style="padding: 5px 5px;" x-text="header"></th>
-                        </template>
+                        <tr>
+                            {% for item in items %}
+                                <th style="padding: 5px 5px;">{{ item.ui_name }}</th>
+                            {% endfor %}
+                        </tr>
                     </thead>
                     <tbody>
+                        <tr>
+                            {% for item in items %}
+                                <template x-if="'{{ name }}' in sample_col">
+                                    <td style="text-align: center;  vertical-align: middle;">
+                                        Count: <span x-text="counts[sample_col['{{ name }}']['{{ item.ui_name }}']['id']] ?? '-'"></span>
+                                    </td>
+                                </template>
+                                <template x-if="!('{{ name }}' in sample_col)">
+                                    <td style="text-align: center;  vertical-align: middle;" x-text="'-'"></td>
+                                </template>
+                            {% endfor %}
+                        </tr>
                         <template x-for="i in [0, 1, 2, 3, 4]">
                             <tr>
-                                <template x-for="header in Object.keys(sample_col['{{ name }}'] ?? {})">
-                                    <td style="text-align: center;  vertical-align: middle;" x-text="sample_col['{{ name }}'][header][i] ?? '-'"></td>s
-                                </template>
+                                {% for item in items %}
+                                    <template x-if="'{{ name }}' in sample_col">
+                                        <td style="text-align: center;  vertical-align: middle;" x-text="sample_col['{{ name }}']['{{ item.ui_name }}']['samples'][i] ?? '-'"></td>s
+                                    </template>
+                                    <template x-if="!('{{ name }}' in sample_col)">
+                                        <td style="text-align: center;  vertical-align: middle;" x-text="'-'"></td>
+                                    </template>
+                                {% endfor %}
                             </tr>
                         </template>
                     </tbody>

@@ -28,9 +28,9 @@ def return_collection_count(api_key, model, model_id, field_ids):
 
     return Response(json_data, status=status, mimetype='application/json')
 
-@bp.route("/collection/sample/<api_key>/<model>/<model_id>/<field_ids>", methods=["GET"])
-def return_collection_sample(api_key, model, model_id, field_ids):
-    json_data, status = utils.sample_collection(api_key, model, model_id, field_ids)
+@bp.route("/collection/sample/<api_key>/<model>/<model_id>/<field_ids>/<skip>", methods=["GET"])
+def return_collection_sample(api_key, model, model_id, field_ids, skip):
+    json_data, status = utils.sample_collection(api_key, model, model_id, field_ids, skip == "true")
 
     return Response(json_data, status=status, mimetype='application/json')
 
@@ -72,6 +72,43 @@ def execute_count(api_key, field_id):
     json_data = res.json()
     return Response(json.dumps({"count":json_data['results']['bindings'][0]['subject_count']['value']}), status=200, mimetype='application/json')
 
+@functools.lru_cache(maxsize=256)
+@bp.route("/sample/<api_key>/<field_id>", methods=["GET"])
+def execute_model_sample(api_key, field_id):
+    scraper_definition = get_scraper_definition(api_key)
+
+    if scraper_definition is None or not scraper_definition["sparqlendpoint"]:
+        return Response(json.dumps({"count": 0}), status=400, mimetype='application/json')
+
+    schemas, secretkey = generate_airtable_schema(api_key)
+    airtable = AirTableConnection(decrypt(secretkey), api_key)
+    record = airtable.get_record_by_formula("Model", match({"ID": field_id}))
+
+    if record is None:
+        return Response(json.dumps({"count": 0}), status=500, mimetype='application/json')
+
+    if 'SparQL_List_Total' not in record['fields']:
+        transformer = SparqlTransformer(api_key, field_id)
+        transformer.create_model_where()
+
+        select_query = SPARQLSelectQuery()
+        select_query.set_where_pattern(transformer.create_model_where())
+        query = select_query.get_text()
+    else:
+        query=record['fields']['SparQL_List_Total'].replace("LIMIT 100", "LIMIT 5")
+
+    sparql_endpoint = scraper_definition["sparqlendpoint"]
+    if "sparql" in sparql_endpoint:
+        res = requests.post(sparql_endpoint, data={"query": query}, headers={"Accept": "application/json"})
+    else:
+        res = requests.post(sparql_endpoint, data=query, headers={"Accept": "application/json", "Content-Type": "application/sparql-query"})
+
+    bindings = res.json()['results']['bindings']
+    if not res.ok:
+        return Response(json.dumps([]), status=500, mimetype='application/json')
+
+    return Response(json.dumps(list(map(lambda x: x['subject']['value'], bindings))), status=200, mimetype='application/json')
+
 @bp.route("/count/<api_key>/<item>/<scraper>", methods=["GET"])
 def execute_count_csv(api_key, item, scraper):
     scraper_definition = get_scraper_definition(api_key)
@@ -91,9 +128,7 @@ def execute_count_csv(api_key, item, scraper):
             high_table = tablename
 
     airtable = AirTableConnection(decrypt(secretkey), api_key)
-    print(item, scraper, high_table)
 
-    print(field_table_group_by)
     fields = list(filter(lambda x: 'Field' in x['fields'], airtable.get_multiple_records_by_formula(
         field_table,
         f'SEARCH("{item}",{{{field_table_group_by}}})',
@@ -106,8 +141,6 @@ def execute_count_csv(api_key, item, scraper):
             fields,
         )
     )
-
-    print(model_fields_ids)
 
     all_fields =  airtable.get_multiple_records_by_formula(
         "Field",
