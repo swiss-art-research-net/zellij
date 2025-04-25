@@ -202,6 +202,7 @@
         <input type="radio" name="tabset_max" id="tabset_max_rdfwarn" hidden aria-hidden="true">
         {% endif %}
         <input type="radio" name="tabset_max" id="tabset_max_jsonld" hidden aria-hidden="true">
+        <input type="radio" name="tabset_max" id="tabset_max_samples" hidden aria-hidden="true" x-show="qaMode">
         <ul hidden aira-hidden="true">
             <li><label for="tabset_max_ontgraph"><i class="fas fa-project-diagram"></i> Ontology Graph</label>
             </li>
@@ -214,6 +215,7 @@
             {% endif %}
             <li onclick="generateJsonLD('aggregated', `{{ patternitem.turtle() }}`)"><label for="tabset_max_jsonld"><i
                         class="fas fa-stream"></i> JSON-LD</label></li>
+            <li x-show="qaMode"><label for="tabset_max_samples">Samples</label></li>
         </ul>
         <div>
             <section id="ontologyGraph">
@@ -253,6 +255,37 @@
                 </div>
             </section>
             {% endif %}
+            <section
+                id="samples"
+                x-show="qaMode"
+                x-data="{samples: []}"
+                x-init="$watch('qaMode', async active => {
+                    if (!active) {
+                        return;
+                    }
+
+                    samples = await fetch('/qa/sample/{{apikey}}/{{ patternitem.ExtraFields['KeyField'] if patternitem.ExtraFields['KeyField'] is string else patternitem.ExtraFields['KeyField'][0] }}')
+                        .then(res => res.json());
+                })"
+            >
+                <h2>Samples</h2>
+                <div>
+                    <table border="1" style="margin-bottom: 15px;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 5px;">{{ patternitem["Name"] }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="sample in samples">
+                                <tr style="text-align: center;  vertical-align: middle;">
+                                    <td x-text="sample"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
     </div>
     {% endif %}
@@ -637,7 +670,7 @@
                         let response = await fetch(`/qa/collection/count/{{apikey}}/{{model_table}}/{{model_id}}/${ids}`, { signal });
                         let data = await response.json();
                         this.counts_col[name] = data.count;
-                        let sample = await fetch(`/qa/collection/sample/{{apikey}}/${ids}`, { signal });
+                        let sample = await fetch(`/qa/collection/sample/{{apikey}}/{{model_table}}/{{model_id}}/${ids}/${data.count === "0"}`, { signal });
                         let sample_data = await sample.json();
                         this.sample_col[name] = sample_data;
                     } catch (error) {
