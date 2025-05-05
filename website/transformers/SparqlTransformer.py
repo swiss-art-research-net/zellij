@@ -19,6 +19,8 @@ from website.transformers.Transformer import Transformer
 
 
 class SparqlTransformer(Transformer):
+    query: SPARQLSelectQuery
+
     def __init__(self, api_key: str, field_id: str):
         super().__init__(api_key, field_id)
         total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
@@ -90,6 +92,9 @@ class SparqlTransformer(Transformer):
         return part.split("[")[-1].split("]")[0].split("_")[0]
 
     def upload(self):
+        if self.query is None or self.query.where is None:
+            return
+
         database = get_db()
         c = database.cursor()
         c.execute(
@@ -123,10 +128,13 @@ class SparqlTransformer(Transformer):
                     "Field already exists in Field table, but not in Field table in the Field Base"
                 )
 
+        where_text: str = self.query.where.get_text()
+        where_text = where_text.strip("\n").removeprefix("{").removesuffix("}").strip("\n ")
+
         try:
             self.airtable.airtable.table(
                 base_id=base_api_key, table_name="Field"
-            ).update(base_field.get("id"), {"sparql_test": self.sparql})
+            ).update(base_field.get("id"), {"SparQL": where_text})
         except Exception as e:
             print("Error uploading Sparql: ", e)
             raise e
@@ -314,6 +322,7 @@ class SparqlTransformer(Transformer):
 
         query.set_where_pattern(where_pattern)
 
+        self.query = query
         self.sparql = query.get_text()
         file = io.BytesIO()
         file.name = f"{self.get_field_or_default('System_Name').replace(' ', '_')}.rq"
