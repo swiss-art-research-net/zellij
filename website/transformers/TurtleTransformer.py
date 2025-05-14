@@ -153,8 +153,12 @@ class TurtleTransformer:
 
         discriminator = "-->" if "-->" in total_path else "->"
         parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
+
+        if self.crm_class is None:
+            raise ValueError(f"Could not find CRM Class")
+
         uris = {
-            -1: self.crm_class.get("fields", {}).get("Class_Ur_Instance").strip("<>")
+            -1: self.crm_class.get("fields", {}).get("Class_Ur_Instance", "").strip("<>")
         }
 
         for idx in range(len(parts)):

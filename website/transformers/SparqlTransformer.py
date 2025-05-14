@@ -3,7 +3,7 @@ from itertools import chain
 from typing import Dict, List, Union
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import match
+from pyairtable.formulas import OR, match
 from rdflib import RDF, Namespace
 from rdflib.namespace import DefinedNamespaceMeta
 
@@ -50,6 +50,7 @@ class SparqlTransformer(Transformer):
                 self.uris[idx] = part
                 continue
 
+            # ->p1->E33_E41[4_1]->zp6i->ZE2[SRDF.323_1]->p4->E52[SRDF.323_2]
             if part.startswith("xsl"):
                 self.uris[idx] = self.self_uri
                 continue
@@ -63,19 +64,28 @@ class SparqlTransformer(Transformer):
                 self.uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
                 continue
 
-            collection = self.get_field_or_default("Collection_Deployed")
+            collection_field = self.airtable.get_record_by_formula(
+                "Collection_Fields",
+                OR(
+                    match({"Field": self.id}),
+                    match({"Field": self.get_field_or_default("ID")}),
+                ),
+            )
 
-            collection_field = self.get_records(collection, "Collection")
-
-            if len(collection_field) == 0 and idx == 1:
-                self.uris[idx] = self.self_uri + "_collection"
-            elif len(collection_field) == 1 and idx == 1:
-                self.uris[idx] = (
-                    collection_field[0]
-                    .get("fields", {})
-                    .get("ID", "")
-                    .replace(".", "_")
+            collection = []
+            if collection_field is not None:
+                collection = self.get_records(
+                    collection_field.get("fields").get("Collection"), "Collection"
                 )
+
+            if len(collection) == 0 and idx == 1:
+                self.uris[idx] = self.self_uri
+            elif len(collection) == 1 and idx == 1:
+                self.uris[idx] = (
+                    collection[0].get("fields", {}).get("ID", "").replace(".", "_")
+                )
+            elif 1 < idx < len(self.parts) - 1:
+                self.uris[idx] = self.number_to_variable(part)
             else:
                 self.uris[idx] = self.self_uri
 
@@ -90,6 +100,12 @@ class SparqlTransformer(Transformer):
             return part
 
         return part.split("[")[-1].split("]")[0].split("_")[0]
+
+    def number_to_variable(self, part: str) -> str:
+        if "[" not in part:
+            return part
+
+        return part.split(sep="[")[-1].split("]")[0].replace(".", "_")
 
     def upload(self):
         if self.query is None or self.query.where is None:
@@ -129,7 +145,9 @@ class SparqlTransformer(Transformer):
                 )
 
         where_text: str = self.query.where.get_text()
-        where_text = where_text.strip("\n").removeprefix("{").removesuffix("}").strip("\n ")
+        where_text = (
+            where_text.strip("\n").removeprefix("{").removesuffix("}").strip("\n ")
+        )
 
         try:
             self.airtable.airtable.table(
@@ -154,6 +172,12 @@ class SparqlTransformer(Transformer):
             classes = self.get_records(record["Ontological_Scope"], "Ontology_Class")
             uris = classes[0].get("fields").get("URI")
             return uris[0] if isinstance(uris, list) else uris
+        elif "Ontology_Scope" in record:
+            classes = self.get_records(record["Ontology_Scope"], "Ontology_Class")
+            uris = classes[0].get("fields").get("URI")
+            return uris[0] if isinstance(uris, list) else uris
+
+        return None
 
     def create_model_where(
         self, model: Union[str, None] = None, model_id: Union[str, None] = None
@@ -313,7 +337,7 @@ class SparqlTransformer(Transformer):
     ):
         if count:
             query = SPARQLSelectQuery(limit=1)
-            query.add_variables(["(COUNT(DISTINCT ?value) as ?count)"])
+            query.add_variables(["(COUNT(?value) as ?count)"])
         else:
             query = SPARQLSelectQuery(limit=100)
         self.add_prefixes(query)

@@ -50,7 +50,7 @@ def execute_qa(api_key, model, model_id, field_id):
 def count_collection(api_key, model, model_id, ids):
     ids = ids.split("_")
     query = SPARQLSelectQuery(limit=1)
-    query.add_variables(["(COUNT(DISTINCT ?value) as ?count)"])
+    query.add_variables(["(COUNT(?value) as ?count)"])
     where_pattern = SPARQLGraphPattern()
     for i, id in enumerate(ids):
         transformer_loop = SparqlTransformer(api_key, id)

@@ -478,6 +478,10 @@
                                     data-upload="true">
                                     Generate SPARQL Query For System
                                 </option>
+                                <option value="composite" class="generate-sparql-count" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Count Query
+                                </option>
                                 <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                     data-upload="false">
                                     Generate X3ML Mappings (Form A)
@@ -575,6 +579,10 @@
                                 <option value="composite" class="generate-sparql" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                     data-upload="true">
                                     Generate SPARQL Query For System
+                                </option>
+                                <option value="composite" class="generate-sparql-count" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Count Query
                                 </option>
                                 <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                     data-upload="false">
@@ -910,7 +918,7 @@
             }
         } else if (type === "sparql") {
             if (upload) {
-                fetch("{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id + "?upload=" + upload)
+                fetch("{{ url_for('docs.patterntransformsparql', apikey=apikey, model_table=model_table, model_id=model_id, item='') }}" + id + "?upload=" + upload)
                     .then((res) => {
                         if (res.ok) {
                             alert("Sparql Query has been generated and uploaded to the system.");
@@ -919,8 +927,10 @@
                         }
                     })
             } else {
-                window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id;
+                window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, model_table=model_table, model_id=model_id, item='') }}" + id;
             }
+        } else if (type === "sparql-count") {
+          window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, model_table=model_table, model_id=model_id, item='') }}" + id + "?count=true";
         } else if (type === "x3ml") {
             if (upload) {
               fetch("{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE', formtype='FORM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type) + `?upload=${upload}`)
@@ -1018,6 +1028,8 @@
             transformField(id, 'x3ml', upload, form_type);
         } else if (classes.includes('generate-rs')) {
             transformField(id, 'rs', upload);
+        } else if (classes.includes('generate-sparql-count')) {
+            transformField(id, 'sparql-count', upload);
         } else {
             transformField(id, 'sparql', upload);
         }
