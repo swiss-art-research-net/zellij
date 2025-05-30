@@ -249,9 +249,12 @@ class ModelExporter(Exporter):
                             "Field_UI_Name", ""
                         )
                         pattern_name = ET.SubElement(pattern, "pattern_name")
-                        pattern_name.text = (
-                            field_ui_names[0] if len(field_ui_names) > 0 else ""
-                        )
+                        if isinstance(field_ui_names, list):
+                            pattern_name.text = (
+                                field_ui_names[0] if len(field_ui_names) > 0 else ""
+                            )
+                        else:
+                            pattern_name.text = field_ui_names
 
                         fields = model_field.get("fields", {}).get("Field", [])
                         if len(fields) > 0:
