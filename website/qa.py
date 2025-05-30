@@ -53,8 +53,7 @@ def execute_model_count(api_key, model, model_id):
             json.dumps({"count": 0}), status=500, mimetype="application/json"
         )
 
-    # if 'SparQL_Count_Total' not in record['fields']:
-    if True:
+    if "SparQL_Count_Total" not in record["fields"]:
         transformer = SparqlTransformer(api_key, model_id, simple=True)
 
         select_query = SPARQLSelectQuery()
@@ -172,7 +171,7 @@ def execute_model_sample(api_key, model, model_id):
     )
 
 
-@bp.route("/count/<api_key>/<item>/<scraper>", methods=["GET"])
+@bp.route("/export/count/<api_key>/<item>/<scraper>", methods=["GET"])
 def execute_count_csv(api_key, item, scraper):
     scraper_definition = get_scraper_definition(api_key)
 
@@ -203,7 +202,7 @@ def execute_count_csv(api_key, item, scraper):
             ),
         )
     )
-    model_fields_ids = list(
+    model_fields_ids: list[str] = list(
         map(
             lambda x: x["fields"]["Field"][0]
             if len(x["fields"]["Field"][0]) > 0
@@ -224,32 +223,8 @@ def execute_count_csv(api_key, item, scraper):
         ),
     )
 
-    categories = {}
-    field_collection = {}
-    for field in all_fields:
-        field_data = field.get("fields", {})
-
-        if "Collection_Deployed" in field_data:
-            if isinstance(field_data["Collection_Deployed"], str):
-                name = field_data["Collection_Deployed"]
-            else:
-                name = field_data["Collection_Deployed"][0]
-
-            if name[:3] == "rec":
-                name = airtable.get_record_by_id("Collection", name)["fields"][
-                    "UI_Name"
-                ]
-        else:
-            name = field_data.get("UI_Name", "") + ": Sample"
-
-        if name:
-            field_id = field.get("id", "")
-
-            if name not in categories:
-                categories[name] = []  # Change to a list of dicts
-
-            categories[name].append(field_id)
-        field_collection[field_id] = {"name": name}
+    def find_field(id: str):
+        return next(field for field in all_fields if field["id"] == id)
 
     final_data = [
         [
@@ -259,21 +234,22 @@ def execute_count_csv(api_key, item, scraper):
             json.loads(utils.execute_qa(api_key, high_table, item, field["id"])[0])[
                 "count"
             ],
-            field_collection[field.get("id", "")]["name"],
-            field_collection[field.get("id", "")]["count"],
         ]
-        for field in all_fields
+        for field in sorted(
+            all_fields,
+            key=lambda x: find_field(x["id"])["fields"].get(
+                "Model_Specific_Field_Order", 0
+            ),
+        )
     ]
-    final_data.insert(
-        0, ["ID", "UI Name", "System Name", "Count", "Collection", "Total Count"]
-    )
+    final_data.insert(0, ["Identifier", "Name", "System Name", "Count"])
     csv_file = io.StringIO()
     csv_writer = csv.writer(csv_file)
     csv_writer.writerows(final_data)
 
     csv_file.seek(0)
 
-    file_wrapper = FileWrapper(csv_file.buffer)
+    file_wrapper = FileWrapper(csv_file)
 
     response = Response(file_wrapper, mimetype="text/csv")
     response.headers["Content-Disposition"] = f"attachment; filename={'output.csv'}"
