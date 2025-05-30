@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from pyairtable.formulas import EQUAL, OR, STR_VALUE
+from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
 from website.exporters.Exporter import Exporter
 
@@ -257,24 +257,34 @@ class ModelExporter(Exporter):
                             pattern_name.text = field_ui_names
 
                         fields = model_field.get("fields", {}).get("Field", [])
+                        fields_key = fields[0] if isinstance(fields, list) else fields
                         if len(fields) > 0:
-                            fields_to_populate[fields[0]] = pattern
-                            fields_uris.append(fields[0])
+                            fields_to_populate[fields_key] = pattern
+                            fields_uris.append(fields_key)
 
                     for field in self._airtable.get_multiple_records_by_formula(
                         "Field",
                         OR(
                             *list(
                                 map(
-                                    lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                    lambda x: OR(
+                                        match({"ID": x}),
+                                        EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                    ),
                                     fields_uris,
                                 )
                             )
                         ),
                     ):
-                        pattern_uri = ET.SubElement(
-                            fields_to_populate[field["id"]], "pattern_URI"
-                        )
+                        if "rec" in fields_uris[0]:
+                            pattern_uri = ET.SubElement(
+                                fields_to_populate[field["id"]], "pattern_URI"
+                            )
+                        else:
+                            pattern_uri = ET.SubElement(
+                                fields_to_populate[field["fields"].get("ID")],
+                                "pattern_URI",
+                            )
                         pattern_uri.text = field.get("fields", {}).get("URI")
 
                 if (
