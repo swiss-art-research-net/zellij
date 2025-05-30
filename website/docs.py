@@ -411,10 +411,11 @@ def patterntransformturtle(apikey, item):
         return response
 
 
-@bp.route("/transform/sparql/<apikey>/<item>")
-def patterntransformsparql(apikey, item):
+@bp.route("/transform/sparql/<apikey>/<model_table>/<model_id>/<item>")
+def patterntransformsparql(apikey, model_table, model_id, item):
     transformer = SparqlTransformer(apikey, item)
-    file = transformer.transform()
+    count = request.args.get("count") == "true"
+    file = transformer.transform(count=count, model=model_table, model_id=model_id)
 
     if request.args.get("upload") == "true":
         if g.user is None:
@@ -585,11 +586,12 @@ def patternitemdisplay(apikey, pattern):
     for obj in item.GroupedFields():
         identifiers = []
         for el in obj[1]:
-            if 'Field' not in el:
+            if "Field" not in el:
                 continue
-            identifiers.append(el['Field'][0])
+            identifiers.append(el["Field"][0])
 
-        fields = airtable.get_multiple_records_by_formula("Field",
+        fields = airtable.get_multiple_records_by_formula(
+            "Field",
             OR(
                 *list(
                     map(
@@ -602,24 +604,31 @@ def patternitemdisplay(apikey, pattern):
         prefix_cat = {}
 
         for field in fields:
-            field_data = field.get('fields', {})
+            field_data = field.get("fields", {})
 
-            if 'Collection_Deployed' in field_data:
-                if isinstance(field_data['Collection_Deployed'], str):
-                    name = field_data['Collection_Deployed']
+            if "Collection_Deployed" in field_data:
+                if isinstance(field_data["Collection_Deployed"], str):
+                    name = field_data["Collection_Deployed"]
                 else:
-                    name = field_data['Collection_Deployed'][0]
+                    name = field_data["Collection_Deployed"][0]
 
                 if name[:3] == "rec":
-                    name = airtable.get_record_by_id("Collection", name)['fields']['UI_Name'] + ": Sample"
+                    name = (
+                        airtable.get_record_by_id("Collection", name)["fields"][
+                            "UI_Name"
+                        ]
+                        + ": Sample"
+                    )
             else:
-                name = field_data.get('UI_Name', '') + ": Sample"
+                name = field_data.get("UI_Name", "") + ": Sample"
 
             if not name:
                 continue
 
-            field_id = field.get('id', '')
-            field_ui_name = field_data.get('UI_Name', '')  # Get UI name or default to ""
+            field_id = field.get("id", "")
+            field_ui_name = field_data.get(
+                "UI_Name", ""
+            )  # Get UI name or default to ""
 
             if name not in categories:
                 categories[name] = []  # Change to a list of dicts
@@ -644,7 +653,7 @@ def patternitemdisplay(apikey, pattern):
         prefill_group=prefill_group,
         functions=functions,
         group_sort=group_sort,
-        airtable = airtable,
+        airtable=airtable,
         categories=[categories, prefix_categories],
         model_id=model_id,
         model_table=model_table,

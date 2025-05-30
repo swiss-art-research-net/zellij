@@ -15,6 +15,13 @@ class Transformer(ABC):
     turtle: str
     sparql: str
 
+    def __init_simple__(self, api_key: str, model_id: str):
+        self.id = model_id
+        self.api_key = api_key
+
+        _, secretkey = generate_airtable_schema(api_key)
+        self.airtable = AirTableConnection(decrypt(secretkey), api_key)
+
     def __init__(self, api_key: str, field_id: str):
         self.id = field_id
         self.api_key = api_key

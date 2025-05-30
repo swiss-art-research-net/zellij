@@ -53,7 +53,7 @@
                 </div>
             </th>
             <template x-if="qaMode">
-                <td x-init="count = (await (await fetch('/qa/count/{{apikey}}/{{ data['KeyField'] if data['KeyField'] is string else data['KeyField'][0] }}')).json()).count; loading=false" x-text="!loading ? count : 'Loading...'">
+                <td x-init="count = (await (await fetch('/qa/count/{{apikey}}/{{model_table}}/{{ data['KeyField'] if data['KeyField'] is string else data['KeyField'][0] }}')).json()).count; loading=false" x-text="!loading ? count : 'Loading...'">
                 </td>
             </template>
         </tr>
