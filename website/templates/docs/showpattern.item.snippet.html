@@ -264,7 +264,7 @@
                         return;
                     }
 
-                    samples = await fetch('/qa/sample/{{apikey}}/{{ patternitem.ExtraFields['KeyField'] if patternitem.ExtraFields['KeyField'] is string else patternitem.ExtraFields['KeyField'][0] }}')
+                    samples = await fetch('/qa/sample/{{apikey}}/{{model_table}}/{{ patternitem.ExtraFields['KeyField'] if patternitem.ExtraFields['KeyField'] is string else patternitem.ExtraFields['KeyField'][0] }}')
                         .then(res => res.json());
                 })"
             >
@@ -274,12 +274,14 @@
                         <thead>
                             <tr>
                                 <th style="padding: 5px;">{{ patternitem["Name"] }}</th>
+                                <th style="padding: 5px;">{{ patternitem["Name"] }} Label</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template x-for="sample in samples">
                                 <tr style="text-align: center;  vertical-align: middle;">
-                                    <td x-text="sample"></td>
+                                    <td x-text="sample['value']"></td>
+                                    <td x-text="sample['label']"></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -478,6 +480,10 @@
                                     data-upload="true">
                                     Generate SPARQL Query For System
                                 </option>
+                                <option value="composite" class="generate-sparql-count" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Count Query
+                                </option>
                                 <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                     data-upload="false">
                                     Generate X3ML Mappings (Form A)
@@ -576,6 +582,10 @@
                                     data-upload="true">
                                     Generate SPARQL Query For System
                                 </option>
+                                <option value="composite" class="generate-sparql-count" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
+                                    data-upload="false">
+                                    Generate SPARQL Count Query
+                                </option>
                                 <option value="composite" class="generate-x3ml" data-form="a" data-id="{{ fld['Field'] if fld['Field'] is string else fld['Field'][0] }}"
                                     data-upload="false">
                                     Generate X3ML Mappings (Form A)
@@ -635,7 +645,6 @@
 <script>
     function batchProcessors(categories) {
     return {
-        counts_col: {},
         sample_col: {},
         queue_col: Object.entries(categories).map(([name, items]) => ({
             name,
@@ -667,10 +676,7 @@
                     const signal = controller.signal;
 
                     try {
-                        let response = await fetch(`/qa/collection/count/{{apikey}}/{{model_table}}/{{model_id}}/${ids}`, { signal });
-                        let data = await response.json();
-                        this.counts_col[name] = data.count;
-                        let sample = await fetch(`/qa/collection/sample/{{apikey}}/{{model_table}}/{{model_id}}/${ids}/${data.count === "0"}`, { signal });
+                        let sample = await fetch(`/qa/collection/sample/{{apikey}}/{{model_table}}/{{model_id}}/${ids}`, { signal });
                         let sample_data = await sample.json();
                         this.sample_col[name] = sample_data;
                     } catch (error) {
@@ -779,7 +785,7 @@
     function downloadCSV() {
         document.body.style.cursor = 'wait';
 
-      fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
+      fetch("/qa/export/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
         .then(response => {
           if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -910,7 +916,7 @@
             }
         } else if (type === "sparql") {
             if (upload) {
-                fetch("{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id + "?upload=" + upload)
+                fetch("{{ url_for('docs.patterntransformsparql', apikey=apikey, model_table=model_table, model_id=model_id, item='') }}" + id + "?upload=" + upload)
                     .then((res) => {
                         if (res.ok) {
                             alert("Sparql Query has been generated and uploaded to the system.");
@@ -919,8 +925,10 @@
                         }
                     })
             } else {
-                window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, item='') }}" + id;
+                window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, model_table=model_table, model_id=model_id, item='') }}" + id;
             }
+        } else if (type === "sparql-count") {
+          window.location.href = "{{ url_for('docs.patterntransformsparql', apikey=apikey, model_table=model_table, model_id=model_id, item='') }}" + id + "?count=true";
         } else if (type === "x3ml") {
             if (upload) {
               fetch("{{ url_for('docs.patterntransformx3ml', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='ITEM_REPLACE', formtype='FORM_REPLACE') }}".replace("ITEM_REPLACE", id).replace("FORM_REPLACE", form_type) + `?upload=${upload}`)
@@ -1018,6 +1026,8 @@
             transformField(id, 'x3ml', upload, form_type);
         } else if (classes.includes('generate-rs')) {
             transformField(id, 'rs', upload);
+        } else if (classes.includes('generate-sparql-count')) {
+            transformField(id, 'sparql-count', upload);
         } else {
             transformField(id, 'sparql', upload);
         }
