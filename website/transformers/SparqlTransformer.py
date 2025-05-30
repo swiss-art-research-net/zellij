@@ -21,12 +21,18 @@ from website.transformers.Transformer import Transformer
 class SparqlTransformer(Transformer):
     query: SPARQLSelectQuery
 
-    def __init__(self, api_key: str, field_id: str):
+    def __init__(
+        self, api_key: str, field_id: str, simple=False, model=None, model_id=None
+    ):
+        if simple:
+            super().__init_simple__(api_key, field_id)
+            return
+
         super().__init__(api_key, field_id)
         total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
         self.parts: List[str] = self._parse_ontological_path(total_path)
         self.uris = {-1: "subject"}
-        self.populate_uris()
+        self.populate_uris(model=model, model_id=model_id)
 
     def _parse_ontological_path(self, path: str) -> List[str]:
         long_discriminator = "-->"
@@ -38,7 +44,9 @@ class SparqlTransformer(Transformer):
 
         return list(chain.from_iterable(parts))
 
-    def populate_uris(self):
+    def populate_uris(
+        self, model: Union[str, None] = None, model_id: Union[str, None] = None
+    ):
         self.self_uri = (
             self.get_field_or_default("ID").replace(".", "_").replace("-", "_")
         )
@@ -50,7 +58,6 @@ class SparqlTransformer(Transformer):
                 self.uris[idx] = part
                 continue
 
-            # ->p1->E33_E41[4_1]->zp6i->ZE2[SRDF.323_1]->p4->E52[SRDF.323_2]
             if part.startswith("xsl"):
                 self.uris[idx] = self.self_uri
                 continue
@@ -64,19 +71,54 @@ class SparqlTransformer(Transformer):
                 self.uris[idx] = f"<{self.get_field_or_default('Set_Value')}>"
                 continue
 
-            collection_field = self.airtable.get_record_by_formula(
-                "Collection_Fields",
-                OR(
-                    match({"Field": self.id}),
-                    match({"Field": self.get_field_or_default("ID")}),
-                ),
-            )
-
             collection = []
-            if collection_field is not None:
-                collection = self.get_records(
-                    collection_field.get("fields").get("Collection"), "Collection"
-                )
+            if model is not None and model_id is not None:
+                if model == "Collection":
+                    collection_field = self.airtable.get_record_by_formula(
+                        "Collection_Fields",
+                        OR(
+                            match(
+                                {
+                                    "Field": self.id,
+                                    "Collection_Field_Part_of_Collection": model_id,
+                                }
+                            ),
+                            match(
+                                {
+                                    "Field": self.get_field_or_default("ID"),
+                                    "Collection_Field_Part_of_Collection": model_id,
+                                }
+                            ),
+                        ),
+                    )
+                else:
+                    collection_field = self.airtable.get_record_by_formula(
+                        "Model_Fields",
+                        OR(
+                            match(
+                                {
+                                    "Field": self.id,
+                                    "Model": model_id,
+                                }
+                            ),
+                            match(
+                                {
+                                    "Field": self.get_field_or_default("ID"),
+                                    "Model": model_id,
+                                }
+                            ),
+                        ),
+                    )
+
+                if collection_field is not None:
+                    field_name = (
+                        "Collection_Specific_Part_of_Collection"
+                        if model == "Collection"
+                        else "Model_Specific_Part_of_Collection"
+                    )
+
+                    collection_ids = collection_field.get("fields").get(field_name, [])
+                    collection = self.get_records(collection_ids, "Collection")
 
             if len(collection) == 0 and idx == 1:
                 self.uris[idx] = self.self_uri
@@ -180,7 +222,10 @@ class SparqlTransformer(Transformer):
         return None
 
     def create_model_where(
-        self, model: Union[str, None] = None, model_id: Union[str, None] = None
+        self,
+        model: Union[str, None] = None,
+        model_id: Union[str, None] = None,
+        get_label=False,
     ):
         where_pattern = SPARQLGraphPattern()
 
@@ -190,6 +235,16 @@ class SparqlTransformer(Transformer):
                 where_pattern.add_triples(
                     [Triple(subject="?subject", predicate="a", object=f"<{class_uri}>")]
                 )
+            if get_label:
+                where_pattern.add_triples(
+                    [
+                        Triple(
+                            subject="?subject",
+                            predicate="rdfs:label",
+                            object="?labels",
+                        )
+                    ]
+                )
 
         return where_pattern
 
@@ -197,9 +252,10 @@ class SparqlTransformer(Transformer):
         self,
         model: Union[str, None] = None,
         model_id: Union[str, None] = None,
-        union=False,
+        optional=False,
+        start=0,
     ):
-        where_pattern = SPARQLGraphPattern(union=union)
+        where_pattern = SPARQLGraphPattern(optional=optional)
 
         if model_id and model:
             class_uri = self.get_class_uri(model, model_id)
@@ -208,8 +264,10 @@ class SparqlTransformer(Transformer):
                     [Triple(subject="?subject", predicate="a", object=f"<{class_uri}>")]
                 )
 
-        for idx in range(len(self.parts)):
-            current_part = self.parts[idx]
+        for idx, current_part in enumerate(self.parts):
+            if idx < start:
+                continue
+
             namespace = current_part.split(":")[0] if ":" in current_part else "crm"
             ns_class = (
                 current_part.split(":")[1] if ":" in current_part else current_part
@@ -270,7 +328,8 @@ class SparqlTransformer(Transformer):
         ):
             where_pattern.add_binding(Binding(f"?{self.uris[1]}", f"?{self.self_uri}"))
 
-        where_pattern.add_binding(Binding(f"?{self.self_uri}", "?value"))
+        if not optional:
+            where_pattern.add_binding(Binding(f"?{self.self_uri}", "?value"))
 
         expected_value_type = self.get_field_or_default("Expected_Value_Type")
         if (
@@ -349,7 +408,7 @@ class SparqlTransformer(Transformer):
         self.query = query
         self.sparql = query.get_text()
         file = io.BytesIO()
-        file.name = f"{self.get_field_or_default('System_Name').replace(' ', '_')}.rq"
+        file.name = f"{self.get_field_or_default('System_Name').replace(' ', '_')}{'_count' if count else ''}.rq"
         file.write(self.sparql.encode("utf-8"))
         file.seek(0)
 

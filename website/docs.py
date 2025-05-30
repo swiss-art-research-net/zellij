@@ -414,7 +414,8 @@ def patterntransformturtle(apikey, item):
 @bp.route("/transform/sparql/<apikey>/<model_table>/<model_id>/<item>")
 def patterntransformsparql(apikey, model_table, model_id, item):
     transformer = SparqlTransformer(apikey, item)
-    file = transformer.transform(count=request.args.get("count") == "true", model=model_table, model_id=model_id)
+    count = request.args.get("count") == "true"
+    file = transformer.transform(count=count, model=model_table, model_id=model_id)
 
     if request.args.get("upload") == "true":
         if g.user is None:

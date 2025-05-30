@@ -264,7 +264,7 @@
                         return;
                     }
 
-                    samples = await fetch('/qa/sample/{{apikey}}/{{ patternitem.ExtraFields['KeyField'] if patternitem.ExtraFields['KeyField'] is string else patternitem.ExtraFields['KeyField'][0] }}')
+                    samples = await fetch('/qa/sample/{{apikey}}/{{model_table}}/{{ patternitem.ExtraFields['KeyField'] if patternitem.ExtraFields['KeyField'] is string else patternitem.ExtraFields['KeyField'][0] }}')
                         .then(res => res.json());
                 })"
             >
@@ -274,12 +274,14 @@
                         <thead>
                             <tr>
                                 <th style="padding: 5px;">{{ patternitem["Name"] }}</th>
+                                <th style="padding: 5px;">{{ patternitem["Name"] }} Label</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template x-for="sample in samples">
                                 <tr style="text-align: center;  vertical-align: middle;">
-                                    <td x-text="sample"></td>
+                                    <td x-text="sample['value']"></td>
+                                    <td x-text="sample['label']"></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -643,7 +645,6 @@
 <script>
     function batchProcessors(categories) {
     return {
-        counts_col: {},
         sample_col: {},
         queue_col: Object.entries(categories).map(([name, items]) => ({
             name,
@@ -675,10 +676,7 @@
                     const signal = controller.signal;
 
                     try {
-                        let response = await fetch(`/qa/collection/count/{{apikey}}/{{model_table}}/{{model_id}}/${ids}`, { signal });
-                        let data = await response.json();
-                        this.counts_col[name] = data.count;
-                        let sample = await fetch(`/qa/collection/sample/{{apikey}}/{{model_table}}/{{model_id}}/${ids}/${data.count === "0"}`, { signal });
+                        let sample = await fetch(`/qa/collection/sample/{{apikey}}/{{model_table}}/{{model_id}}/${ids}`, { signal });
                         let sample_data = await sample.json();
                         this.sample_col[name] = sample_data;
                     } catch (error) {
