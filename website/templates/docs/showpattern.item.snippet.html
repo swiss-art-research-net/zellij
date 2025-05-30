@@ -785,7 +785,7 @@
     function downloadCSV() {
         document.body.style.cursor = 'wait';
 
-      fetch("/qa/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
+      fetch("/qa/export/count/{{apikey}}/{{patternitem['ID']}}/{{pattern}}")
         .then(response => {
           if (!response.ok) {
             throw new Error('Network response was not ok');
