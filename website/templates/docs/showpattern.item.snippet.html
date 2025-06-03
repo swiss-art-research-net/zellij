@@ -679,6 +679,23 @@
                         let sample = await fetch(`/qa/collection/sample/{{apikey}}/{{model_table}}/{{model_id}}/${ids}`, { signal });
                         let sample_data = await sample.json();
                         this.sample_col[name] = sample_data;
+
+                        for (const ui_var of Object.keys(this.sample_col[name])) {
+                          if (this.sample_col[name][ui_var].text === undefined) {
+                              this.sample_col[name][ui_var].text = [];
+                          }
+
+                          for (let i = 0; i < this.sample_col[name][ui_var]['samples'].length; i++) {
+                              const sample = this.sample_col[name][ui_var]['samples'][i];
+                              const label = this.sample_col[name][ui_var]['labels'][i];
+
+                              if (label !== "-") {
+                                  this.sample_col[name][ui_var].text.push(`${label} (${sample})`);
+                              } else {
+                                  this.sample_col[name][ui_var].text.push(sample);
+                              }
+                          }
+                        }
                     } catch (error) {
                         if (error.name === 'AbortError') {
                             console.warn(`Fetch aborted for ${name}`);

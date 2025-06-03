@@ -93,10 +93,13 @@ def sample_collection(api_key, model, model_id, ids):
         if transformer.get_field_or_default("UI_Name") not in samples:
             samples[transformer.get_field_or_default("UI_Name")] = {
                 "samples": [],
+                "labels": [],
                 "id": transformer.id,
             }
 
-        query.add_variables(["?" + transformer.self_uri])
+        query.add_variables(
+            ["?" + transformer.self_uri, "?" + transformer.self_uri + "_label"]
+        )
         where = transformer.create_where_pattern(optional=True, start=2)
 
         main_where.add_nested_graph_pattern(where)
@@ -126,6 +129,9 @@ def sample_collection(api_key, model, model_id, ids):
         for transformer in transformers.values():
             samples[transformer.get_field_or_default("UI_Name")]["samples"].append(
                 binding.get(transformer.self_uri, {}).get("value", "-")
+            )
+            samples[transformer.get_field_or_default("UI_Name")]["labels"].append(
+                binding.get(transformer.self_uri + "_label", {}).get("value", "-")
             )
 
     return [json.dumps(samples), 200]
