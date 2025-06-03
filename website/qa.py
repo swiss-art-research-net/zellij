@@ -107,31 +107,17 @@ def execute_model_sample(api_key, model, model_id):
             json.dumps({"count": 0}), status=400, mimetype="application/json"
         )
 
-    schemas, secretkey = generate_airtable_schema(api_key)
-    airtable = AirTableConnection(decrypt(secretkey), api_key)
-    record = airtable.get_record_by_formula("Model", match({"ID": model_id}))
+    transformer = SparqlTransformer(api_key, model_id, simple=True)
 
-    if record is None:
-        return Response(
-            json.dumps({"count": 0}), status=500, mimetype="application/json"
-        )
+    select_query = SPARQLSelectQuery(limit=5, distinct=True)
+    transformer.add_prefixes(select_query)
 
-    if "SparQL_List_Total" not in record["fields"]:
-        transformer = SparqlTransformer(api_key, model_id, simple=True)
-
-        select_query = SPARQLSelectQuery(limit=5, distinct=True)
-        transformer.add_prefixes(select_query)
-
-        select_query.add_group_by(GroupBy(["?subject"]))
-        select_query.variables = ["?subject", "(SAMPLE(?labels) AS ?label)"]
-        select_query.set_where_pattern(
-            transformer.create_model_where(
-                model=model, model_id=model_id, get_label=True
-            )
-        )
-        query = select_query.get_text()
-    else:
-        query = record["fields"]["SparQL_List_Total"].replace("LIMIT 100", "LIMIT 5")
+    select_query.add_group_by(GroupBy(["?subject"]))
+    select_query.variables = ["?subject", "(SAMPLE(?labels) AS ?label)"]
+    select_query.set_where_pattern(
+        transformer.create_model_where(model=model, model_id=model_id, get_label=True)
+    )
+    query = select_query.get_text()
 
     sparql_endpoint = scraper_definition["sparqlendpoint"]
     if "sparql" in sparql_endpoint:
@@ -159,8 +145,8 @@ def execute_model_sample(api_key, model, model_id):
             list(
                 map(
                     lambda x: {
-                        "value": x["subject"]["value"],
-                        "label": x["label"]["value"],
+                        "value": x.get("subject", {}).get("value"),
+                        "label": x.get("label", {}).get("value"),
                     },
                     bindings,
                 )

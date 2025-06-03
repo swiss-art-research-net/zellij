@@ -186,7 +186,7 @@
                             <tr>
                                 {% for item in items %}
                                     <template x-if="'{{ name }}' in sample_col">
-                                        <td style="text-align: center;  vertical-align: middle;" x-text="sample_col['{{ name }}']['{{ item.ui_name }}']['samples'][i] ?? '-'"></td>s
+                                        <td style="text-align: center;  vertical-align: middle;" x-text="sample_col['{{ name }}']['{{ item.ui_name }}']['text'][i] ?? '-'"></td>s
                                     </template>
                                     <template x-if="!('{{ name }}' in sample_col)">
                                         <td style="text-align: center;  vertical-align: middle;" x-text="'-'"></td>

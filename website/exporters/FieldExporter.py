@@ -31,10 +31,8 @@ class FieldExporter(Exporter):
         if field is None:
             return ""
 
-        base_field = self._airtable.get_record_by_id(
-            "Field", field.get("fields", {}).get("Field", [])[0]
-        )
-        fields = base_field.get("fields")
+        base_field = self.get_records(field.get("fields", {}).get("Field", []), "Field")
+        fields = base_field[0].get("fields")
         uri = ET.SubElement(root, "uri")
         uri.text = fields.get("URI")
 

@@ -6,7 +6,7 @@ from typing import Dict, List, Literal, Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
+from pyairtable.formulas import OR, match
 
 from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.Transformer import Transformer
@@ -88,6 +88,7 @@ class X3MLTransformer(Transformer):
             map(
                 lambda x: x["fields"]["Field"][0]
                 if len(x["fields"]["Field"][0]) > 0
+                and isinstance(x["fields"]["Field"], list)
                 else x["fields"]["Field"],
                 sorted(
                     self.airtable.get_multiple_records_by_formula(
@@ -101,27 +102,19 @@ class X3MLTransformer(Transformer):
             )
         )
 
-        fields = list(
-            filter(
-                lambda field: len(
-                    field.get("fields", {}).get("Collection_Deployed", "")
+        fields = self.airtable.get_multiple_records_by_formula(
+            "Field",
+            OR(
+                *list(
+                    map(
+                        lambda x: match({"ID": x}),
+                        model_fields_ids,
+                    )
                 )
-                > 0,
-                self.airtable.get_multiple_records_by_formula(
-                    "Field",
-                    OR(
-                        *list(
-                            map(
-                                lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
-                                model_fields_ids,
-                            )
-                        )
-                    ),
-                ),
-            )
+            ),
         )
 
-        return sorted(fields, key=lambda x: model_fields_ids.index(x["id"]))
+        return sorted(fields, key=lambda x: model_fields_ids.index(x["fields"]["ID"]))
 
     def get_major_number_of_part(self, part: str) -> str:
         if "[" not in part:
@@ -484,7 +477,7 @@ class X3MLTransformer(Transformer):
             "editor": "3MEditor v3.3",
             "source_type": "xpath",
             "version": "1.0",
-            "xsi:noNamespaceSchemaLocation": "x3ml_v1.5.xsd"
+            "xsi:noNamespaceSchemaLocation": "x3ml_v1.5.xsd",
         }
         root = ET.Element("x3ml", attrib=attributes)
 
