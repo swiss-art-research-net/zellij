@@ -11,6 +11,7 @@ from io import BytesIO
 from typing import Dict
 
 from flask import Blueprint, Response, abort, g, render_template, request
+from pyairtable.formulas import EQUAL, OR, STR_VALUE
 from werkzeug.wsgi import FileWrapper
 
 from website.auth import login_required
@@ -33,7 +34,6 @@ from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.TurtleTransformer import TurtleTransformer
 from website.transformers.X3MLTransformer import X3MLTransformer
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
-from pyairtable.formulas import EQUAL, OR, STR_VALUE
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
 
@@ -413,7 +413,7 @@ def patterntransformturtle(apikey, item):
 
 @bp.route("/transform/sparql/<apikey>/<model_table>/<model_id>/<item>")
 def patterntransformsparql(apikey, model_table, model_id, item):
-    transformer = SparqlTransformer(apikey, item)
+    transformer = SparqlTransformer(apikey, item, model=model_table, model_id=model_id)
     count = request.args.get("count") == "true"
     file = transformer.transform(count=count, model=model_table, model_id=model_id)
 

@@ -4,11 +4,12 @@ Created on Mar. 11, 2021
 @author: Pete Harris
 """
 
-import os
-import dotenv
-from socket import gethostname
-from flask import Flask
 import logging
+import os
+from socket import gethostname
+
+import dotenv
+from flask import Flask
 
 dotenv.load_dotenv()
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -42,40 +43,40 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from website import db
+    from . import db
 
     db.init_app(app)
 
-    from website import auth
+    from . import auth
 
     app.register_blueprint(auth.bp)
 
-    from website import datasources
+    from . import datasources
 
     app.register_blueprint(datasources.bp)
 
-    from website import docs
+    from . import docs
 
     app.register_blueprint(docs.bp)
 
-    from website import tools
+    from . import tools
 
     app.register_blueprint(tools.bp)
 
-    from website import pages
+    from . import pages
 
     app.register_blueprint(pages.bp)
     app.add_url_rule("/", endpoint="index")
 
-    from website import qa
+    from . import qa
 
     app.register_blueprint(qa.bp)
 
-    from website import error
+    from . import error
 
     app.register_blueprint(error.bp)
 
-    from website import functions
+    from . import functions
 
     app.register_blueprint(functions.bp)
 
@@ -83,16 +84,14 @@ def create_app(test_config=None):
 
 
 if __name__ == "__main__":
-    # from website import db
-    # db.init_db()    # might want this for database in the future, for running on PythonAnywhere from their bash script.
     if "liveconsole" not in gethostname():
         # this won't run even from console if run from PythonAnywhere console (named 'liveconsole'),
         # so this script can be used to just activate DB in previous line.
         app = create_app()
-        from website import errordecode
+        from . import errordecode
 
         app.register_blueprint(errordecode.bp)
-        from website import testpages
+        from . import testpages
 
         app.register_blueprint(testpages.bp)
         app.run(options={"threaded": False, "processes": 3})

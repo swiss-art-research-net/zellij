@@ -29,7 +29,10 @@ class SparqlTransformer(Transformer):
             return
 
         super().__init__(api_key, field_id)
-        total_path: str = self.field.get("fields", {}).get("Ontological_Long_Path", "")
+        total_path: str = self.field.get("fields", {}).get(
+            "Ontological_Long_Path",
+            self.field.get("fields", {}).get("Ontology_Long_Path", ""),
+        )
         self.parts: List[str] = self._parse_ontological_path(total_path)
         self.uris = {-1: "subject"}
         self.populate_uris(model=model, model_id=model_id)

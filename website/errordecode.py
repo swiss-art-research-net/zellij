@@ -4,31 +4,13 @@ Created on Mar. 23, 2021
 @author: Pete Harris
 """
 
+import nacl.secret
 from flask import (
     Blueprint,
-    flash,
-    g,
-    redirect,
+    current_app,
     render_template,
     request,
-    session,
-    url_for,
-    Markup,
-    current_app,
 )
-import traceback
-import nacl.secret
-
-from werkzeug.security import check_password_hash, generate_password_hash
-from website.db import (
-    get_db,
-    dict_gen_one,
-    dict_gen_many,
-    generate_airtable_schema,
-    decrypt,
-    encrypt,
-)
-from website.auth import login_required
 
 bp = Blueprint("errordecode", __name__)
 
@@ -134,7 +116,7 @@ def main():
         flash( "db.cursor() works." )
     except Exception as e:
         flash( "db.cursor() failed: " + str(e) )
-    
+
     c.close()
     return render_template("menubase.html")
 """
