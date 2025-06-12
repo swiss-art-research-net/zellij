@@ -148,17 +148,19 @@ class TurtleTransformer:
         graph.bind("rdf", RDF)
 
         total_path: str = self.field.get("fields", {}).get(
-            "Ontological_Long_Path", ""
-        ) or self.field.get("fields", {}).get("Ontological_Path", "")
+            "Ontology_Long_Path", ""
+        ) or self.field.get("fields", {}).get("Ontology_Path", "")
 
         discriminator = "-->" if "-->" in total_path else "->"
         parts: List[str] = total_path.lstrip(discriminator).split(discriminator)
 
         if self.crm_class is None:
-            raise ValueError(f"Could not find CRM Class")
+            raise ValueError("Could not find CRM Class")
 
         uris = {
-            -1: self.crm_class.get("fields", {}).get("Class_Ur_Instance", "").strip("<>")
+            -1: self.crm_class.get("fields", {})
+            .get("Class_Ur_Instance", "")
+            .strip("<>")
         }
 
         for idx in range(len(parts)):
@@ -204,7 +206,7 @@ class TurtleTransformer:
                         uris[idx] = (
                             f"{instance_root}"
                             + f"{instance_modifier}/"
-                            + f'{part.split("[")[1].split("]")[0]}'
+                            + f"{part.split('[')[1].split(']')[0]}"
                         )
                     else:
                         print(
@@ -216,8 +218,8 @@ class TurtleTransformer:
                             "Instance Root"
                         ) or self.crm_class.get("fields", {}).get("Instance_Root", "")
                         uris[idx] = (
-                            f'{instance_root}{"/" if instance_root[-1] != "/" else ""}'
-                            + f'{part.split("[")[1].split("]")[0]}'
+                            f"{instance_root}{'/' if instance_root[-1] != '/' else ''}"
+                            + f"{part.split('[')[1].split(']')[0]}"
                         )
                 else:
                     uris[idx] = f"https://linked.art/example/{part}"

@@ -30,7 +30,7 @@ class SparqlTransformer(Transformer):
 
         super().__init__(api_key, field_id)
         total_path: str = self.field.get("fields", {}).get(
-            "Ontological_Long_Path",
+            "Ontology_Long_Path",
             self.field.get("fields", {}).get("Ontology_Long_Path", ""),
         )
         self.parts: List[str] = self._parse_ontological_path(total_path)
@@ -213,8 +213,8 @@ class SparqlTransformer(Transformer):
         if "Ontological_Scope_URI" in record:
             uris = record.get("Ontological_Scope_URI")
             return uris[0] if isinstance(uris, list) else uris
-        elif "Ontological_Scope" in record:
-            classes = self.get_records(record["Ontological_Scope"], "Ontology_Class")
+        elif "Ontology_Scope" in record:
+            classes = self.get_records(record["Ontology_Scope"], "Ontology_Class")
             uris = classes[0].get("fields").get("URI")
             return uris[0] if isinstance(uris, list) else uris
         elif "Ontology_Scope" in record:
