@@ -368,9 +368,9 @@ class X3MLTransformer(Transformer):
         ET.SubElement(source_relation, "relation")
 
         target_relation = ET.SubElement(path, "target_relation")
-        total_path = field.get("fields", {}).get("Ontological_Long_Path") or field.get(
+        total_path = field.get("fields", {}).get("Ontology_Long_Path") or field.get(
             "fields", {}
-        ).get("Ontological_Path")
+        ).get("Ontology_Path")
 
         if not total_path:
             return []

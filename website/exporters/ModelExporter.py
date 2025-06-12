@@ -353,7 +353,7 @@ class ModelExporter(Exporter):
                     )
                     post_version_modification_date.text = val
 
-                if self._prefill_group.get(key, {}).get("name") == "Authors":
+                if self._prefill_group.get(key, {}).get("name") == "Author":
                     creators = ET.SubElement(creation_data, "creators")
                     for author in self.get_records(val, "Actors"):
                         creator = ET.SubElement(creators, "creator")
@@ -365,10 +365,7 @@ class ModelExporter(Exporter):
                         if not creator_label.text:
                             creator_label.text = author.get("fields", {}).get("ID")
 
-                if (
-                    self._prefill_group.get(key, {}).get("name") == "Funders"
-                    or self._prefill_group.get(key, {}).get("name") == "Funder"
-                ):
+                if self._prefill_group.get(key, {}).get("name") == "Funder":
                     try:
                         records = self.get_records(val, "Institution")
                     except Exception:

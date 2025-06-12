@@ -157,15 +157,15 @@ class FieldExporter(Exporter):
                 ontology_label.text = record.get("fields", {}).get("ID")
 
             semantic_path = ET.SubElement(definition, "semantic_path")
-            semantic_path.text = fields.get("Ontological_Path")
+            semantic_path.text = fields.get("Ontology_Path")
 
             semantic_long_path = ET.SubElement(definition, "semantic_long_path")
-            semantic_long_path.text = fields.get("Ontological_Long_Path")
+            semantic_long_path.text = fields.get("Ontology_Long_Path")
 
             semantic_path_total = ET.SubElement(definition, "semantic_path_total")
             semantic_path_total.text = (
-                fields.get("Total_Ontological_Path")
-                or field.get("fields", {}).get("Total_Ontological_Path")
+                fields.get("Total_Ontology_Path")
+                or field.get("fields", {}).get("Total_Ontology_Path")
                 or field.get("fields", {}).get("Model_Fields_Total_Ontological_Path")
             )
 
