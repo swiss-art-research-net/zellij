@@ -13,6 +13,7 @@ from pyairtable import Api
 from pyairtable.api import Table
 from pyairtable.formulas import EQUAL, OR, STR_VALUE
 
+from website.db import decrypt, generate_airtable_schema
 from ZellijData.SingleGroupedItem import SingleGroupedItem
 
 logging.basicConfig(level=logging.DEBUG)
@@ -44,6 +45,11 @@ class AirTableConnection(object):
         self.friendlyname = friendlyname
         self.airtable = Api(self.bearerToken)
         self.headers = {"Authorization": "Bearer " + self.bearerToken}
+
+    @classmethod
+    def from_api_key(cls, api_key):
+        _, secretkey = generate_airtable_schema(api_key)
+        return cls(decrypt(secretkey), api_key)
 
     def enrich_linked_data(
         self, data_dict, data_key, record, record_key, table, records
