@@ -10,7 +10,7 @@ from website.exporters.PDFExporter import PDFExporter
 
 class ProjectPDFExporter(PDFExporter):
     @override
-    def load_data(self) -> None:
+    def load_data(self) -> dict:
         airtable = AirTableConnection.from_api_key(self.id)
         projects = airtable.get_all_records_from_table("Project")
         for project in projects:
@@ -34,6 +34,12 @@ class ProjectPDFExporter(PDFExporter):
         self.data["ontologies"] = list(
             map(lambda x: x["fields"], airtable.get_all_records_from_table("Ontology"))
         )
+
+        return {
+            "name": self.data["project"].get("UI_Name", "Unknown Project"),
+            "institution": self.data["project"].get("Author", "Unknown Author"),
+            "version": self.data["project"].get("Version", "1.0"),
+        }
 
     def _render_section(
         self, title: str, data: list[dict], configuration: dict

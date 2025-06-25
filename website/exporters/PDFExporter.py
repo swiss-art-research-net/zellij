@@ -1,9 +1,67 @@
 import io
 from abc import ABC, abstractmethod
+from datetime import date
 
 from fpdf import FPDF, Align
 from fpdf.enums import TextEmphasis, WrapMode
 from fpdf.outline import TableOfContents
+
+
+class CustomPDF(FPDF):
+    def __init__(
+        self,
+        name: str,
+        institution: str | None = None,
+        version: str | None = None,
+    ):
+        super().__init__(
+            orientation="landscape",
+            unit="mm",
+            format="a4",
+            font_cache_dir="DEPRECATED",
+        )
+        self.name = name
+        self.institution = institution
+        self.version = version
+
+    def header(self):
+        if self.page_no() == 1:
+            return  # Skip header on the first page
+
+        self.set_font("helvetica", size=12)
+
+        if self.institution:
+            header_text = (
+                f"Semantic Documentation for {self.name} curated by {self.institution}"
+            )
+        else:
+            header_text = f"Semantic Documentation for {self.name}"
+
+        self.cell(
+            text=header_text,
+            align=Align.C,
+            center=True,
+        )
+        self.ln(10)
+
+    def footer(self):
+        if self.page_no() == 1:
+            return  # Skip footer on the first page
+
+        self.set_y(-12)
+        self.set_font("helvetica", size=12)
+        if self.version:
+            self.cell(
+                text=f"Version Number: {self.version}",
+                align=Align.C,
+                center=True,
+            )
+        self.ln(5)
+        self.cell(
+            text=f"Generation Date: {date.today().strftime('%d/%m/%Y')} | Generated Via: Zellij Semantic Pattern Documentation Tool",
+            align=Align.C,
+            center=True,
+        )
 
 
 class PDFExporter(ABC):
@@ -14,7 +72,7 @@ class PDFExporter(ABC):
         self._inserted_toc = False
 
     @abstractmethod
-    def load_data(self) -> None: ...
+    def load_data(self) -> dict: ...
 
     @abstractmethod
     def generate_content(self) -> None: ...
@@ -70,11 +128,15 @@ class PDFExporter(ABC):
 
     def export(self) -> io.BytesIO:
         try:
-            self.load_data()
+            metadata = self.load_data()
         except Exception as e:
             raise RuntimeError(f"Failed to load data: {e}")
 
-        self.pdf = FPDF(format="A4", orientation="landscape")
+        self.pdf = CustomPDF(
+            name=metadata.get("name", ""),
+            institution=metadata.get("inistitution", ""),
+            version=metadata.get("version"),
+        )
         self.pdf.set_auto_page_break(True)
         self.reset_font()
         self.pdf.add_page()
