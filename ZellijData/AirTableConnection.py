@@ -11,7 +11,7 @@ from urllib.parse import unquote_plus, urlparse
 
 from pyairtable import Api
 from pyairtable.api import Table
-from pyairtable.formulas import OR, EQUAL, STR_VALUE
+from pyairtable.formulas import EQUAL, OR, STR_VALUE
 
 from ZellijData.SingleGroupedItem import SingleGroupedItem
 
@@ -134,7 +134,9 @@ class AirTableConnection(object):
                 else ""
             )
 
-            if isinstance(highout[mykey], list) and any(["rec" in field for field in highout[mykey]]):
+            if isinstance(highout[mykey], list) and any(
+                ["rec" in field for field in highout[mykey]]
+            ):
                 records = []
                 table_id: Union[str, None] = None
 
@@ -149,18 +151,30 @@ class AirTableConnection(object):
                 records.extend(
                     self.get_multiple_records_by_formula(
                         table_id,
-                OR(
+                        OR(
                             *list(
                                 map(
                                     lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
                                     highout[mykey],
                                 )
                             )
-                        )
+                        ),
                     )
                 )
 
-                highout[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID", x.get("fields", {}).get("Name")), records))))
+                highout[mykey] = ", ".join(
+                    list(
+                        filter(
+                            lambda x: x,
+                            map(
+                                lambda x: x.get("fields", {}).get(
+                                    "ID", x.get("fields", {}).get("Name")
+                                ),
+                                records,
+                            ),
+                        )
+                    )
+                )
 
         out = SingleGroupedItem(highout)
 
@@ -172,7 +186,7 @@ class AirTableConnection(object):
         )
 
         for rec in low_records:
-            if 'Field' not in rec['fields']:
+            if "Field" not in rec["fields"]:
                 continue
             remapped = {}
             for mykey, theirkey in low_remapper.items():
@@ -320,7 +334,9 @@ class AirTableConnection(object):
                     rec["fields"][theirkey] if theirkey in rec["fields"] else ""
                 )
 
-                if isinstance(remapped[mykey], list) and any(["rec" in field for field in remapped[mykey]]):
+                if isinstance(remapped[mykey], list) and any(
+                    ["rec" in field for field in remapped[mykey]]
+                ):
                     fetched_records = []
                     table_id: Union[str, None] = None
 
@@ -336,10 +352,26 @@ class AirTableConnection(object):
                         cache[table_id] = self.get_all_records_from_table(table_id)
 
                     fetched_records.extend(
-                        list(filter(lambda x: x['id'] in remapped[mykey], cache[table_id]))
+                        list(
+                            filter(
+                                lambda x: x["id"] in remapped[mykey], cache[table_id]
+                            )
+                        )
                     )
 
-                    remapped[mykey] = ", ".join(list(filter(lambda x: x, map(lambda x: x.get("fields", {}).get("ID", x.get("fields", {}).get("Name")), fetched_records))))
+                    remapped[mykey] = ", ".join(
+                        list(
+                            filter(
+                                lambda x: x,
+                                map(
+                                    lambda x: x.get("fields", {}).get(
+                                        "ID", x.get("fields", {}).get("Name")
+                                    ),
+                                    fetched_records,
+                                ),
+                            )
+                        )
+                    )
 
             out.append(remapped)
 

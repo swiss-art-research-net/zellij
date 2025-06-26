@@ -164,6 +164,7 @@
                 <table border="1" style="margin-bottom: 15px;">
                     <thead>
                         <tr>
+                            <th style="padding: 5px 5px;">Subject</th>
                             {% for item in items %}
                                 <th style="padding: 5px 5px;">{{ item.ui_name }}</th>
                             {% endfor %}
@@ -171,6 +172,7 @@
                     </thead>
                     <tbody>
                         <tr>
+                            <td style="text-align: center;  vertical-align: middle;">Count: <span x-text="modelCount"></span></td>
                             {% for item in items %}
                                 <template x-if="'{{ name }}' in sample_col">
                                     <td style="text-align: center;  vertical-align: middle;">
@@ -184,9 +186,12 @@
                         </tr>
                         <template x-for="i in [0, 1, 2, 3, 4]">
                             <tr>
+                                <template x-if="'{{ name }}' in sample_col">
+                                    <td style="text-align: center;  vertical-align: middle;" x-text="sample_col['{{ name }}']['subject']['text'][i] ?? '-'"></td>
+                                </template>
                                 {% for item in items %}
                                     <template x-if="'{{ name }}' in sample_col">
-                                        <td style="text-align: center;  vertical-align: middle;" x-text="sample_col['{{ name }}']['{{ item.ui_name }}']['text'][i] ?? '-'"></td>s
+                                        <td style="text-align: center;  vertical-align: middle;" x-text="sample_col['{{ name }}']['{{ item.ui_name }}']['text'][i] ?? '-'"></td>
                                     </template>
                                     <template x-if="!('{{ name }}' in sample_col)">
                                         <td style="text-align: center;  vertical-align: middle;" x-text="'-'"></td>
