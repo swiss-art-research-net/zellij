@@ -46,14 +46,14 @@
     {% endfor %}
 
     <div x-data="{ qaMode: false }" @qa-mode-changed.window="qaMode = $event.detail">
-        <tr x-show="qaMode" x-data="{loading: true, count: 0}">
+        <tr x-show="qaMode" x-data="{loading: true}">
             <th>
                 <div>
                     Count
                 </div>
             </th>
             <template x-if="qaMode">
-                <td x-init="count = (await (await fetch('/qa/count/{{apikey}}/{{model_table}}/{{ data['KeyField'] if data['KeyField'] is string else data['KeyField'][0] }}')).json()).count; loading=false" x-text="!loading ? count : 'Loading...'">
+                <td x-init="modelCount = (await (await fetch('/qa/count/{{apikey}}/{{model_table}}/{{ data['KeyField'] if data['KeyField'] is string else data['KeyField'][0] }}')).json()).count; loading=false" x-text="!loading ? modelCount : 'Loading...'">
                 </td>
             </template>
         </tr>

@@ -3,7 +3,11 @@ import json
 
 import requests
 
-from SPARQLBurger.SPARQLQueryBuilder import SPARQLGraphPattern, SPARQLSelectQuery
+from SPARQLBurger.SPARQLQueryBuilder import (
+    SPARQLGraphPattern,
+    SPARQLSelectQuery,
+    Triple,
+)
 from website.db import get_scraper_definition
 from website.transformers.SparqlTransformer import SparqlTransformer
 
@@ -59,6 +63,7 @@ def sample_collection(api_key, model, model_id, ids):
     query = SPARQLSelectQuery(distinct=True, limit=5)
     main_where = SPARQLGraphPattern()
     query.set_where_pattern(main_where)
+    samples = {}
 
     common_parts = []
     transformers: dict[str, SparqlTransformer] = {}
@@ -83,10 +88,24 @@ def sample_collection(api_key, model, model_id, ids):
                 model=model,
                 model_id=model_id,
             )
+            where.add_triples(
+                [
+                    Triple(
+                        subject="?subject",
+                        predicate="rdfs:label",
+                        object="?subject_label",
+                    )
+                ]
+            )
+            query.add_variables(["?subject", "?subject_label"])
+            samples["subject"] = {
+                "samples": [],
+                "labels": [],
+                "id": model_id,
+            }
             transformer.parts = temp[:]
             main_where.add_nested_graph_pattern(where)
 
-    samples = {}
     for i, id in enumerate(ids):
         transformer = transformers[id]
 
@@ -127,6 +146,12 @@ def sample_collection(api_key, model, model_id, ids):
     bindings = res.json()["results"]["bindings"]
     for binding in bindings:
         for transformer in transformers.values():
+            samples["subject"]["samples"].append(
+                binding.get("subject", {}).get("value", "-")
+            )
+            samples["subject"]["labels"].append(
+                binding.get("subject_label", {}).get("value", "-")
+            )
             samples[transformer.get_field_or_default("UI_Name")]["samples"].append(
                 binding.get(transformer.self_uri, {}).get("value", "-")
             )
