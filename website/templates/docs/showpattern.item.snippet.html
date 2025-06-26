@@ -150,6 +150,7 @@
             .then(body => { this.hasendpoint = body.sparqlendpoint })
             .finally(() => this.$nextTick())
     },
+    modelCount: 0,
     ...batchProcessor({{ patternitem.GroupedFields() }}),
     ...batchProcessors({{ categories[0] }}),
     }">
@@ -680,7 +681,7 @@
                         let sample_data = await sample.json();
                         this.sample_col[name] = sample_data;
 
-                        for (const ui_var of Object.keys(this.sample_col[name])) {
+                        for (const ui_var of Object.keys(this.sample_col[name]).concat("subject")) {
                           if (this.sample_col[name][ui_var].text === undefined) {
                               this.sample_col[name][ui_var].text = [];
                           }

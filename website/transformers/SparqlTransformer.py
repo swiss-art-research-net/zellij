@@ -345,7 +345,7 @@ class SparqlTransformer(Transformer):
                 "Integer",
             ]
         ):
-            optional_label = SPARQLGraphPattern(optional=True)
+            optional_label = SPARQLGraphPattern(optional=(not optional))
             optional_label.add_triples(
                 [
                     Triple(
@@ -357,6 +357,18 @@ class SparqlTransformer(Transformer):
             )
 
             where_pattern.add_nested_graph_pattern(optional_label)
+
+        if self.get_field_or_default("Set_Value") and start == 0:
+            where_pattern.add_triples(
+                [
+                    Triple(
+                        subject=f"?{self.self_uri}",
+                        predicate="crm:P2_has_type",
+                        object=f"<{self.get_field_or_default('Set_Value')}>",
+                    )
+                ]
+            )
+
         return where_pattern
 
     def add_prefixes(self, query: SPARQLSelectQuery):
