@@ -214,11 +214,10 @@ class SparqlTransformer(Transformer):
             uris = record.get("Ontological_Scope_URI")
             return uris[0] if isinstance(uris, list) else uris
         elif "Ontology_Scope" in record:
-            classes = self.get_records(record["Ontology_Scope"], "Ontology_Class")
-            uris = classes[0].get("fields").get("URI")
-            return uris[0] if isinstance(uris, list) else uris
-        elif "Ontology_Scope" in record:
-            classes = self.get_records(record["Ontology_Scope"], "Ontology_Class")
+            try:
+                classes = self.get_records(record["Ontology_Scope"], "Ontology_Class")
+            except Exception:
+                classes = self.get_records(record["Ontology_Scope"], "CRM Class")
             uris = classes[0].get("fields").get("URI")
             return uris[0] if isinstance(uris, list) else uris
 

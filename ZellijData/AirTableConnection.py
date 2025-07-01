@@ -180,6 +180,11 @@ class AirTableConnection(object):
 
         # Now get all the low items grouped under the group record.
         low_airtable = self.airtable.table(self.airTableBaseAPI, low_table)
+        if low_table == "Model_Fields":
+            low_fields.append("Model_Specific_Part_of_Collection")
+        elif low_table == "Collection_Fields":
+            low_fields.append("Collection_Specific_Part_of_Collection")
+
         low_records = low_airtable.all(
             fields=low_fields,
             formula=f'SEARCH("{searchtext}",{{{low_group_by}}})',
@@ -189,6 +194,23 @@ class AirTableConnection(object):
             if "Field" not in rec["fields"]:
                 continue
             remapped = {}
+
+            if (
+                low_table == "Model_Fields"
+                and "Model_Specific_Part_of_Collection" in rec["fields"]
+            ):
+                out.addFieldCollection(
+                    rec["id"], rec["fields"]["Model_Specific_Part_of_Collection"][0]
+                )
+            elif (
+                low_table == "Collection_Fields"
+                and "Collection_Specific_Part_of_Collection" in rec["fields"]
+            ):
+                out.addFieldCollection(
+                    rec["id"],
+                    rec["fields"]["Collection_Specific_Part_of_Collection"][0],
+                )
+
             for mykey, theirkey in low_remapper.items():
                 if theirkey not in rec["fields"]:
                     continue

@@ -605,20 +605,24 @@ def patternitemdisplay(apikey, pattern):
 
         for field in fields:
             field_data = field.get("fields", {})
+            field_model_field = None
+            for key, val in item._GroupedData.items():
+                if val.get("Field", [None])[0] == field["id"]:
+                    field_model_field = key
+                    break
 
-            if "Collection_Deployed" in field_data:
-                if isinstance(field_data["Collection_Deployed"], str):
-                    name = field_data["Collection_Deployed"]
-                else:
-                    name = field_data["Collection_Deployed"][0]
+            if field_model_field is None:
+                continue
 
-                if name[:3] == "rec":
-                    name = (
-                        airtable.get_record_by_id("Collection", name)["fields"][
-                            "UI_Name"
-                        ]
-                        + ": Sample"
-                    )
+            field_collection = item._fieldCollections.get(field_model_field)
+
+            if field_collection is not None:
+                name = (
+                    airtable.get_record_by_id("Collection", field_collection)["fields"][
+                        "UI_Name"
+                    ]
+                    + ": Sample"
+                )
             else:
                 name = field_data.get("UI_Name", "") + ": Sample"
 

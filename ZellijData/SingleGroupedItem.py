@@ -9,9 +9,9 @@ import logging
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
 from CRITERIA import criteria
+from website.tools import formatRDFerror, formatRDFwarnings
 from ZellijData.RDFCodeBlock import RDFCodeBlock
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
-from website.tools import formatRDFwarnings, formatRDFerror
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -52,6 +52,7 @@ class SingleGroupedItem(object):
         """
         self._GroupedData = dict()
         self._GroupedFields = dict()
+        self._fieldCollections = dict()
         self.Identifier = ""
         self.Name = ""
         self.Description = ""
@@ -105,9 +106,12 @@ class SingleGroupedItem(object):
     def addFields(self, key, data):
         d = {}
         for k, v in data.items():
-            if not k in ["GroupBy"]:
+            if k not in ["GroupBy"]:
                 d[k] = v
         self._GroupedData[key] = d
+
+    def addFieldCollection(self, key, data):
+        self._fieldCollections[key] = data
 
     def generateTurtle(self):
         allturtle = "\n".join(
