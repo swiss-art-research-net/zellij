@@ -1,9 +1,9 @@
+import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
 
 from website.exporters.Exporter import Exporter
-import xml.etree.ElementTree as ET
 
 
 class ProjectExporter(Exporter):

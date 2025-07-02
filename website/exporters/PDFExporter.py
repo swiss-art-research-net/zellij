@@ -1,10 +1,14 @@
 import io
+import os
 from abc import ABC, abstractmethod
 from datetime import date
+from urllib.parse import urlparse
 
 from fpdf import FPDF, Align
 from fpdf.enums import TextEmphasis, WrapMode
 from fpdf.outline import TableOfContents
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
 
 
 class CustomPDF(FPDF):
@@ -58,9 +62,15 @@ class CustomPDF(FPDF):
             )
         self.ln(5)
         self.cell(
-            text=f"Generation Date: {date.today().strftime('%d/%m/%Y')} | Generated Via: Zellij Semantic Pattern Documentation Tool",
-            align=Align.C,
-            center=True,
+            text=f"Generation Date: {date.today().strftime('%d/%m/%Y')} |",
+            align=Align.R,
+            w=100,
+        )
+        self.cell(
+            text="Generated Via: Zellij Semantic Pattern Documentation Tool",
+            link=BASE_URL,
+            align=Align.L,
+            w=100,
         )
 
 
@@ -113,7 +123,14 @@ class PDFExporter(ABC):
                     else:
                         content = str(cell)
 
-                    row.cell(content)
+                    if urlparse(content).scheme in ("http", "https"):
+                        row.cell(
+                            "Link",
+                            link=content,
+                            align=Align.L,
+                        )
+                    else:
+                        row.cell(content)
 
         self.reset_font()
 
@@ -137,7 +154,7 @@ class PDFExporter(ABC):
             institution=metadata.get("inistitution", ""),
             version=metadata.get("version"),
         )
-        self.pdf.set_auto_page_break(True)
+        self.pdf.set_auto_page_break(True, 10)
         self.reset_font()
         self.pdf.add_page()
 

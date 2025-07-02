@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 from fpdf import Align
@@ -6,6 +7,8 @@ from typing_extensions import override
 
 from website.datasources import AirTableConnection
 from website.exporters.PDFExporter import PDFExporter
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 
 class ProjectPDFExporter(PDFExporter):
@@ -54,7 +57,18 @@ class ProjectPDFExporter(PDFExporter):
 
         rows = [tuple(configuration.values())]
         for data_row in data:
-            rows.append(tuple([data_row.get(key, "") for key in configuration.keys()]))
+            row = []
+
+            for key in configuration.keys():
+                if key == "URL":
+                    scraper = "Model" if title == "Models" else "Collection"
+                    row.append(
+                        f"{BASE_URL}/docs/list/{self.id}?scraper={scraper}&selectedMenuItem=%2Fdocs%2Fdisplay%2F{self.id}%2F{scraper}%3Fsearch%3D{data_row.get('ID')}"
+                    )
+                else:
+                    row.append(data_row.get(key, ""))
+
+            rows.append(tuple(row))
 
         self.table(
             has_header=True,
