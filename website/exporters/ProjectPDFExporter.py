@@ -16,6 +16,10 @@ class ProjectPDFExporter(PDFExporter):
     fields = {}
 
     @override
+    def get_file_name(self) -> str:
+        return f"{self.data['project'].get('UI_Name', 'Unknown Project')}.pdf"
+
+    @override
     def load_data(self) -> dict:
         self.airtable = AirTableConnection.from_api_key(self.id)
         projects = self.airtable.get_all_records_from_table("Project")

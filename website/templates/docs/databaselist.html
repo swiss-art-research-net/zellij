@@ -61,6 +61,12 @@
                                         <option value="space" data-id="{{ db['dbaseapikey'] }}" class="export-field">This Space XML</option>
                                         <option value="total-space" data-id="{{ db['dbaseapikey'] }}" class="export-field-all">Total Space XML</option>
                                     </optgroup>
+                                    <optgroup label="PDF Export">
+                                        <option value="pdf" data-id="{{ db['dbaseapikey'] }}" data-upload="false" class="export-pdf-field">Download PDF</option>
+                                        {% if db.githubrepo and db.githubtoken %}
+                                            <option value="pdf-github" data-id="{{ db['dbaseapikey'] }}" data-upload="true" class="export-pdf-upload-field">Upload PDF</option>
+                                        {% endif %}
+                                    </optgroup>
                                 </select>
                             </td>
                         </tr>
@@ -89,10 +95,25 @@
             const selected = $(this).find(':selected');
             const classes = selected.attr('class').split(' ');
             const id = selected.data('id');
+            const upload = selected.data('upload');
 
             if (classes.includes('export-field')) {
                 window.location.href = "{{ url_for('docs.patternlistexport', apikey='API_KEY', exportType='project', model='API_KEY') }}"
                     .replaceAll("API_KEY", id);
+            } else if (classes.includes("export-pdf-field") || classes.includes("export-pdf-upload-field")) {
+                const url = "{{ url_for('docs.exportpdf', id='API_KEY') }}".replaceAll("API_KEY", id) + `?upload=${upload}`
+                if (upload) {
+                  fetch(url)
+                    .then((res) => {
+                        if (res.ok) {
+                            alert("The PDF has been successfully uploaded to the GitHub repository.");
+                        } else {
+                            alert("There was an error uploading the PDF to the GitHub repository.");
+                        }
+                    })
+                } else {
+                  window.location.href = url
+                }
             } else {
                 window.location.href = "{{ url_for('docs.patternlistexporttree', apikey='API_KEY', exportType='project', model='API_KEY') }}"
                     .replaceAll("API_KEY", id);

@@ -82,6 +82,9 @@ class PDFExporter(ABC):
         self._inserted_toc = False
 
     @abstractmethod
+    def get_file_name(self) -> str: ...
+
+    @abstractmethod
     def load_data(self) -> dict: ...
 
     @abstractmethod
