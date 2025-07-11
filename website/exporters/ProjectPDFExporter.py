@@ -69,7 +69,11 @@ class ProjectPDFExporter(PDFExporter):
             raise ValueError(f"Unknown section title: {title}")
 
     def _render_section(
-        self, title: str, data: list[dict], configuration: dict
+        self,
+        title: str,
+        data: list[dict],
+        configuration: dict,
+        sizing: tuple[int, ...] | None,
     ) -> None:
         self.section(title)
         self.div(title, align=Align.L, decoration=TextEmphasis.B)
@@ -154,6 +158,7 @@ class ProjectPDFExporter(PDFExporter):
         self.table(
             has_header=True,
             rows=tuple(rows),
+            sizing=sizing,
         )
 
     def _metadata_section(self) -> None:
@@ -211,6 +216,7 @@ class ProjectPDFExporter(PDFExporter):
                 "URI": "URI",
                 "URL": "URL",
             },
+            (15, 15, 15, 30, 5, 10, 10),
         )
 
     def _collection_section(self) -> None:
@@ -226,6 +232,7 @@ class ProjectPDFExporter(PDFExporter):
                 "URI": "URI",
                 "URL": "URL",
             },
+            (15, 15, 15, 30, 5, 10, 10),
         )
 
     def _field_section(self) -> None:
@@ -234,13 +241,14 @@ class ProjectPDFExporter(PDFExporter):
             self.data.get("fields", []),
             {
                 "UI_Name": "Name",
-                "Identifier": "ID",
+                "Identifer": "ID",
                 "Ontology_Scope": "Ontology Scope",
                 "Ontology_Long_Path": "Path",
                 "Description": "Description",
                 "Version": "Version",
                 "URI": "URI",
             },
+            (15, 15, 15, 20, 25, 5, 5),
         )
 
     def _ontologies_section(self) -> None:
@@ -254,6 +262,7 @@ class ProjectPDFExporter(PDFExporter):
                 "Version": "Version",
                 "Namespace": "Namespace",
             },
+            None,
         )
 
     @override

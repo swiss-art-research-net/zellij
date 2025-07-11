@@ -106,12 +106,15 @@ class PDFExporter(ABC):
         self.pdf.multi_cell(w=0, text=text + "\n", center=align == Align.C, align=align)
         self.reset_font()
 
-    def table(self, rows: tuple, has_header=True) -> None:
+    def table(
+        self, rows: tuple, has_header=True, sizing: tuple[int, ...] | None = None
+    ) -> None:
         self.pdf.set_font(self.font, size=8)
         with self.pdf.table(
             first_row_as_headings=has_header,
             repeat_headings=False,
             wrapmode=WrapMode.CHAR,
+            col_widths=sizing,
         ) as table:
             for data_row in rows:
                 row = table.row()
@@ -154,7 +157,7 @@ class PDFExporter(ABC):
             institution=metadata.get("inistitution", ""),
             version=metadata.get("version"),
         )
-        self.pdf.set_auto_page_break(True, 10)
+        self.pdf.set_auto_page_break(True, 15)
         self.reset_font()
         self.pdf.add_page()
 
