@@ -4,12 +4,13 @@ Created on Mar. 11, 2021
 @author: Pete Harris
 """
 
+import os
 from collections import OrderedDict
+
+import click
 
 # import sqlite3
 import MySQLdb  # from pip install mysqlclient
-import click
-import os
 import nacl.secret
 from flask import current_app, g
 from flask.cli import with_appcontext
@@ -106,6 +107,7 @@ def decrypt(bytestring, keyfile=None, key=None):
         print(e)
         return ""
 
+
 def get_base_name(apikey):
     db = get_db()
     c = db.cursor()
@@ -121,19 +123,19 @@ def get_base_name(apikey):
     )
     row = dict_gen_one(c)
 
-    return row.get('dbasename') if row else None
+    return row.get("dbasename") if row else None
+
 
 def get_scraper_definition(api_key: str):
     database = get_db()
     c = database.cursor()
-    c.execute(
-        "SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (api_key,)
-    )
+    c.execute("SELECT * FROM AirTableDatabases WHERE dbaseapikey=%s", (api_key,))
 
     data = dict_gen_one(c)
     c.close()
 
     return data
+
 
 def generate_airtable_schema(apikey, db=None):
     if not db:
@@ -155,7 +157,7 @@ def generate_airtable_schema(apikey, db=None):
     for rec in dict_gen_many(c):
         if not secrettoken:
             secrettoken = rec["secrettoken"]
-        if not rec["scrapername"] in scrapers:
+        if rec["scrapername"] not in scrapers:
             scrapers[rec["scrapername"]] = {}
             scrapers[rec["scrapername"]]["id"] = rec["scraperkey"]
 
@@ -172,7 +174,7 @@ def generate_airtable_schema(apikey, db=None):
                 scrapers[rec["scrapername"]][rec["group_table"]]["KeyField"] = rec[
                     "group_keyfield"
                 ]
-        if not rec["tablename"] in scrapers[rec["scrapername"]]:
+        if rec["tablename"] not in scrapers[rec["scrapername"]]:
             # data_table or group_table from SQL table "scrapers" does not match tablename from SQL table "scraperfields"
             # probably should throw a data error, but also this shouldn't happen
             print(
@@ -182,12 +184,39 @@ def generate_airtable_schema(apikey, db=None):
             )
             print("       Creating key, but this may have unexpected effects.")
             scrapers[rec["scrapername"]][rec["tablename"]] = OrderedDict()
-        if not rec["fieldlabel"] in scrapers[rec["scrapername"]][rec["tablename"]]:
+        if rec["fieldlabel"] not in scrapers[rec["scrapername"]][rec["tablename"]]:
             scrapers[rec["scrapername"]][rec["tablename"]][rec["fieldlabel"]] = rec[
                 "fieldname"
             ]
     c.close()
     return (scrapers, secrettoken)
+
+
+def get_schema_from_api_key(pattern: str, api_key: str) -> dict:
+    schemas, _ = generate_airtable_schema(api_key)
+
+    schema = schemas.get(pattern)
+
+    if not schema:
+        return {}
+
+    schema_dict = {}
+
+    for tablename, fieldlist in schema.items():
+        if not isinstance(fieldlist, dict):
+            continue
+
+        if "GroupBy" in fieldlist:
+            schema_dict["low_remapper"] = fieldlist
+            schema_dict["low_fields"] = list(fieldlist.values())
+            schema_dict["low_table"] = tablename
+            schema_dict["low_group_by"] = fieldlist["GroupBy"]
+        else:
+            schema_dict["high_remapper"] = fieldlist
+            schema_dict["high_fields"] = list(fieldlist.values())
+            schema_dict["high_table"] = tablename
+
+    return schema_dict
 
 
 def get_airtable_pattern(apikey, scraperid, db=None, validateuserid=None):
@@ -304,7 +333,7 @@ def _get_airtable_pattern_by_name_or_id(
         ):
             # DATA MISMATCH ERROR
             raise Exception(
-                f"Data mismatch; \"tablename\": ({rec['tablename']}) must be equal to \"data_table\" ({rec['data_table']}) or \"group_table\" ({rec['group_table']})"
+                f'Data mismatch; "tablename": ({rec["tablename"]}) must be equal to "data_table" ({rec["data_table"]}) or "group_table" ({rec["group_table"]})'
             )
 
         if rec["tablename"] == rec["data_table"]:

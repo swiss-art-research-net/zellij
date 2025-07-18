@@ -75,8 +75,9 @@ class CustomPDF(FPDF):
 
 
 class PDFExporter(ABC):
-    def __init__(self, id: str):
+    def __init__(self, id: str, model_id: str | None = None):
         self.id = id
+        self.model_id = model_id
         self.data = {}
         self.font = "helvetica"
         self._inserted_toc = False

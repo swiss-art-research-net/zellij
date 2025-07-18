@@ -26,6 +26,7 @@ from website.db import (
 )
 from website.exporters.FieldExporter import FieldExporter
 from website.exporters.ModelExporter import ModelExporter
+from website.exporters.ModelPDFExporter import ModelPDFExporter
 from website.exporters.ProjectExporter import ProjectExporter
 from website.exporters.ProjectPDFExporter import ProjectPDFExporter
 from website.functions import functions
@@ -489,14 +490,16 @@ def patterntransformrs(apikey, pattern, modelid, item):
         return response
 
 
-@bp.route("/export/pdf/<id>/<model_id>", methods=["GET"])
-def exportmodelpdf(id: str, model_id: str):
-    exporter = ProjectPDFExporter(id)
+@bp.route("/export/pdf/<id>/<pattern>/<model_id>", methods=["GET"])
+def exportmodelpdf(id: str, pattern: str, model_id: str):
+    exporter = ModelPDFExporter(id, pattern, model_id)
 
     wrapper = FileWrapper(exporter.export())
 
     response = Response(wrapper, mimetype="application/pdf", direct_passthrough=True)
-    response.headers["Content-Disposition"] = "attachment; filename=test.pdf"
+    response.headers["Content-Disposition"] = (
+        f"attachment; filename={exporter.get_file_name()}"
+    )
     response.headers["Content-Type"] = "application/pdf"
     return response
 
