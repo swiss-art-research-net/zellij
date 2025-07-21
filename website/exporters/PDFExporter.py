@@ -150,6 +150,9 @@ class PDFExporter(ABC):
             self._inserted_toc = True
         self.pdf.start_section(title)
 
+    def sub_section(self, title: str, level=1) -> None:
+        self.pdf.start_section(title, level=level)
+
     def export(self) -> io.BytesIO:
         try:
             metadata = self.load_data()

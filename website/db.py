@@ -192,7 +192,7 @@ def generate_airtable_schema(apikey, db=None):
     return (scrapers, secrettoken)
 
 
-def get_schema_from_api_key(pattern: str, api_key: str) -> dict:
+def get_schema_from_api_key(pattern: str, api_key: str) -> (dict, dict):
     schemas, _ = generate_airtable_schema(api_key)
 
     schema = schemas.get(pattern)
@@ -216,7 +216,7 @@ def get_schema_from_api_key(pattern: str, api_key: str) -> dict:
             schema_dict["high_fields"] = list(fieldlist.values())
             schema_dict["high_table"] = tablename
 
-    return schema_dict
+    return schema, schema_dict
 
 
 def get_airtable_pattern(apikey, scraperid, db=None, validateuserid=None):

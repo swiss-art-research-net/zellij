@@ -1,23 +1,25 @@
-from flask import render_template, Blueprint, request
+from flask import Blueprint, render_template, request
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
 from CRITERIA import criteria
 from ZellijData.RDFCodeBlock import RDFCodeBlock
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
-from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
-
 
 bp = Blueprint("functions", __name__, url_prefix="/functions")
 
 
-@bp.route("/ontology", methods=["POST"])
-def generate_ontology_graph():
-    rdf = RDFCodeBlock(request.form["turtle_text"])
+def generate_ontology_graph(rdf) -> str:
+    rdf = RDFCodeBlock(rdf)
 
     try:
         return criteria.ontology(rdf.turtle())
     except Exception as e:
         return "ERROR: " + str(e)
+
+
+@bp.route("/ontology", methods=["POST"])
+def generate_ontology_graph_route():
+    return generate_ontology_graph(request.form["turtle_text"])
 
 
 @bp.route("/instance", methods=["POST"])
@@ -62,25 +64,25 @@ def display_graph(prefix, input, item, categories):
 
     # for field in fields:
     #     field_data = field.get('fields', {})
-        
+
     #     if 'Collection_Deployed' in field_data:
     #         if isinstance(field_data['Collection_Deployed'], str):
     #             name = field_data['Collection_Deployed']
     #         else:
     #             name = field_data['Collection_Deployed'][0]
-            
+
     #         if name[:3] == "rec":
     #             name = airtable.get_record_by_id("Collection", name)['fields']['UI_Name'] + ":Sample"
     #     else:
     #         name = field_data.get('UI_Name') + ":Sample"
 
     #     if name:
-    #         field_id = field.get('id', '')  
+    #         field_id = field.get('id', '')
     #         field_ui_name = field_data.get('UI_Name', '')  # Get UI name or default to ""
-            
+
     #         if name not in categories:
     #             categories[name] = []  # Change to a list of dicts
-            
+
     #         categories[name].append({"id": field_id, "ui_name": field_ui_name})
 
     TurtlePrefix = ""
@@ -107,7 +109,12 @@ def display_graph(prefix, input, item, categories):
     graphs["generateInstance"] = generate_instance_graph
     graphs["generateJsonLD"] = generate_json_ld
 
-    return render_template("functions/display_graph.html", prefix=prefix, graphs=graphs, categories=category_field)
+    return render_template(
+        "functions/display_graph.html",
+        prefix=prefix,
+        graphs=graphs,
+        categories=category_field,
+    )
 
 
 # each function should have a label and a function
