@@ -135,6 +135,20 @@ class ModelPDFExporter(PDFExporter):
                 .get("Name")
             )
 
+        funding_project = self.data["model"].get("Funding_Project")
+        if (
+            funding_project
+            and len(funding_project) > 0
+            and funding_project[0].startswith("rec")
+        ):
+            funding_project = (
+                self.airtable.get_record_by_id(
+                    "Project", self.data["model"]["Funding_Project"][0]
+                )
+                .get("fields")
+                .get("UI_Name")
+            )
+
         self.table(
             has_header=False,
             rows=(
@@ -148,7 +162,7 @@ class ModelPDFExporter(PDFExporter):
                 ("Last Modified", self.data["model"].get("Last_Modified", "")),
                 ("Authors", author),
                 ("Funders", funder),
-                ("Funding Project", self.data["model"].get("Funding_Project", "")),
+                ("Funding Project", funding_project),
                 ("Ontology", self.data["model"].get("Ontology_Scope_URI", "")),
                 ("URI", self.data["model"].get("URI", "")),
                 (
@@ -171,6 +185,9 @@ class ModelPDFExporter(PDFExporter):
                 if field_key in self.hidden_keys:
                     continue
 
+                if field_key not in rows[0]:
+                    continue
+
                 if isinstance(field, list):
                     if any([isinstance(f, dict) for f in field]):
                         field = ", ".join(
@@ -182,6 +199,24 @@ class ModelPDFExporter(PDFExporter):
                     field = ""
                 elif not isinstance(field, str):
                     field = str(field)
+
+                if field.startswith("rec"):
+                    if self.scraper["low_table"] not in self.schemas:
+                        self.schemas[self.scraper["low_table"]] = (
+                            self.airtable.airtable.table(
+                                base_id=self.id, table_name=self.scraper["low_table"]
+                            ).schema()
+                        )
+                    schema = self.schemas[self.scraper["low_table"]]
+                    for f in schema.fields:
+                        if f.name == field_key and f.type == "multipleRecordLinks":
+                            if field not in self.fields:
+                                self.fields[field] = self.airtable.airtable.table(
+                                    base_id=self.id,
+                                    table_name=f.options.linked_table_id,
+                                ).get(field)
+
+                            field = self.fields[field].get("fields").get("UI_Name", "")
 
                 if len(field) > 100:
                     field = field[:97] + "..."

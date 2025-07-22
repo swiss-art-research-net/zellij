@@ -493,15 +493,36 @@ def patterntransformrs(apikey, pattern, modelid, item):
 @bp.route("/export/pdf/<id>/<pattern>/<model_id>", methods=["GET"])
 def exportmodelpdf(id: str, pattern: str, model_id: str):
     exporter = ModelPDFExporter(id, pattern, model_id)
+    upload = request.args.get("upload", "false").lower() == "true"
 
-    wrapper = FileWrapper(exporter.export())
+    pdf_bytes = exporter.export()
 
-    response = Response(wrapper, mimetype="application/pdf", direct_passthrough=True)
-    response.headers["Content-Disposition"] = (
-        f"attachment; filename={exporter.get_file_name()}"
-    )
-    response.headers["Content-Type"] = "application/pdf"
-    return response
+    if upload:
+        if g.user is None:
+            return "", 401
+
+        github = GithubWrapper.from_api_key(id)
+
+        if github is None:
+            return "", 400
+
+        try:
+            github.upload_file(f"composite/{exporter.get_file_name()}", pdf_bytes)
+            return "", 200
+        except Exception as e:
+            logging.error(f"Failed to upload PDF: {e}")
+            return "", 500
+    else:
+        wrapper = FileWrapper(pdf_bytes)
+
+        response = Response(
+            wrapper, mimetype="application/pdf", direct_passthrough=True
+        )
+        response.headers["Content-Disposition"] = (
+            f"attachment; filename={exporter.get_file_name()}"
+        )
+        response.headers["Content-Type"] = "application/pdf"
+        return response
 
 
 @bp.route("/export/pdf/<id>", methods=["GET"])
