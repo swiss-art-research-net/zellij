@@ -211,9 +211,9 @@ class ModelPDFExporter(PDFExporter):
 
         allturtle = TurtlePrefix + "\n\n" + text
         turtle = TurtleCodeBlock(allturtle)
-        graph_text = turtle.text()
+        self.graph_text = turtle.text()
         mmd = md.Mermaid(
-            generate_ontology_graph(graph_text),
+            generate_ontology_graph(self.graph_text),
             width=math.floor(self.pdf.w - 20) * 8,
             height=math.floor(self.pdf.h - 60) * 8,
         )
@@ -229,6 +229,13 @@ class ModelPDFExporter(PDFExporter):
         self.sub_section(f"{title}: Data Sample")
         self.div(f"{title}: Data Sample", align=Align.C, decoration=TextEmphasis.B)
 
+        rows = [("RDF",), (self.data["model"].get("Model_Turtle", "")[0:2500] + "...",)]
+
+        self.table(
+            has_header=True,
+            rows=tuple(rows),
+        )
+
     def _generate_category_section(self, title: str, data: dict) -> None:
         self.section(title)
         self.div(title, align=Align.C, decoration=TextEmphasis.B)
@@ -236,12 +243,13 @@ class ModelPDFExporter(PDFExporter):
         if self.graph_field is not None:
             self.pdf.add_page()
             self._generate_graph_sub_section(title, data)
-        self.pdf.add_page()
-        self._generate_rdf_sub_section(title, data)
+
+        if self.data["model"].get("Model_Turtle"):
+            self.pdf.add_page()
+            self._generate_rdf_sub_section(title, data)
 
     @override
     def generate_content(self) -> None:
         self._metadata_section()
         for key, val in self.data["item"].GroupedFields():
             self._generate_category_section(key, val)
-            break
