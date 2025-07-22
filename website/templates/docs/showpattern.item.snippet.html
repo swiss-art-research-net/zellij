@@ -47,7 +47,6 @@
 </script>
 <script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js'></script>
 <script>
-
     function makeTableSortable(table) {
         const headers = table.querySelectorAll('th');
         let sortCount = 0;
@@ -183,6 +182,10 @@
                         <option class="export-x3ml-form-b" data-upload="true">Generate X3ML Mappings For System (Form B)</option>
                         <option class="export-rs" data-upload="false">Generate ResearchSpace Definition</option>
                         <option class="export-rs" data-upload="true">Generate ResearchSpace Definition For System</option>
+                    </optgroup>
+                    <optgroup label="PDF Export">
+                        <option value="pdf" data-upload="false" class="export-pdf-field">Download PDF</option>
+                        <option value="pdf-github" data-upload="true" class="export-pdf-upload-field">Upload PDF</option>
                     </optgroup>
                 </select>
             </td>
@@ -1023,6 +1026,19 @@
           } else {
               window.location.href = "{{ url_for('docs.patterntransformrs', apikey=apikey, pattern=pattern, modelid=patternitem['ID'], item='model') }}";
           }
+        } else if (classes.includes("export-pdf-field") || classes.includes("export-pdf-upload-field")) {
+            if (upload) {
+                fetch("{{ url_for('docs.exportmodelpdf', id=apikey, pattern=pattern, model_id=patternitem['ID']) }}" + `?upload=${upload}`)
+                    .then((res) => {
+                        if (res.ok) {
+                            alert("The PDF has been generated and uploaded to the system.");
+                        } else {
+                            alert("An error occurred while uploading the PDF to the system.");
+                        }
+                    })
+            } else {
+                window.location.href = "{{ url_for('docs.exportmodelpdf', id=apikey, pattern=pattern, model_id=patternitem['ID']) }}";
+            }
         } else {
             window.location.href = "{{ url_for('docs.patternlistexporttree', apikey=apikey, exportType='model', model=pattern, item=patternitem['ID']) }}";
         }

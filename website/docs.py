@@ -26,7 +26,9 @@ from website.db import (
 )
 from website.exporters.FieldExporter import FieldExporter
 from website.exporters.ModelExporter import ModelExporter
+from website.exporters.ModelPDFExporter import ModelPDFExporter
 from website.exporters.ProjectExporter import ProjectExporter
+from website.exporters.ProjectPDFExporter import ProjectPDFExporter
 from website.functions import functions
 from website.github_wrapper import GithubWrapper
 from website.transformers.ResearchSpaceTransformer import ResearchSpaceTransformer
@@ -486,6 +488,79 @@ def patterntransformrs(apikey, pattern, modelid, item):
         response.headers["Content-Disposition"] = f"attachment; filename={file.name}"
         response.headers["Content-Type"] = "text/yaml"
         return response
+
+
+@bp.route("/export/pdf/<id>/<pattern>/<model_id>", methods=["GET"])
+def exportmodelpdf(id: str, pattern: str, model_id: str):
+    exporter = ModelPDFExporter(id, pattern, model_id)
+    upload = request.args.get("upload", "false").lower() == "true"
+
+    pdf_bytes = exporter.export()
+
+    if upload:
+        if g.user is None:
+            return "", 401
+
+        github = GithubWrapper.from_api_key(id)
+
+        if github is None:
+            return "", 400
+
+        try:
+            github.upload_file(f"composite/{exporter.get_file_name()}", pdf_bytes)
+            return "", 200
+        except Exception as e:
+            logging.error(f"Failed to upload PDF: {e}")
+            return "", 500
+    else:
+        wrapper = FileWrapper(pdf_bytes)
+
+        response = Response(
+            wrapper, mimetype="application/pdf", direct_passthrough=True
+        )
+        response.headers["Content-Disposition"] = (
+            f"attachment; filename={exporter.get_file_name()}"
+        )
+        response.headers["Content-Type"] = "application/pdf"
+        return response
+
+
+@bp.route("/export/pdf/<id>", methods=["GET"])
+def exportpdf(id: str):
+    exporter = ProjectPDFExporter(id)
+    upload = request.args.get("upload", "false").lower() == "true"
+
+    pdf_bytes = exporter.export()
+
+    if upload:
+        if g.user is None:
+            return "", 401
+
+        github = GithubWrapper.from_api_key(id)
+
+        if github is None:
+            return "", 400
+
+        try:
+            github.upload_file(f"space/{exporter.get_file_name()}", pdf_bytes)
+            return "", 200
+        except Exception as e:
+            logging.error(f"Failed to upload PDF: {e}")
+            return "", 500
+    else:
+        wrapper = FileWrapper(exporter.export())
+
+        response = Response(
+            wrapper, mimetype="application/pdf", direct_passthrough=True
+        )
+        response.headers["Content-Disposition"] = "attachment; filename=project.pdf"
+        response.headers["Content-Type"] = "application/pdf"
+        return response
+
+
+@bp.route("/pdf/<id>", methods=["GET"])
+def pdf(id: str):
+    return render_template("functions/project_pdf.html")
 
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])
