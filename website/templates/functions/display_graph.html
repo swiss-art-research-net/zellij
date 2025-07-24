@@ -159,9 +159,9 @@
             </section>
         {% endif %}
         {% for name, items in categories.items() %}
-            <section x-show="qaMode">
+            <section x-show="qaMode" style="overflow-x: scroll;">
                 <h2>{{ name }}</h2>
-                <table border="1" style="margin-bottom: 15px;">
+                <table border="1" style="margin-bottom: 15px; max-width: 100%;">
                     <thead>
                         <tr>
                             <th style="padding: 5px 5px;">Subject</th>

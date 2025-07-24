@@ -37,7 +37,15 @@
                     </th>
                     <td>
                         <div>
-                            {{ data[field] }}
+                            {% if data[field] is iterable and "filename" in data[field][0] %}
+                                {% for file in data[field] %}
+                                    <a href="{{ file['url'] }}" target="_blank">
+                                        <img src="{{ file['thumbnails']['small']['url'] }}" alt="{{ file['filename'] }}" >
+                                    </a>
+                                {% endfor %}
+                            {% else %}
+                                {{ data[field] }}
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
