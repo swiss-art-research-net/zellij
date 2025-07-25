@@ -9,6 +9,7 @@ from fpdf.enums import TextEmphasis, WrapMode
 from fpdf.outline import TableOfContents
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
+FONT = "titillium-web"
 
 
 class CustomPDF(FPDF):
@@ -32,7 +33,7 @@ class CustomPDF(FPDF):
         if self.page_no() == 1:
             return  # Skip header on the first page
 
-        self.set_font("helvetica", size=12)
+        self.set_font(FONT, size=12)
 
         if self.institution:
             header_text = (
@@ -53,7 +54,7 @@ class CustomPDF(FPDF):
             return  # Skip footer on the first page
 
         self.set_y(-12)
-        self.set_font("helvetica", size=12)
+        self.set_font(FONT, size=12)
         if self.version:
             self.cell(
                 text=f"Version Number: {self.version}",
@@ -79,7 +80,7 @@ class PDFExporter(ABC):
         self.id = id
         self.model_id = model_id
         self.data = {}
-        self.font = "helvetica"
+        self.font = FONT
         self._inserted_toc = False
 
     @abstractmethod
@@ -165,6 +166,12 @@ class PDFExporter(ABC):
             version=metadata.get("version"),
         )
         self.pdf.set_auto_page_break(True, 15)
+        self.pdf.add_font(
+            "titillium-web", fname="./website/static/TitilliumWeb-Regular.ttf"
+        )
+        self.pdf.add_font(
+            "titillium-web", style="B", fname="./website/static/TitilliumWeb-Bold.ttf"
+        )
         self.reset_font()
         self.pdf.add_page()
 

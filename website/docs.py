@@ -548,7 +548,7 @@ def exportpdf(id: str):
             logging.error(f"Failed to upload PDF: {e}")
             return "", 500
     else:
-        wrapper = FileWrapper(exporter.export())
+        wrapper = FileWrapper(pdf_bytes)
 
         response = Response(
             wrapper, mimetype="application/pdf", direct_passthrough=True
