@@ -77,23 +77,8 @@ class SparqlTransformer(Transformer):
             collection = []
             if model is not None and model_id is not None:
                 if model == "Collection":
-                    collection_field = self.airtable.get_record_by_formula(
-                        "Collection_Fields",
-                        OR(
-                            match(
-                                {
-                                    "Field": self.id,
-                                    "Collection_Field_Part_of_Collection": model_id,
-                                }
-                            ),
-                            match(
-                                {
-                                    "Field": self.get_field_or_default("ID"),
-                                    "Collection_Field_Part_of_Collection": model_id,
-                                }
-                            ),
-                        ),
-                    )
+                    collection_field = None
+                    collection = self.get_records(model_id, "Collection")
                 else:
                     collection_field = self.airtable.get_record_by_formula(
                         "Model_Fields",
@@ -407,6 +392,7 @@ class SparqlTransformer(Transformer):
         count: bool = False,
         model: Union[str, None] = None,
         model_id: Union[str, None] = None,
+        upload: bool = False,
     ):
         if count:
             query = SPARQLSelectQuery(limit=1)
@@ -415,7 +401,10 @@ class SparqlTransformer(Transformer):
             query = SPARQLSelectQuery(limit=100)
         self.add_prefixes(query)
 
-        where_pattern = self.create_where_pattern(model=model, model_id=model_id)
+        if upload:
+            where_pattern = self.create_where_pattern()
+        else:
+            where_pattern = self.create_where_pattern(model=model, model_id=model_id)
 
         query.set_where_pattern(where_pattern)
 

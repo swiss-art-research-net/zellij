@@ -546,13 +546,34 @@
                     {% endif %}
                     <td>
                         {% for item in fld_f_list %}
-                        {% if item.id is defined %}
+                        {% if item.id is defined and item.filename is not defined %}
                         {% set record_url = segments[0] + "?selectedMenuItem=" + segments[0].replace("/list/", "/display/")
                         + "/" + item["table"] + "?search=" + item["fields"]["ID"] %}
                         <a href="{{ record_url }}" target="_blank">{{ item["fields"]["UI_Name"] }}</a>
                         {% if not loop.last %}, {% endif %}
                         {% else %}
-                        {{ item }}{% if not loop.last %}, {% endif %}
+                            {% if item is iterable and "filename" in item[0] %}
+                                {% for file in item %}
+                                    <a href="{{ file['url'] }}" target="_blank">
+                                        {% if 'thumbnails' in file %}
+                                            <img src="{{ file['thumbnails']['small']['url'] }}" alt="{{ file['filename'] }}" >
+                                        {% else %}
+                                            {{ file['filename'] }}
+                                        {% endif %}
+                                    </a>
+                                {% endfor %}
+                            {% elif "filename" in item %}
+                                <a href="{{ item['url'] }}" target="_blank">
+                                    {% if 'thumbnails' in item %}
+                                    <img src="{{ item['thumbnails']['small']['url'] }}" alt="{{ item['filename'] }}" >
+                                    {% else %}
+                                        {{ item['filename'] }}
+                                    {% endif %}
+                                </a>
+                            {% else %}
+                                {{ item }}
+                            {% endif %}
+                            {% if not loop.last %}, {% endif %}
                         {% endif %}
                         {% endfor %}
                     </td>
