@@ -77,23 +77,8 @@ class SparqlTransformer(Transformer):
             collection = []
             if model is not None and model_id is not None:
                 if model == "Collection":
-                    collection_field = self.airtable.get_record_by_formula(
-                        "Collection_Fields",
-                        OR(
-                            match(
-                                {
-                                    "Field": self.id,
-                                    "Collection_Field_Part_of_Collection": model_id,
-                                }
-                            ),
-                            match(
-                                {
-                                    "Field": self.get_field_or_default("ID"),
-                                    "Collection_Field_Part_of_Collection": model_id,
-                                }
-                            ),
-                        ),
-                    )
+                    collection_field = None
+                    collection = self.get_records(model_id, "Collection")
                 else:
                     collection_field = self.airtable.get_record_by_formula(
                         "Model_Fields",
