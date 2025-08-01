@@ -392,6 +392,7 @@ class SparqlTransformer(Transformer):
         count: bool = False,
         model: Union[str, None] = None,
         model_id: Union[str, None] = None,
+        upload: bool = False,
     ):
         if count:
             query = SPARQLSelectQuery(limit=1)
@@ -400,7 +401,10 @@ class SparqlTransformer(Transformer):
             query = SPARQLSelectQuery(limit=100)
         self.add_prefixes(query)
 
-        where_pattern = self.create_where_pattern(model=model, model_id=model_id)
+        if upload:
+            where_pattern = self.create_where_pattern()
+        else:
+            where_pattern = self.create_where_pattern(model=model, model_id=model_id)
 
         query.set_where_pattern(where_pattern)
 

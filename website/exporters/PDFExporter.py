@@ -112,9 +112,13 @@ class PDFExporter(ABC):
         self.reset_font()
 
     def table(
-        self, rows: tuple, has_header=True, sizing: tuple[int, ...] | None = None
+        self,
+        rows: tuple,
+        has_header=True,
+        sizing: tuple[int, ...] | None = None,
+        font_size: int = 8,
     ) -> None:
-        self.pdf.set_font(self.font, size=8)
+        self.pdf.set_font(self.font, size=font_size)
         with self.pdf.table(
             first_row_as_headings=has_header,
             repeat_headings=False,

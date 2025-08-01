@@ -417,9 +417,12 @@ def patterntransformturtle(apikey, item):
 def patterntransformsparql(apikey, model_table, model_id, item):
     transformer = SparqlTransformer(apikey, item, model=model_table, model_id=model_id)
     count = request.args.get("count") == "true"
-    file = transformer.transform(count=count, model=model_table, model_id=model_id)
+    upload = request.args.get("upload") == "true"
+    file = transformer.transform(
+        count=count, model=model_table, model_id=model_id, upload=upload
+    )
 
-    if request.args.get("upload") == "true":
+    if upload:
         if g.user is None:
             return "", 401
 

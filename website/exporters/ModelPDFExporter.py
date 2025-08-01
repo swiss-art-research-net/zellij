@@ -110,7 +110,7 @@ class ModelPDFExporter(PDFExporter):
         }
 
     def _metadata_section(self) -> None:
-        self.h1(self.data["model"]["UI_Name"])
+        self.h1(self.data["model"].get("UI_Name", self.data["model"].get("ID")))
         self.div(self.data["project"]["UI_Name"], align=Align.C)
         self.div(date.today().strftime("%d/%m/%Y"), align=Align.C)
         self.div("Metadata", align=Align.C, decoration=TextEmphasis.B)
@@ -178,7 +178,9 @@ class ModelPDFExporter(PDFExporter):
         rows = []
         for entry in data:
             if len(rows) == 0:
-                rows.append(tuple(entry.keys()))
+                rows.append(
+                    tuple(filter(lambda x: x not in self.hidden_keys, entry.keys()))
+                )
 
             data_row = []
             for field_key, field in entry.items():
@@ -264,7 +266,16 @@ class ModelPDFExporter(PDFExporter):
         self.sub_section(f"{title}: Data Sample")
         self.div(f"{title}: Data Sample", align=Align.C, decoration=TextEmphasis.B)
 
-        rows = [("RDF",), (self.data["model"].get("Model_Turtle", "")[0:2500] + "...",)]
+        if len(data) == 0 or "Turtle RDF" not in data[0]:
+            return
+
+        rdf = data[0].get("Turtle RDF")
+        rdf = rdf.split("\n")
+        rdf = [line for line in rdf if not line.strip().startswith("@")]
+        rdf = "\n".join(rdf)
+        if len(rdf) > 2000:
+            rdf = rdf[:2000] + "..."
+        rows = [("RDF",), (rdf,)]
 
         self.table(
             has_header=True,
