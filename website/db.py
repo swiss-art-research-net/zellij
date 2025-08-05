@@ -6,6 +6,7 @@ Created on Mar. 11, 2021
 
 import os
 from collections import OrderedDict
+from typing import Tuple
 
 import click
 
@@ -192,13 +193,19 @@ def generate_airtable_schema(apikey, db=None):
     return (scrapers, secrettoken)
 
 
-def get_schema_from_api_key(pattern: str, api_key: str) -> (dict, dict):
+def get_schemas_from_api_key(api_key: str) -> dict:
     schemas, _ = generate_airtable_schema(api_key)
+
+    return schemas
+
+
+def get_schema_from_api_key(pattern: str, api_key: str) -> Tuple[dict, dict]:
+    schemas = get_schemas_from_api_key(api_key)
 
     schema = schemas.get(pattern)
 
     if not schema:
-        return {}
+        return ({}, {})
 
     schema_dict = {}
 

@@ -5,7 +5,8 @@ from fpdf import Align
 from fpdf.enums import TextEmphasis
 from typing_extensions import override
 
-from website.datasources import AirTableConnection
+from website.datasources import AirTableConnection, OrderedDict
+from website.db import get_schemas_from_api_key
 from website.exporters.PDFExporter import PDFExporter
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
@@ -14,6 +15,14 @@ BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 class ProjectPDFExporter(PDFExporter):
     schemas = {}
     fields = {}
+
+    def __init__(self, id: str):
+        if not id:
+            raise ValueError("ID is required for ModelPDFExporter.")
+
+        self.schema = get_schemas_from_api_key(id)
+
+        super().__init__(id)
 
     @override
     def get_file_name(self) -> str:
@@ -94,7 +103,22 @@ class ProjectPDFExporter(PDFExporter):
 
             for key in configuration.keys():
                 if key == "URL":
-                    scraper = "Model" if title == "Models" else "Collection"
+                    scraper = None
+                    for key, val in self.schema.items():
+                        if scraper is not None:
+                            break
+
+                        for item_val in val.values():
+                            if scraper is not None:
+                                break
+
+                            if not isinstance(item_val, OrderedDict):
+                                continue
+
+                            for entry, entry_val in item_val.items():
+                                if entry == "GroupBy" and entry_val == table_name:
+                                    scraper = key
+                                    break
                     row.append(
                         f"{BASE_URL}/docs/list/{self.id}?scraper={scraper}&selectedMenuItem=%2Fdocs%2Fdisplay%2F{self.id}%2F{scraper}%3Fsearch%3D{data_row.get('ID')}"
                     )
