@@ -12,19 +12,20 @@ from collections import OrderedDict
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 from werkzeug.security import generate_password_hash
 
-# from ZellijTable.AggregateDataCollector import AggregateDataCollector
-from ZellijData.AirTableConnection import EnhancedResponse, AirTableConnection
-from website.DataScraper import DataScraper
 from website.auth import login_required
+from website.DataScraper import DataScraper
 from website.db import (
-    get_db,
-    dict_gen_one,
-    dict_gen_many,
     decrypt,
+    dict_gen_many,
+    dict_gen_one,
     encrypt,
+    get_db,
     set_airtable_pattern,
 )
 from website.functions import functions
+
+# from ZellijTable.AggregateDataCollector import AggregateDataCollector
+from ZellijData.AirTableConnection import AirTableConnection
 
 bp = Blueprint("datasources", __name__, url_prefix="/datasources")
 
@@ -190,7 +191,7 @@ def pasteInManageDataSources(dbId, scraperId):
     cursor2 = db2.cursor()
     for field in existing_fields:
         cursor2.execute(
-            f"""
+            """
             INSERT INTO ScraperFields (scraperkey, sortorder, tablename, fieldlabel, fieldname, sortable, groupable, hideable, function, link, exportable)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """,

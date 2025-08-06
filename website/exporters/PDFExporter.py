@@ -125,9 +125,10 @@ class PDFExporter(ABC):
             wrapmode=WrapMode.CHAR,
             col_widths=sizing,
         ) as table:
+            header = rows[0] if has_header else []
             for data_row in rows:
                 row = table.row()
-                for cell in data_row:
+                for idx, cell in enumerate(data_row):
                     if not isinstance(cell, int) and len(cell) == 0:
                         content = "N/A"
                     elif isinstance(cell, list):
@@ -135,12 +136,17 @@ class PDFExporter(ABC):
                     else:
                         content = str(cell)
 
-                    if urlparse(content).scheme in ("http", "https"):
+                    if urlparse(content).scheme in ("http", "https") and (
+                        (len(header) > 0 and header[idx] != "URI")
+                        or data_row[0] != "URI"
+                    ):
+                        self.pdf.set_text_color(0, 0, 238)
                         row.cell(
                             "Link",
                             link=content,
                             align=Align.L,
                         )
+                        self.pdf.set_text_color(0, 0, 0)
                     else:
                         row.cell(content)
 
