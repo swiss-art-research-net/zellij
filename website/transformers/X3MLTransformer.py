@@ -6,7 +6,7 @@ from typing import Dict, List, Literal, Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import OR, match
+from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
 
 from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.Transformer import Transformer
@@ -84,21 +84,24 @@ class X3MLTransformer(Transformer):
             return []
 
         searchtext = self.model["fields"]["ID"]
+        model_fields = list(
+            sorted(
+                self.airtable.get_multiple_records_by_formula(
+                    self.field_table,
+                    f'SEARCH("{searchtext}",{{{self.field_table_group_by}}})',
+                ),
+                key=lambda x: x["fields"]["Canonical_Field_Order"]
+                if "Canonical_Field_Order" in x["fields"]
+                else x["fields"]["Model_Specific_Field_Order"],
+            ),
+        )
         model_fields_ids = list(
             map(
                 lambda x: x["fields"]["Field"][0]
                 if len(x["fields"]["Field"][0]) > 0
                 and isinstance(x["fields"]["Field"], list)
                 else x["fields"]["Field"],
-                sorted(
-                    self.airtable.get_multiple_records_by_formula(
-                        self.field_table,
-                        f'SEARCH("{searchtext}",{{{self.field_table_group_by}}})',
-                    ),
-                    key=lambda x: x["fields"]["Canonical_Field_Order"]
-                    if "Canonical_Field_Order" in x["fields"]
-                    else x["fields"]["Model_Specific_Field_Order"],
-                ),
+                model_fields,
             )
         )
 
@@ -107,14 +110,27 @@ class X3MLTransformer(Transformer):
             OR(
                 *list(
                     map(
-                        lambda x: match({"ID": x}),
+                        lambda x: OR(
+                            match({"ID": x}), EQUAL("RECORD_ID()", STR_VALUE(x))
+                        ),
                         model_fields_ids,
                     )
                 )
             ),
         )
 
-        return sorted(fields, key=lambda x: model_fields_ids.index(x["fields"]["ID"]))
+        sorted_fields = sorted(fields, key=lambda x: model_fields_ids.index(x["id"]))
+        for field, model_field in zip(sorted_fields, model_fields):
+            if "Model_Specific_Part_of_Collection" in model_field["fields"]:
+                field["fields"]["Model_Specific_Part_of_Collection"] = model_field[
+                    "fields"
+                ]["Model_Specific_Part_of_Collection"]
+            elif "Collection_Specific_Part_of_Collection" in model_field["fields"]:
+                field["fields"]["Collection_Specific_Part_of_Collection"] = model_field[
+                    "fields"
+                ]["Collection_Specific_Part_of_Collection"]
+
+        return sorted(fields, key=lambda x: model_fields_ids.index(x["id"]))
 
     def get_major_number_of_part(self, part: str) -> str:
         if "[" not in part:
@@ -212,7 +228,7 @@ class X3MLTransformer(Transformer):
             title.text = self.model.get("fields", {}).get("System_Name", "")
             description.text = self.model.get("fields", {}).get("Description", "")
         elif self.field_id and self.field:
-            collection_id = self.field.get("fields", {}).get("Collection_Deployed", "")
+            collection_id = self._get_collection_deployed(self.field)
 
             collection_name = self._get_collection_name(
                 collection_id,
@@ -287,6 +303,16 @@ class X3MLTransformer(Transformer):
 
         return ""
 
+    def _get_collection_deployed(self, field: RecordDict):
+        fields = field.get("fields", {})
+
+        if "Model_Specific_Part_of_Collection" in fields:
+            return fields["Model_Specific_Part_of_Collection"]
+        elif "Collection_Specific_Part_of_Collection" in fields:
+            return fields["Collection_Specific_Part_of_Collection"]
+
+        return ""
+
     def _add_mapping_domain(
         self, root: ET.Element, template: str, parts: Union[List[str], None] = None
     ) -> None:
@@ -294,15 +320,14 @@ class X3MLTransformer(Transformer):
         domain.attrib["template"] = template
         source_node = ET.SubElement(domain, "source_node")
         target_node = ET.SubElement(domain, "target_node")
-        entity = ET.SubElement(target_node, "entity")
-        entity_type = ET.SubElement(entity, "type")
-        entity_type.text = template
 
         if parts:
-            relationship = ET.SubElement(source_node, "relationship")
-            relationship.text = parts[0]
-            self._self_populate_entity_node(entity, parts[-1])
+            source_node.text = "/"
+            self._self_populate_entity_node(target_node, parts[-1])
         else:
+            entity = ET.SubElement(target_node, "entity")
+            entity_type = ET.SubElement(entity, "type")
+            entity_type.text = template
             instance_generator = ET.SubElement(entity, "instance_generator")
             instance_generator.attrib["name"] = "UUID"
 
@@ -352,22 +377,6 @@ class X3MLTransformer(Transformer):
         if field is None:
             return []
 
-        link = ET.SubElement(parent, "link")
-        if form == "a":
-            link.attrib["template"] = field.get("fields", {}).get("ID", "")
-        elif form == "b" and first_part:
-            link.attrib["template"] = self._get_collection_name(
-                field.get("fields", {}).get("Collection_Deployed", "")
-            )
-        elif form == "b" and not first_part:
-            link.attrib["template"] = field.get("fields", {}).get("ID", "")
-
-        path = ET.SubElement(link, "path")
-
-        source_relation = ET.SubElement(path, "source_relation")
-        ET.SubElement(source_relation, "relation")
-
-        target_relation = ET.SubElement(path, "target_relation")
         total_path = field.get("fields", {}).get("Ontology_Long_Path") or field.get(
             "fields", {}
         ).get("Ontology_Path")
@@ -379,6 +388,26 @@ class X3MLTransformer(Transformer):
         # for form b take only the last two parts of the path
         if form == "b":
             parts = parts[0:2] if first_part else parts[2:]
+
+        if not parts:
+            return []
+
+        link = ET.SubElement(parent, "link")
+        if form == "a":
+            link.attrib["template"] = field.get("fields", {}).get("ID", "")
+        elif form == "b" and first_part:
+            link.attrib["template"] = self._get_collection_name(
+                self._get_collection_deployed(field)
+            )
+        elif form == "b" and not first_part:
+            link.attrib["template"] = field.get("fields", {}).get("ID", "")
+
+        path = ET.SubElement(link, "path")
+
+        source_relation = ET.SubElement(path, "source_relation")
+        ET.SubElement(source_relation, "relation")
+
+        target_relation = ET.SubElement(path, "target_relation")
 
         # handles mappings the in the form of "a 'integer' -> rdf:literal"
         parts = list(map(lambda x: x.split(" ")[0], parts))
@@ -410,7 +439,7 @@ class X3MLTransformer(Transformer):
                 self._add_mapping_domain(
                     mapping,
                     self._get_collection_name(
-                        self.field.get("fields", {}).get("Collection_Deployed", "")
+                        self._get_collection_deployed(self.field)
                     ),
                 )
                 self._add_field(mapping, self.field_id, form)
@@ -439,7 +468,7 @@ class X3MLTransformer(Transformer):
                 self._add_mapping_domain(
                     model_mapping,
                     self._get_collection_name(
-                        self.field.get("fields", {}).get("Collection_Deployed", "")
+                        self._get_collection_deployed(self.field)
                     ),
                     domain_path_parts,
                 )
@@ -452,24 +481,25 @@ class X3MLTransformer(Transformer):
 
                 for field in self._fetch_model_fields():
                     collection_name = self._get_collection_name(
-                        field.get("fields", {}).get("Collection_Deployed", "")
+                        self._get_collection_deployed(field)
                     )
 
                     if collection_name not in inserted_collections:
                         domain_path_parts = self._add_field(mapping, field, form, True)
 
-                    if collection_name in inserted_collections:
-                        model_mapping = inserted_collections[collection_name]
-                    else:
-                        model_mapping = ET.SubElement(mappings, "mapping")
-                        self._add_mapping_domain(
-                            model_mapping,
-                            collection_name,
-                            domain_path_parts,
-                        )
-                        inserted_collections[collection_name] = model_mapping
+                    if collection_name != "":
+                        if collection_name in inserted_collections:
+                            model_mapping = inserted_collections[collection_name]
+                        else:
+                            model_mapping = ET.SubElement(mappings, "mapping")
+                            self._add_mapping_domain(
+                                model_mapping,
+                                collection_name,
+                                domain_path_parts,
+                            )
+                            inserted_collections[collection_name] = model_mapping
 
-                    self._add_field(model_mapping, field, form, False)
+                        self._add_field(model_mapping, field, form, False)
 
     def transform(self, form: Union[Literal["a"], Literal["b"]]) -> io.BytesIO:
         attributes = {

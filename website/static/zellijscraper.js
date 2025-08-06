@@ -6,7 +6,7 @@
 function addSortable(thing) {
 	//alert('Add code to add list item\n' + thing);
 	var prefix = thing.id.substring(0, thing.id.indexOf("ScraperList"));
-	
+
 	var cntobj = document.getElementById(thing.id + "Count");
 	cntobj.value = parseInt(cntobj.value) + 1;
 	var suffix = parseInt(cntobj.value) + 1;
@@ -17,7 +17,7 @@ function addSortable(thing) {
 	obj.classList.add("drag-handle");
 	obj.classList.add("fas");
 	obj.classList.add("fa-bars");
-	newitem.appendChild(obj);   // creates the dragable section in the field 
+	newitem.appendChild(obj);   // creates the dragable section in the field
 
 	var obj = document.createElement("sub");
 	obj.innerHTML = suffix;	// the hidden INPUT is already incrementing this by one, but we're making one extra for unsortable KeyField
@@ -47,7 +47,7 @@ function addSortable(thing) {
 	obj.value="";
 	obj.classList.add("val");
 	newitem.appendChild(obj);
-	
+
 	var obj = document.createElement("i");
 	obj.classList.add("status");
 	obj.classList.add("far");
@@ -82,16 +82,16 @@ function removeScraperItem(thing){
 }
 
 function removeSingleScraperItem(button){
-	var item = button.parentNode; 
+	var item = button.parentNode;
 	var indexOfItem = Array.prototype.indexOf.call(item.parentNode.childNodes,item);
 	item.parentNode.removeChild(item)	;
 	// console.log("removed item");
 }
 
 function sortByAlphabeticallIndex(fields){
-	
+
 	var items = fields.querySelectorAll('input');
-	var itemsArray = Array.from(items) 
+	var itemsArray = Array.from(items)
 
 	itemsArray.sort(function(a,b){
 		var aValue = parseInt(a.value);
