@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
+from pyairtable.formulas import EQ, OR, match, quoted
 
 from website.exporters.Exporter import Exporter
 
@@ -211,11 +211,7 @@ class ModelExporter(Exporter):
 
                     for field in self._airtable.get_multiple_records_by_formula(
                         "Field",
-                        OR(
-                            *list(
-                                map(lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"), val)
-                            )
-                        ),
+                        OR(*list(map(lambda x: EQ(quoted(x), "RECORD_ID()"), val))),
                     ):
                         fields = field.get("fields")
 
@@ -269,7 +265,7 @@ class ModelExporter(Exporter):
                                 map(
                                     lambda x: OR(
                                         match({"ID": x}),
-                                        EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                        EQ(quoted(x), "RECORD_ID()"),
                                     ),
                                     fields_uris,
                                 )

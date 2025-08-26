@@ -6,7 +6,7 @@ from io import BytesIO
 import mermaid as md
 from fpdf import Align
 from fpdf.enums import TextEmphasis
-from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
+from pyairtable.formulas import EQ, OR, match, quoted
 from typing_extensions import override
 
 from website.datasources import AirTableConnection, get_prefill
@@ -59,7 +59,7 @@ class ModelPDFExporter(PDFExporter):
             self.data["model"] = self.airtable.get_record_by_formula(
                 self.scraper["high_table"],
                 OR(
-                    EQUAL("RECORD_ID()", STR_VALUE(self.model_id)),
+                    EQ("RECORD_ID()", quoted(self.model_id)),
                     match({"ID": self.model_id}),
                 ),
             )
@@ -75,6 +75,11 @@ class ModelPDFExporter(PDFExporter):
             raise ValueError(
                 f"Invalid prefill data for model {self.model_id}: {prefill_data}"
             )
+
+        for key, val in prefill_data.items():
+            if val.get("sortable"):
+                self.sort_key = key
+                break
 
         self.data["item"] = self.airtable.getSingleGroupedItem(
             self.model_id,
@@ -176,19 +181,29 @@ class ModelPDFExporter(PDFExporter):
         self.sub_section(f"{title}: Fields")
         self.div(f"{title}: Fields", align=Align.C, decoration=TextEmphasis.B)
         rows = []
+
+        if self.sort_key:
+            data = sorted(data, key=lambda x: x.get(self.sort_key, 0))
+
         for entry in data:
             if len(rows) == 0:
                 rows.append(
-                    tuple(filter(lambda x: x not in self.hidden_keys, entry.keys()))
+                    tuple(
+                        filter(
+                            lambda x: x not in self.hidden_keys,
+                            self.scraper["low_remapper"].keys(),
+                        )
+                    )
                 )
 
             data_row = []
-            for field_key, field in entry.items():
+            for field_key in self.scraper["low_remapper"].keys():
                 if field_key in self.hidden_keys:
                     continue
 
                 if field_key not in rows[0]:
                     continue
+                field = entry.get(field_key, "")
 
                 if isinstance(field, list):
                     if any([isinstance(f, dict) for f in field]):
@@ -254,13 +269,14 @@ class ModelPDFExporter(PDFExporter):
             width=math.floor(self.pdf.w - 20) * 8,
             height=math.floor(self.pdf.h - 60) * 8,
         )
-        self.pdf.image(
-            BytesIO(mmd.img_response.content),
-            x=10,
-            y=20,
-            w=self.pdf.w - 20,
-            h=self.pdf.h - 60,
-        )
+        if mmd.img_response.ok:
+            self.pdf.image(
+                BytesIO(mmd.img_response.content),
+                x=10,
+                y=20,
+                w=self.pdf.w - 20,
+                h=self.pdf.h - 60,
+            )
 
     def _generate_rdf_sub_section(self, title: str, data: dict) -> None:
         self.sub_section(f"{title}: Data Sample")
@@ -290,7 +306,9 @@ class ModelPDFExporter(PDFExporter):
             self.pdf.add_page()
             self._generate_graph_sub_section(title, data)
 
-        if self.data["model"].get("Model_Turtle"):
+        if self.data["model"].get("Model_Turtle") or self.data["model"].get(
+            "Collection_Turtle"
+        ):
             self.pdf.add_page()
             self._generate_rdf_sub_section(title, data)
 
@@ -298,4 +316,6 @@ class ModelPDFExporter(PDFExporter):
     def generate_content(self) -> None:
         self._metadata_section()
         for key, val in self.data["item"].GroupedFields():
+            if key == "default":
+                key = "Deneral"
             self._generate_category_section(key, val)

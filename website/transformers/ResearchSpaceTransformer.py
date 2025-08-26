@@ -1,15 +1,15 @@
 import io
+import re
 from typing import Dict, List, Union
 
 import yaml
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
+from pyairtable.formulas import EQ, OR, match, quoted
 
 from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.Transformer import Transformer
 from ZellijData.AirTableConnection import AirTableConnection
-import re
 
 
 class ResearchSpaceTransformer(Transformer):
@@ -89,7 +89,7 @@ class ResearchSpaceTransformer(Transformer):
                         OR(
                             *list(
                                 map(
-                                    lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                    lambda x: EQ(quoted(x), "RECORD_ID()"),
                                     model_fields_ids,
                                 )
                             )
@@ -199,18 +199,23 @@ class ResearchSpaceTransformer(Transformer):
         self._populate_namespaces(data)
         self._populate_fields(data)
         width = 0
-        for field in data['fields']:
+        for field in data["fields"]:
             description = field["description"].encode().decode("unicode_escape").strip()
             if len(description) > width:
                 width = len(description)
             field["description"] = description
-            for query in field['queries']:
-                query['select'] = query['select'].encode().decode("unicode_escape")
-                match = re.search(r"\bSELECT\b", query['select'], re.IGNORECASE)
+            for query in field["queries"]:
+                query["select"] = query["select"].encode().decode("unicode_escape")
+                match = re.search(r"\bSELECT\b", query["select"], re.IGNORECASE)
 
                 if match:
-                    final_query = query['select'][match.start():].encode().decode("unicode_escape").strip()
-                    query['select'] = final_query
+                    final_query = (
+                        query["select"][match.start() :]
+                        .encode()
+                        .decode("unicode_escape")
+                        .strip()
+                    )
+                    query["select"] = final_query
 
         def str_presenter(dumper, data):
             if "\n" in data:  # if the string contains newlines
