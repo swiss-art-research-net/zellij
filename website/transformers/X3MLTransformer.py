@@ -6,7 +6,7 @@ from typing import Dict, List, Literal, Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
+from pyairtable.formulas import EQ, OR, match, quoted
 
 from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.Transformer import Transformer
@@ -38,8 +38,8 @@ class X3MLTransformer(Transformer):
         self.api_key = api_key
         self.field: Union[RecordDict, None] = None
 
-        schemas, secretkey = generate_airtable_schema(api_key)
-        self.airtable = AirTableConnection(decrypt(secretkey), api_key)
+        schemas, self.secretkey = generate_airtable_schema(api_key)
+        self.airtable = AirTableConnection(decrypt(self.secretkey), api_key)
         self.pattern = pattern
         self._fetch_scraper_definition()
 
@@ -90,9 +90,10 @@ class X3MLTransformer(Transformer):
                     self.field_table,
                     f'SEARCH("{searchtext}",{{{self.field_table_group_by}}})',
                 ),
-                key=lambda x: x["fields"]["Canonical_Field_Order"]
-                if "Canonical_Field_Order" in x["fields"]
-                else x["fields"]["Model_Specific_Field_Order"],
+                key=lambda x: x["fields"].get(
+                    "Canonical_Field_Order",
+                    x["fields"].get("Model_Specific_Field_Order", 0),
+                ),
             ),
         )
         model_fields_ids = list(
@@ -110,16 +111,24 @@ class X3MLTransformer(Transformer):
             OR(
                 *list(
                     map(
-                        lambda x: OR(
-                            match({"ID": x}), EQUAL("RECORD_ID()", STR_VALUE(x))
-                        ),
+                        lambda x: OR(match({"ID": x}), EQ("RECORD_ID()", quoted(x))),
                         model_fields_ids,
                     )
                 )
             ),
         )
 
-        sorted_fields = sorted(fields, key=lambda x: model_fields_ids.index(x["id"]))
+        if len(model_fields_ids) == 0:
+            sorted_fields = fields
+        elif model_fields_ids[0].startswith("rec"):
+            sorted_fields = sorted(
+                fields, key=lambda x: model_fields_ids.index(x["id"])
+            )
+        else:
+            sorted_fields = sorted(
+                fields, key=lambda x: model_fields_ids.index(x["fields"]["ID"])
+            )
+
         for field, model_field in zip(sorted_fields, model_fields):
             if "Model_Specific_Part_of_Collection" in model_field["fields"]:
                 field["fields"]["Model_Specific_Part_of_Collection"] = model_field[
@@ -130,7 +139,14 @@ class X3MLTransformer(Transformer):
                     "fields"
                 ]["Collection_Specific_Part_of_Collection"]
 
-        return sorted(fields, key=lambda x: model_fields_ids.index(x["id"]))
+        if len(model_fields_ids) == 0:
+            return fields
+        elif model_fields_ids[0].startswith("rec"):
+            return sorted(fields, key=lambda x: model_fields_ids.index(x["id"]))
+        else:
+            return sorted(
+                fields, key=lambda x: model_fields_ids.index(x["fields"]["ID"])
+            )
 
     def get_major_number_of_part(self, part: str) -> str:
         if "[" not in part:
@@ -156,7 +172,11 @@ class X3MLTransformer(Transformer):
         record_id = self.field_id if self.field_id else self.model_id
 
         base_api_key = self.api_key
-        if self.scraper_definition is not None and self.scraper_definition["fieldbase"]:
+        if (
+            self.field_id
+            and self.scraper_definition
+            and self.scraper_definition["fieldbase"]
+        ):
             base_api_key = self.scraper_definition["fieldbase"]
 
         base_field = None
@@ -182,10 +202,15 @@ class X3MLTransformer(Transformer):
                     "Field already exists in Field table, but not in Field table in the Field Base"
                 )
 
+        print(base_api_key, self.content)
         try:
-            self.airtable.airtable.table(
-                base_id=base_api_key, table_name=table_name
-            ).update(base_field.get("id"), {column_name: self.content})
+            conn = AirTableConnection(decrypt(self.secretkey), base_api_key)
+            print(conn, base_api_key)
+            table = conn.airtable.table(base_id=base_api_key, table_name=table_name)
+            print(table)
+            table.update(
+                base_field.get("id"), {column_name: (self.content)}, typecast=True
+            )
         except Exception as e:
             print("Error uploading X3ML: ", e)
             raise e
@@ -288,14 +313,17 @@ class X3MLTransformer(Transformer):
                 .get(collection_field, "")
             )
 
-        if self.scraper_definition and self.scraper_definition["collectionbase"]:
-            collection_fields = self.get_records(
-                collection_id,
-                "Collection",
-                api_key=self.scraper_definition["collectionbase"],
-            )
-        else:
+        try:
             collection_fields = self.get_records(collection_id, "Collection")
+        except Exception as e:
+            if self.scraper_definition and self.scraper_definition["collectionbase"]:
+                collection_fields = self.get_records(
+                    collection_id,
+                    "Collection",
+                    api_key=self.scraper_definition["collectionbase"],
+                )
+            else:
+                raise e
 
         if len(collection_fields) == 1:
             self.collection_cache[cache_collection_id] = collection_fields[0]

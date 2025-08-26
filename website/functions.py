@@ -54,7 +54,7 @@ def display_graph(prefix, input, item, categories):
     # OR(
     #                         *list(
     #                             map(
-    #                                 lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+    #                                 lambda x: EQ(quoted(x), "RECORD_ID()"),
     #                                 identifiers,
     #                             )
     #                         )

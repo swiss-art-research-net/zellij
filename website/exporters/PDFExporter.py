@@ -138,7 +138,8 @@ class PDFExporter(ABC):
 
                     if urlparse(content).scheme in ("http", "https") and (
                         (len(header) > 0 and header[idx] != "URI")
-                        or data_row[0] != "URI"
+                        and data_row[0] != "URI"
+                        and data_row[0] != "Namespace"
                     ):
                         self.pdf.set_text_color(0, 0, 238)
                         row.cell(

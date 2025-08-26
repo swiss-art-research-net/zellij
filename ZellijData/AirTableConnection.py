@@ -11,7 +11,7 @@ from urllib.parse import unquote_plus, urlparse
 
 from pyairtable import Api
 from pyairtable.api import Table
-from pyairtable.formulas import EQUAL, OR, STR_VALUE
+from pyairtable.formulas import EQ, OR, quoted
 
 from website.db import decrypt, generate_airtable_schema
 from ZellijData.SingleGroupedItem import SingleGroupedItem
@@ -160,7 +160,7 @@ class AirTableConnection(object):
                         OR(
                             *list(
                                 map(
-                                    lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                                    lambda x: EQ(quoted(x), "RECORD_ID()"),
                                     highout[mykey],
                                 )
                             )

@@ -3,7 +3,7 @@ from typing import Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import EQUAL, OR, STR_VALUE, match
+from pyairtable.formulas import EQ, OR, match, quoted
 
 from website.exporters.Exporter import Exporter
 
@@ -305,7 +305,7 @@ class FieldExporter(Exporter):
                 OR(
                     *list(
                         map(
-                            lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                            lambda x: EQ(quoted(x), "RECORD_ID()"),
                             fields.get("Model_Deployed", []),
                         )
                     )
@@ -348,7 +348,7 @@ class FieldExporter(Exporter):
                 OR(
                     *list(
                         map(
-                            lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                            lambda x: EQ(quoted(x), "RECORD_ID()"),
                             fields.get("Collection_Deployed", []),
                         )
                     )
@@ -472,7 +472,7 @@ class FieldExporter(Exporter):
                 OR(
                     *list(
                         map(
-                            lambda x: EQUAL(STR_VALUE(x), "RECORD_ID()"),
+                            lambda x: EQ(quoted(x), "RECORD_ID()"),
                             fields.get("Author", []),
                         )
                     )
