@@ -4,7 +4,7 @@ from typing import List, Union
 
 from pyairtable import Table
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import EQ, OR, match, quoted
+from pyairtable.formulas import EQ, OR, FunctionCall, match, quoted
 
 from website.datasources import get_prefill
 from website.db import decrypt, generate_airtable_schema
@@ -113,7 +113,7 @@ class Exporter(ABC):
             records.extend(
                 self._airtable.get_multiple_records_by_formula(
                     table,
-                    OR(*list(map(lambda x: EQ(quoted(x), "RECORD_ID()"), item))),
+                    OR(*list(map(lambda x: EQ(x, FunctionCall("RECORD_ID")), item))),
                 )
             )
 

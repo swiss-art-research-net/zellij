@@ -11,7 +11,7 @@ from urllib.parse import unquote_plus, urlparse
 
 from pyairtable import Api
 from pyairtable.api import Table
-from pyairtable.formulas import EQ, OR, quoted
+from pyairtable.formulas import EQ, OR, Compound, FunctionCall
 
 from website.db import decrypt, generate_airtable_schema
 from ZellijData.SingleGroupedItem import SingleGroupedItem
@@ -160,7 +160,7 @@ class AirTableConnection(object):
                         OR(
                             *list(
                                 map(
-                                    lambda x: EQ(quoted(x), "RECORD_ID()"),
+                                    lambda x: EQ(x, FunctionCall("RECORD_ID")),
                                     highout[mykey],
                                 )
                             )
@@ -416,7 +416,7 @@ class AirTableConnection(object):
 
         return record
 
-    def get_record_by_formula(self, table_name: str, formula: str):
+    def get_record_by_formula(self, table_name: str, formula: Compound):
         """
         A single call to the AirTable, returning the unprocessed JSON result from AirTable.
         """

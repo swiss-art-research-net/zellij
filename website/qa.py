@@ -5,7 +5,7 @@ import json
 
 import requests
 from flask import Blueprint, Response
-from pyairtable.formulas import EQ, OR, match, quoted
+from pyairtable.formulas import EQ, OR, FunctionCall, match
 from werkzeug.wsgi import FileWrapper
 
 import website.utils.utils as utils
@@ -202,7 +202,7 @@ def execute_count_csv(api_key, item, scraper):
         OR(
             *list(
                 map(
-                    lambda x: EQ(quoted(x), "RECORD_ID()"),
+                    lambda x: EQ(x, FunctionCall("RECORD_ID")),
                     model_fields_ids,
                 )
             )
