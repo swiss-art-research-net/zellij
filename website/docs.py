@@ -11,7 +11,7 @@ from io import BytesIO
 from typing import Dict
 
 from flask import Blueprint, Response, abort, g, render_template, request
-from pyairtable.formulas import EQ, OR, quoted
+from pyairtable.formulas import EQ, OR, FunctionCall
 from werkzeug.wsgi import FileWrapper
 
 from website.auth import login_required
@@ -673,7 +673,7 @@ def patternitemdisplay(apikey, pattern):
             OR(
                 *list(
                     map(
-                        lambda x: EQ(quoted(x), "RECORD_ID()"),
+                        lambda x: EQ(x, FunctionCall("RECORD_ID")),
                         identifiers,
                     )
                 )

@@ -4,7 +4,7 @@ from typing import Dict, List, Union
 
 import yaml
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import EQ, OR, match, quoted
+from pyairtable.formulas import EQ, OR, FunctionCall, match
 
 from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.SparqlTransformer import SparqlTransformer
@@ -89,7 +89,7 @@ class ResearchSpaceTransformer(Transformer):
                         OR(
                             *list(
                                 map(
-                                    lambda x: EQ(quoted(x), "RECORD_ID()"),
+                                    lambda x: EQ(x, FunctionCall("RECORD_ID")),
                                     model_fields_ids,
                                 )
                             )

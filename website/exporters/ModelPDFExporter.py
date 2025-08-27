@@ -6,7 +6,7 @@ from io import BytesIO
 import mermaid as md
 from fpdf import Align
 from fpdf.enums import TextEmphasis
-from pyairtable.formulas import EQ, OR, match, quoted
+from pyairtable.formulas import EQ, OR, FunctionCall, match
 from typing_extensions import override
 
 from website.datasources import AirTableConnection, get_prefill
@@ -59,7 +59,7 @@ class ModelPDFExporter(PDFExporter):
             self.data["model"] = self.airtable.get_record_by_formula(
                 self.scraper["high_table"],
                 OR(
-                    EQ("RECORD_ID()", quoted(self.model_id)),
+                    EQ(FunctionCall("RECORD_ID"), self.model_id),
                     match({"ID": self.model_id}),
                 ),
             )

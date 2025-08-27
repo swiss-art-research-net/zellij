@@ -6,7 +6,7 @@ from typing import Dict, List, Literal, Union
 from xml.dom import minidom
 
 from pyairtable.api.types import RecordDict
-from pyairtable.formulas import EQ, OR, match, quoted
+from pyairtable.formulas import EQ, OR, FunctionCall, match
 
 from website.db import decrypt, dict_gen_one, generate_airtable_schema, get_db
 from website.transformers.Transformer import Transformer
@@ -111,12 +111,15 @@ class X3MLTransformer(Transformer):
             OR(
                 *list(
                     map(
-                        lambda x: OR(match({"ID": x}), EQ("RECORD_ID()", quoted(x))),
+                        lambda x: OR(
+                            match({"ID": x}), EQ(FunctionCall("RECORD_ID"), x)
+                        ),
                         model_fields_ids,
                     )
                 )
             ),
         )
+        print("Fields found: ", len(fields), " for model fields: ", len(model_fields))
 
         if len(model_fields_ids) == 0:
             sorted_fields = fields

@@ -130,24 +130,35 @@ class PDFExporter(ABC):
                 row = table.row()
                 for idx, cell in enumerate(data_row):
                     if not isinstance(cell, int) and len(cell) == 0:
-                        content = "N/A"
+                        content = ""
                     elif isinstance(cell, list):
                         content = ", ".join(cell)
                     else:
                         content = str(cell)
 
-                    if urlparse(content).scheme in ("http", "https") and (
-                        (len(header) > 0 and header[idx] != "URI")
-                        and data_row[0] != "URI"
-                        and data_row[0] != "Namespace"
-                    ):
-                        self.pdf.set_text_color(0, 0, 238)
-                        row.cell(
-                            "Link",
-                            link=content,
-                            align=Align.L,
-                        )
-                        self.pdf.set_text_color(0, 0, 0)
+                    if urlparse(content).scheme in ("http", "https"):
+                        if header and header[idx] != "URI":
+                            self.pdf.set_text_color(0, 0, 238)
+                            row.cell(
+                                "Link",
+                                link=content,
+                                align=Align.L,
+                            )
+                            self.pdf.set_text_color(0, 0, 0)
+                        elif (
+                            not header
+                            and data_row[0] != "URI"
+                            and data_row[0] != "Namespace"
+                        ):
+                            self.pdf.set_text_color(0, 0, 238)
+                            row.cell(
+                                "Link",
+                                link=content,
+                                align=Align.L,
+                            )
+                            self.pdf.set_text_color(0, 0, 0)
+                        else:
+                            row.cell(content)
                     else:
                         row.cell(content)
 
