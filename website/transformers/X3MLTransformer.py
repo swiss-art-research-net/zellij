@@ -119,7 +119,6 @@ class X3MLTransformer(Transformer):
                 )
             ),
         )
-        print("Fields found: ", len(fields), " for model fields: ", len(model_fields))
 
         if len(model_fields_ids) == 0:
             sorted_fields = fields
@@ -205,14 +204,15 @@ class X3MLTransformer(Transformer):
                     "Field already exists in Field table, but not in Field table in the Field Base"
                 )
 
-        print(base_api_key, self.content)
         try:
             conn = AirTableConnection(decrypt(self.secretkey), base_api_key)
-            print(conn, base_api_key)
             table = conn.airtable.table(base_id=base_api_key, table_name=table_name)
-            print(table)
-            table.update(
-                base_field.get("id"), {column_name: (self.content)}, typecast=True
+            table.upload_attachment(
+                record_id=base_field.get("id"),
+                field=column_name,
+                filename=f"{self.file_name}.x3ml",
+                content=self.content,
+                content_type="application/xml",
             )
         except Exception as e:
             print("Error uploading X3ML: ", e)
