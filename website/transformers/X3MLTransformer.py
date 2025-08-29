@@ -430,6 +430,9 @@ class X3MLTransformer(Transformer):
             link.attrib["template"] = self._get_collection_name(
                 self._get_collection_deployed(field)
             )
+
+            if not link.attrib["template"]:
+                link.attrib["template"] = field.get("fields", {}).get("System_Name", "")
         elif form == "b" and not first_part:
             link.attrib["template"] = field.get("fields", {}).get("ID", "")
 
