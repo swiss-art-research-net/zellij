@@ -159,7 +159,16 @@ class SingleGroupedItem(object):
                 self.InstanceGraph = str(e)
 
     def generateTurtleForPrefix(self, prefix):
-        values = self._GroupedFields.get(prefix)
+        if isinstance(self._GroupedFields, list):
+            for item in self._GroupedFields:
+                if item[0] == prefix:
+                    values = item[1]
+                    break
+        elif isinstance(self._GroupedFields, dict):
+            values = self._GroupedFields.get(prefix)
+        else:
+            return ""
+
         if values is None:
             return ""
 

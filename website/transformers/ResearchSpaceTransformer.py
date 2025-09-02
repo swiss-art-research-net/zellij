@@ -224,7 +224,6 @@ class ResearchSpaceTransformer(Transformer):
             return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="'")
 
         yaml.add_representer(str, str_presenter, Dumper=yaml.SafeDumper)
-        print(width)
         self.content = yaml.safe_dump(
             data,
             default_flow_style=False,

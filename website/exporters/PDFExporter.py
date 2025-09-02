@@ -129,7 +129,9 @@ class PDFExporter(ABC):
             for data_row in rows:
                 row = table.row()
                 for idx, cell in enumerate(data_row):
-                    if not isinstance(cell, int) and len(cell) == 0:
+                    if not cell:
+                        content = ""
+                    elif not isinstance(cell, int) and len(cell) == 0:
                         content = ""
                     elif isinstance(cell, list):
                         content = ", ".join(cell)
@@ -149,6 +151,7 @@ class PDFExporter(ABC):
                             not header
                             and data_row[0] != "URI"
                             and data_row[0] != "Namespace"
+                            and data_row[0] != "Ontology"
                         ):
                             self.pdf.set_text_color(0, 0, 238)
                             row.cell(

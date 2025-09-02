@@ -190,7 +190,7 @@ class ModelPDFExporter(PDFExporter):
                 rows.append(
                     tuple(
                         filter(
-                            lambda x: x not in self.hidden_keys,
+                            lambda x: x not in self.hidden_keys and x != "GroupBy",
                             self.scraper["low_remapper"].keys(),
                         )
                     )
@@ -198,7 +198,7 @@ class ModelPDFExporter(PDFExporter):
 
             data_row = []
             for field_key in self.scraper["low_remapper"].keys():
-                if field_key in self.hidden_keys:
+                if field_key in self.hidden_keys or field_key == "GroupBy":
                     continue
 
                 if field_key not in rows[0]:
@@ -285,18 +285,12 @@ class ModelPDFExporter(PDFExporter):
         if len(data) == 0 or "Turtle RDF" not in data[0]:
             return
 
-        rdf = data[0].get("Turtle RDF")
-        rdf = rdf.split("\n")
-        rdf = [line for line in rdf if not line.strip().startswith("@")]
-        rdf = "\n".join(rdf)
-        if len(rdf) > 2000:
-            rdf = rdf[:2000] + "..."
-        rows = [("RDF",), (rdf,)]
-
-        self.table(
-            has_header=True,
-            rows=tuple(rows),
+        self.pdf.set_font_size(8)
+        self.pdf.multi_cell(
+            w=self.pdf.w - 20,
+            text=self.data["item"].generateTurtleForPrefix(title).text(),
         )
+        self.reset_font()
 
     def _generate_category_section(self, title: str, data: dict) -> None:
         self.section(title)
