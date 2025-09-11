@@ -1,9 +1,6 @@
-import math
 import os
 from datetime import date
-from io import BytesIO
 
-import mermaid as md
 from fpdf import Align
 from fpdf.enums import TextEmphasis
 from pyairtable.formulas import EQ, OR, FunctionCall, match
@@ -12,7 +9,6 @@ from typing_extensions import override
 from website.datasources import AirTableConnection, get_prefill
 from website.db import get_schema_from_api_key
 from website.exporters.PDFExporter import PDFExporter
-from website.functions import generate_ontology_graph
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
@@ -207,9 +203,20 @@ class ModelPDFExporter(PDFExporter):
 
                 if isinstance(field, list):
                     if any([isinstance(f, dict) for f in field]):
-                        field = ", ".join(
-                            list(map(lambda x: x["fields"].get("UI_Name", ""), field))
-                        )
+                        try:
+                            field = ", ".join(
+                                list(
+                                    map(
+                                        lambda x: x.get("fields", {}).get(
+                                            "UI_Name", ""
+                                        ),
+                                        field,
+                                    )
+                                )
+                            )
+                        except Exception as e:
+                            print(field)
+                            raise e
                     else:
                         field = ", ".join(field)
                 elif field is None:
@@ -300,9 +307,7 @@ class ModelPDFExporter(PDFExporter):
             self.pdf.add_page()
             self._generate_graph_sub_section(title, data)
 
-        if self.data["model"].get("Model_Turtle") or self.data["model"].get(
-            "Collection_Turtle"
-        ):
+        if self.data["item"].generateTurtleForPrefix(title).text():
             self.pdf.add_page()
             self._generate_rdf_sub_section(title, data)
 

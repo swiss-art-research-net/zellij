@@ -159,6 +159,7 @@ class SingleGroupedItem(object):
                 self.InstanceGraph = str(e)
 
     def generateTurtleForPrefix(self, prefix):
+        values = None
         if isinstance(self._GroupedFields, list):
             for item in self._GroupedFields:
                 if item[0] == prefix:
@@ -167,10 +168,10 @@ class SingleGroupedItem(object):
         elif isinstance(self._GroupedFields, dict):
             values = self._GroupedFields.get(prefix)
         else:
-            return ""
+            return TurtleCodeBlock("")
 
         if values is None:
-            return ""
+            return TurtleCodeBlock("")
 
         allturtle = "\n".join(
             [x["Turtle RDF"] if "Turtle RDF" in x else "" for x in values]
