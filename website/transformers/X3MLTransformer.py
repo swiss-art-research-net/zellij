@@ -131,7 +131,9 @@ class X3MLTransformer(Transformer):
                 fields, key=lambda x: model_fields_ids.index(x["fields"]["ID"])
             )
 
-        for field, model_field in zip(sorted_fields, model_fields):
+        for field in sorted_fields:
+            model_field = model_fields[model_fields_ids.index(field["id"])]
+
             if "Model_Specific_Part_of_Collection" in model_field["fields"]:
                 field["fields"]["Model_Specific_Part_of_Collection"] = model_field[
                     "fields"
@@ -456,7 +458,7 @@ class X3MLTransformer(Transformer):
             )
 
             if not link.attrib["template"]:
-                link.attrib["template"] = field.get("fields", {}).get("System_Name", "")
+                link.attrib["template"] = field.get("fields", {}).get("ID", "")
         elif form == "b" and not first_part:
             link.attrib["template"] = field.get("fields", {}).get("ID", "")
 

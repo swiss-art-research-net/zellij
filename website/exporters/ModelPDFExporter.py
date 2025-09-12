@@ -1,6 +1,9 @@
+import math
 import os
 from datetime import date
+from io import BytesIO
 
+import mermaid as md
 from fpdf import Align
 from fpdf.enums import TextEmphasis
 from pyairtable.formulas import EQ, OR, FunctionCall, match
@@ -9,6 +12,7 @@ from typing_extensions import override
 from website.datasources import AirTableConnection, get_prefill
 from website.db import get_schema_from_api_key
 from website.exporters.PDFExporter import PDFExporter
+from website.functions import generate_ontology_graph
 from ZellijData.TurtleCodeBlock import TurtleCodeBlock
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
@@ -271,8 +275,13 @@ class ModelPDFExporter(PDFExporter):
         allturtle = TurtlePrefix + "\n\n" + text
         turtle = TurtleCodeBlock(allturtle)
         self.graph_text = turtle.text()
+        try:
+            criteria = generate_ontology_graph(self.graph_text)
+        except Exception:
+            return
+
         mmd = md.Mermaid(
-            generate_ontology_graph(self.graph_text),
+            criteria,
             width=math.floor(self.pdf.w - 20) * 8,
             height=math.floor(self.pdf.h - 60) * 8,
         )
