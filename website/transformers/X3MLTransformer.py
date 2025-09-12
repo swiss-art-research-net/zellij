@@ -131,7 +131,9 @@ class X3MLTransformer(Transformer):
                 fields, key=lambda x: model_fields_ids.index(x["fields"]["ID"])
             )
 
-        for field, model_field in zip(sorted_fields, model_fields):
+        for field in sorted_fields:
+            model_field = model_fields[model_fields_ids.index(field["id"])]
+
             if "Model_Specific_Part_of_Collection" in model_field["fields"]:
                 field["fields"]["Model_Specific_Part_of_Collection"] = model_field[
                     "fields"
@@ -221,7 +223,12 @@ class X3MLTransformer(Transformer):
     def _parse_ontological_path(self, path: str) -> List[str]:
         long_discriminator = "-->"
         short_discriminator = "->"
-        stripped_path = path.strip(short_discriminator).strip(long_discriminator)
+        stripped_path = (
+            path.strip(short_discriminator)
+            .strip(long_discriminator)
+            .replace("<br><br>", long_discriminator)
+            .replace("<br>", long_discriminator)
+        )
 
         parts = stripped_path.split(long_discriminator)
         parts = list(map(lambda x: x.split(short_discriminator), parts))
@@ -243,6 +250,9 @@ class X3MLTransformer(Transformer):
         namespaces = ET.SubElement(root, "namespaces")
 
         for record in records:
+            if "Prefix" not in record["fields"] or "Namespace" not in record["fields"]:
+                continue
+
             namespace = ET.SubElement(namespaces, "namespace")
             namespace.attrib["prefix"] = record["fields"]["Prefix"]
             namespace.attrib["uri"] = record["fields"]["Namespace"]
@@ -279,6 +289,9 @@ class X3MLTransformer(Transformer):
         namespaces_records = self._get_namespaces()
         target = ET.SubElement(info, "target")
         for rec in namespaces_records:
+            if "Namespace" not in rec["fields"]:
+                continue
+
             target_info = ET.SubElement(target, "target_info")
             target_schema = ET.SubElement(target_info, "target_schema")
             target_schema.attrib["type"] = "rdfs"
@@ -358,7 +371,20 @@ class X3MLTransformer(Transformer):
         else:
             entity = ET.SubElement(target_node, "entity")
             entity_type = ET.SubElement(entity, "type")
-            entity_type.text = template
+
+            if (
+                self.model
+                and self.model["fields"].get("Ontology_Scope", [])
+                and isinstance(self.model["fields"].get("Ontology_Scope", []), list)
+            ):
+                ontology = self.airtable.get_record_by_id(
+                    table="Ontology_Class",
+                    record_id=self.model["fields"]["Ontology_Scope"][0],
+                )
+                entity_type.text = ontology["fields"].get("URI")
+            else:
+                entity_type.text = template
+
             instance_generator = ET.SubElement(entity, "instance_generator")
             instance_generator.attrib["name"] = "UUID"
 
@@ -432,7 +458,7 @@ class X3MLTransformer(Transformer):
             )
 
             if not link.attrib["template"]:
-                link.attrib["template"] = field.get("fields", {}).get("System_Name", "")
+                link.attrib["template"] = field.get("fields", {}).get("ID", "")
         elif form == "b" and not first_part:
             link.attrib["template"] = field.get("fields", {}).get("ID", "")
 

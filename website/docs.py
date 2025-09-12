@@ -35,6 +35,7 @@ from website.transformers.ResearchSpaceTransformer import ResearchSpaceTransform
 from website.transformers.SparqlTransformer import SparqlTransformer
 from website.transformers.TurtleTransformer import TurtleTransformer
 from website.transformers.X3MLTransformer import X3MLTransformer
+from website.utils.decorators import replace_chars
 from ZellijData.AirTableConnection import AirTableConnection, EnhancedResponse
 
 bp = Blueprint("docs", __name__, url_prefix="/docs")
@@ -390,6 +391,7 @@ def patternlistexporttree(apikey, exportType, model):
 
 
 @bp.route("/transform/turtle/<apikey>/<item>")
+@replace_chars("item", "+", "/")
 def patterntransformturtle(apikey, item):
     transformer = TurtleTransformer(apikey, item)
     file = transformer.transform()
@@ -414,6 +416,7 @@ def patterntransformturtle(apikey, item):
 
 
 @bp.route("/transform/sparql/<apikey>/<model_table>/<model_id>/<item>")
+@replace_chars("item", "+", "/")
 def patterntransformsparql(apikey, model_table, model_id, item):
     transformer = SparqlTransformer(apikey, item, model=model_table, model_id=model_id)
     count = request.args.get("count") == "true"
@@ -442,6 +445,7 @@ def patterntransformsparql(apikey, model_table, model_id, item):
 
 
 @bp.route("/transform/x3ml/<apikey>/<pattern>/<modelid>/<item>/<formtype>")
+@replace_chars("item", "+", "/")
 def patterntransformx3ml(apikey, pattern, modelid, item, formtype):
     transformer = X3MLTransformer(
         apikey, pattern, modelid, item if item != "model" else None
@@ -468,6 +472,7 @@ def patterntransformx3ml(apikey, pattern, modelid, item, formtype):
 
 
 @bp.route("/transform/rs/<apikey>/<pattern>/<modelid>/<item>")
+@replace_chars("item", "+", "/")
 def patterntransformrs(apikey, pattern, modelid, item):
     transformer = ResearchSpaceTransformer(
         apikey, pattern, modelid, item if item != "model" else None
@@ -559,11 +564,6 @@ def exportpdf(id: str):
         response.headers["Content-Disposition"] = "attachment; filename=project.pdf"
         response.headers["Content-Type"] = "application/pdf"
         return response
-
-
-@bp.route("/pdf/<id>", methods=["GET"])
-def pdf(id: str):
-    return render_template("functions/project_pdf.html")
 
 
 @bp.route("/list/<apikey>/<pattern>", methods=["GET"])

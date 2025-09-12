@@ -207,9 +207,20 @@ class ModelPDFExporter(PDFExporter):
 
                 if isinstance(field, list):
                     if any([isinstance(f, dict) for f in field]):
-                        field = ", ".join(
-                            list(map(lambda x: x["fields"].get("UI_Name", ""), field))
-                        )
+                        try:
+                            field = ", ".join(
+                                list(
+                                    map(
+                                        lambda x: x.get("fields", {}).get(
+                                            "UI_Name", ""
+                                        ),
+                                        field,
+                                    )
+                                )
+                            )
+                        except Exception as e:
+                            print(field)
+                            raise e
                     else:
                         field = ", ".join(field)
                 elif field is None:
@@ -264,8 +275,13 @@ class ModelPDFExporter(PDFExporter):
         allturtle = TurtlePrefix + "\n\n" + text
         turtle = TurtleCodeBlock(allturtle)
         self.graph_text = turtle.text()
+        try:
+            criteria = generate_ontology_graph(self.graph_text)
+        except Exception:
+            return
+
         mmd = md.Mermaid(
-            generate_ontology_graph(self.graph_text),
+            criteria,
             width=math.floor(self.pdf.w - 20) * 8,
             height=math.floor(self.pdf.h - 60) * 8,
         )
@@ -300,9 +316,7 @@ class ModelPDFExporter(PDFExporter):
             self.pdf.add_page()
             self._generate_graph_sub_section(title, data)
 
-        if self.data["model"].get("Model_Turtle") or self.data["model"].get(
-            "Collection_Turtle"
-        ):
+        if self.data["item"].generateTurtleForPrefix(title).text():
             self.pdf.add_page()
             self._generate_rdf_sub_section(title, data)
 
