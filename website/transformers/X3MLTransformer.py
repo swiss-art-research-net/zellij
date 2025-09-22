@@ -132,7 +132,12 @@ class X3MLTransformer(Transformer):
             )
 
         for field in sorted_fields:
-            model_field = model_fields[model_fields_ids.index(field["id"])]
+            if model_fields_ids and model_fields_ids[0].startswith("rec"):
+                model_field = model_fields[model_fields_ids.index(field["id"])]
+            else:
+                model_field = model_fields[
+                    model_fields_ids.index(field["fields"]["ID"])
+                ]
 
             if "Model_Specific_Part_of_Collection" in model_field["fields"]:
                 field["fields"]["Model_Specific_Part_of_Collection"] = model_field[
