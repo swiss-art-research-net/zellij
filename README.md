@@ -64,3 +64,7 @@ Zellīj is a web app, and as such is designed to be deployed to a web server, su
 
 ### Extra stuff available to developer
 * Because this is a work in progress, error messages on the server will contain full stack trace and debug information. But because that's production, all that info is encrypted into a secure string. This string can be reported to you by users, and can be _decrypted_ by this application running locally. When running locally you'll be able to go to http://127.0.0.1:5000/errordecoder and paste in the encrypted string, and see the full error message.
+
+
+## License
+Apache-2.0 © Takin.solutions Ltd 2020-2025
